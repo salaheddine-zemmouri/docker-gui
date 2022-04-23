@@ -2,3 +2,4 @@
 build/
 config.js
 node_modules/
+temp/

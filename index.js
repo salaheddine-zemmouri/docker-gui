@@ -5,6 +5,7 @@ const sslify     = require('express-sslify')
 const http       = require('http')
 const path       = require('path')
 const api        = require('./api')
+const dockerfile = require('./api/dockerfilegen')
 const config     = require('./config')
 
 const app    = express()
@@ -35,6 +36,9 @@ app.use(session({
 
 // Route to the api
 app.use('/api/v1', api)
+
+// Route to the Dockerfile generator
+app.use("/api/dockerfile", dockerfile)
 
 // Route to the index file
 app.use('*', (req, res) => {
