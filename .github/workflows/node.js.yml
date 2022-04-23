@@ -1,5 +1,6 @@
 # This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
 name: Node.js CI
 
 on:
@@ -12,7 +13,12 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-
+    env : 
+        DOCKER_USERNAME: ${{secrets.DOCKER_USERNAME}}
+        DOCKER_PASS: ${{secrets.DOCKER_PASSWORD}}
+        IMAGE_NAME : docker-gui-ci-test
+        IMAGE_TAGNAME : latest
+        
     strategy:
       matrix:
         node-version: [7.x]
@@ -24,6 +30,12 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
     - run: npm install
     - run: npm test
+    - name : Docker login
+      run : |
+        docker login -u $DOCKER_USERNAME -p $DOCKER_PASS
+    - name: Build docker image
+      run : docker build . --file Dockerfile -t $DOCKER_USERNAME/$IMAGE_NAME:$IMAGE_TAGNAME
+    - name : Docker push
+      run : docker push $DOCKER_USERNAME/$IMAGE_NAME:$IMAGE_TAGNAME
