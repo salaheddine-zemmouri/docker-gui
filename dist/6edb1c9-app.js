@@ -263,7 +263,7 @@ var Login = (_class = function (_BaseStore) {
     var _this2 = this;
 
     return function () {
-      var _ref = _asyncToGenerator(regeneratorRuntime.mark(function _callee(credentials) {
+      var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(credentials) {
         var redirect;
         return regeneratorRuntime.wrap(function _callee$(_context) {
           while (1) {
@@ -306,7 +306,7 @@ var Login = (_class = function (_BaseStore) {
   initializer: function initializer() {
     var _this3 = this;
 
-    return _asyncToGenerator(regeneratorRuntime.mark(function _callee2() {
+    return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2() {
       return regeneratorRuntime.wrap(function _callee2$(_context2) {
         while (1) {
           switch (_context2.prev = _context2.next) {
@@ -616,7 +616,7 @@ var Containers = (_class = function (_BaseStore) {
     var _this2 = this;
 
     return function () {
-      var _ref = _asyncToGenerator(regeneratorRuntime.mark(function _callee(id) {
+      var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(id) {
         return regeneratorRuntime.wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
@@ -657,7 +657,7 @@ var Containers = (_class = function (_BaseStore) {
     var _this3 = this;
 
     return function () {
-      var _ref2 = _asyncToGenerator(regeneratorRuntime.mark(function _callee2(id) {
+      var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(id) {
         var res;
         return regeneratorRuntime.wrap(function _callee2$(_context2) {
           while (1) {
@@ -700,7 +700,7 @@ var Containers = (_class = function (_BaseStore) {
   initializer: function initializer() {
     var _this4 = this;
 
-    return _asyncToGenerator(regeneratorRuntime.mark(function _callee3() {
+    return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3() {
       var res;
       return regeneratorRuntime.wrap(function _callee3$(_context3) {
         while (1) {
@@ -766,7 +766,7 @@ var Containers = (_class = function (_BaseStore) {
   initializer: function initializer() {
     var _this5 = this;
 
-    return _asyncToGenerator(regeneratorRuntime.mark(function _callee4() {
+    return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4() {
       return regeneratorRuntime.wrap(function _callee4$(_context4) {
         while (1) {
           switch (_context4.prev = _context4.next) {
@@ -802,7 +802,7 @@ var Containers = (_class = function (_BaseStore) {
     var _this6 = this;
 
     return function () {
-      var _ref5 = _asyncToGenerator(regeneratorRuntime.mark(function _callee5(id, name) {
+      var _ref5 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5(id, name) {
         return regeneratorRuntime.wrap(function _callee5$(_context5) {
           while (1) {
             switch (_context5.prev = _context5.next) {
@@ -843,7 +843,7 @@ var Containers = (_class = function (_BaseStore) {
     var _this7 = this;
 
     return function () {
-      var _ref6 = _asyncToGenerator(regeneratorRuntime.mark(function _callee6(id) {
+      var _ref6 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee6(id) {
         return regeneratorRuntime.wrap(function _callee6$(_context6) {
           while (1) {
             switch (_context6.prev = _context6.next) {
@@ -884,7 +884,7 @@ var Containers = (_class = function (_BaseStore) {
     var _this8 = this;
 
     return function () {
-      var _ref7 = _asyncToGenerator(regeneratorRuntime.mark(function _callee7(id) {
+      var _ref7 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee7(id) {
         return regeneratorRuntime.wrap(function _callee7$(_context7) {
           while (1) {
             switch (_context7.prev = _context7.next) {
@@ -925,7 +925,7 @@ var Containers = (_class = function (_BaseStore) {
     var _this9 = this;
 
     return function () {
-      var _ref8 = _asyncToGenerator(regeneratorRuntime.mark(function _callee8(id) {
+      var _ref8 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee8(id) {
         return regeneratorRuntime.wrap(function _callee8$(_context8) {
           while (1) {
             switch (_context8.prev = _context8.next) {
@@ -966,7 +966,7 @@ var Containers = (_class = function (_BaseStore) {
     var _this10 = this;
 
     return function () {
-      var _ref9 = _asyncToGenerator(regeneratorRuntime.mark(function _callee9(id) {
+      var _ref9 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee9(id) {
         return regeneratorRuntime.wrap(function _callee9$(_context9) {
           while (1) {
             switch (_context9.prev = _context9.next) {
@@ -1007,7 +1007,7 @@ var Containers = (_class = function (_BaseStore) {
     var _this11 = this;
 
     return function () {
-      var _ref10 = _asyncToGenerator(regeneratorRuntime.mark(function _callee10(id) {
+      var _ref10 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee10(id) {
         return regeneratorRuntime.wrap(function _callee10$(_context10) {
           while (1) {
             switch (_context10.prev = _context10.next) {
@@ -1048,7 +1048,7 @@ var Containers = (_class = function (_BaseStore) {
     var _this12 = this;
 
     return function () {
-      var _ref11 = _asyncToGenerator(regeneratorRuntime.mark(function _callee11(id) {
+      var _ref11 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee11(id) {
         return regeneratorRuntime.wrap(function _callee11$(_context11) {
           while (1) {
             switch (_context11.prev = _context11.next) {
@@ -1208,7 +1208,7 @@ var Images = (_class = function (_BaseStore) {
     var _this2 = this;
 
     return function () {
-      var _ref = _asyncToGenerator(regeneratorRuntime.mark(function _callee(id) {
+      var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(id) {
         return regeneratorRuntime.wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
@@ -1249,7 +1249,7 @@ var Images = (_class = function (_BaseStore) {
     var _this3 = this;
 
     return function () {
-      var _ref2 = _asyncToGenerator(regeneratorRuntime.mark(function _callee2(id) {
+      var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(id) {
         var res;
         return regeneratorRuntime.wrap(function _callee2$(_context2) {
           while (1) {
@@ -1292,7 +1292,7 @@ var Images = (_class = function (_BaseStore) {
   initializer: function initializer() {
     var _this4 = this;
 
-    return _asyncToGenerator(regeneratorRuntime.mark(function _callee3() {
+    return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3() {
       var res;
       return regeneratorRuntime.wrap(function _callee3$(_context3) {
         while (1) {
@@ -1376,7 +1376,7 @@ var Images = (_class = function (_BaseStore) {
   initializer: function initializer() {
     var _this5 = this;
 
-    return _asyncToGenerator(regeneratorRuntime.mark(function _callee4() {
+    return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4() {
       return regeneratorRuntime.wrap(function _callee4$(_context4) {
         while (1) {
           switch (_context4.prev = _context4.next) {
@@ -1513,7 +1513,7 @@ var Volumes = (_class = function (_BaseStore) {
     var _this2 = this;
 
     return function () {
-      var _ref = _asyncToGenerator(regeneratorRuntime.mark(function _callee(volume) {
+      var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(volume) {
         return regeneratorRuntime.wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
@@ -1554,7 +1554,7 @@ var Volumes = (_class = function (_BaseStore) {
     var _this3 = this;
 
     return function () {
-      var _ref2 = _asyncToGenerator(regeneratorRuntime.mark(function _callee2(id) {
+      var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(id) {
         return regeneratorRuntime.wrap(function _callee2$(_context2) {
           while (1) {
             switch (_context2.prev = _context2.next) {
@@ -1595,7 +1595,7 @@ var Volumes = (_class = function (_BaseStore) {
     var _this4 = this;
 
     return function () {
-      var _ref3 = _asyncToGenerator(regeneratorRuntime.mark(function _callee3(id) {
+      var _ref3 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(id) {
         var res;
         return regeneratorRuntime.wrap(function _callee3$(_context3) {
           while (1) {
@@ -1638,7 +1638,7 @@ var Volumes = (_class = function (_BaseStore) {
   initializer: function initializer() {
     var _this5 = this;
 
-    return _asyncToGenerator(regeneratorRuntime.mark(function _callee4() {
+    return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4() {
       var res;
       return regeneratorRuntime.wrap(function _callee4$(_context4) {
         while (1) {
@@ -1683,7 +1683,7 @@ var Volumes = (_class = function (_BaseStore) {
   initializer: function initializer() {
     var _this6 = this;
 
-    return _asyncToGenerator(regeneratorRuntime.mark(function _callee5() {
+    return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5() {
       return regeneratorRuntime.wrap(function _callee5$(_context5) {
         while (1) {
           switch (_context5.prev = _context5.next) {
@@ -1828,7 +1828,7 @@ var Networks = (_class = function (_BaseStore) {
     var _this2 = this;
 
     return function () {
-      var _ref = _asyncToGenerator(regeneratorRuntime.mark(function _callee(network) {
+      var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(network) {
         return regeneratorRuntime.wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
@@ -1869,7 +1869,7 @@ var Networks = (_class = function (_BaseStore) {
     var _this3 = this;
 
     return function () {
-      var _ref2 = _asyncToGenerator(regeneratorRuntime.mark(function _callee2(id) {
+      var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(id) {
         return regeneratorRuntime.wrap(function _callee2$(_context2) {
           while (1) {
             switch (_context2.prev = _context2.next) {
@@ -1910,7 +1910,7 @@ var Networks = (_class = function (_BaseStore) {
     var _this4 = this;
 
     return function () {
-      var _ref3 = _asyncToGenerator(regeneratorRuntime.mark(function _callee3(id) {
+      var _ref3 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(id) {
         var res;
         return regeneratorRuntime.wrap(function _callee3$(_context3) {
           while (1) {
@@ -1953,7 +1953,7 @@ var Networks = (_class = function (_BaseStore) {
   initializer: function initializer() {
     var _this5 = this;
 
-    return _asyncToGenerator(regeneratorRuntime.mark(function _callee4() {
+    return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4() {
       var res;
       return regeneratorRuntime.wrap(function _callee4$(_context4) {
         while (1) {
@@ -2001,7 +2001,7 @@ var Networks = (_class = function (_BaseStore) {
   initializer: function initializer() {
     var _this6 = this;
 
-    return _asyncToGenerator(regeneratorRuntime.mark(function _callee5() {
+    return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5() {
       return regeneratorRuntime.wrap(function _callee5$(_context5) {
         while (1) {
           switch (_context5.prev = _context5.next) {
