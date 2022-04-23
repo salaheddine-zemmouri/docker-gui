@@ -1,6 +1,4 @@
-FROM node:7.7.3
-
-MAINTAINER oscar@otothea.com
+FROM node:12-slim
 
 # WORKDIR
 
@@ -30,7 +28,7 @@ COPY config.example.js config.js
 COPY fuse.js           fuse.js
 COPY fuse.prod.js      fuse.prod.js
 COPY index.js          index.js
-
+COPY temp              temp
 RUN npm run build
 
 CMD npm run prod
