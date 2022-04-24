@@ -2,6 +2,7 @@ import {inject, observer} from 'mobx-react'
 import React from 'react'
 import AppStore from 'stores/AppStore'
 import {STATE} from 'stores/Containers/Containers'
+import {Link} from 'react-router'
 
 @inject('store')
 @observer
@@ -143,6 +144,7 @@ export default class Containers extends React.Component {
                       {container.state === STATE.RUNNING && <li><a href="#" onClick={() => this.pauseContainer(container.id)}>Pause</a></li>}
                       {container.state === STATE.PAUSED && <li><a href="#" onClick={() => this.unpauseContainer(container.id)}>Unpause</a></li>}
                       <li><a href="#" onClick={() => this.renameContainer(container)}>Rename</a></li>
+                      <li><Link to={`/Logs?containerId=${container.id}`}>Logs</Link></li>
                     </ul>
                   </div>
                 </td>
