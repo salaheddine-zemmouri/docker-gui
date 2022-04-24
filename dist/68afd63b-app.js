@@ -263,7 +263,7 @@ var Login = (_class = function (_BaseStore) {
     var _this2 = this;
 
     return function () {
-      var _ref = _asyncToGenerator(regeneratorRuntime.mark(function _callee(credentials) {
+      var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(credentials) {
         var redirect;
         return regeneratorRuntime.wrap(function _callee$(_context) {
           while (1) {
@@ -306,7 +306,7 @@ var Login = (_class = function (_BaseStore) {
   initializer: function initializer() {
     var _this3 = this;
 
-    return _asyncToGenerator(regeneratorRuntime.mark(function _callee2() {
+    return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2() {
       return regeneratorRuntime.wrap(function _callee2$(_context2) {
         while (1) {
           switch (_context2.prev = _context2.next) {
@@ -483,7 +483,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = exports.STATE = undefined;
 
-var _desc, _value, _class, _descriptor, _descriptor2, _descriptor3, _descriptor4, _descriptor5, _descriptor6, _descriptor7, _descriptor8, _descriptor9, _descriptor10, _descriptor11, _descriptor12;
+var _desc, _value, _class, _descriptor, _descriptor2, _descriptor3, _descriptor4, _descriptor5, _descriptor6, _descriptor7, _descriptor8, _descriptor9, _descriptor10, _descriptor11, _descriptor12, _descriptor13;
 
 var _axios = require("~/lib/axios");
 
@@ -582,23 +582,25 @@ var Containers = (_class = function (_BaseStore) {
 
     _initDefineProp(_this, "inspectContainer", _descriptor3, _this);
 
-    _initDefineProp(_this, "loadContainers", _descriptor4, _this);
+    _initDefineProp(_this, "loadContainersLogs", _descriptor4, _this);
 
-    _initDefineProp(_this, "pruneContainers", _descriptor5, _this);
+    _initDefineProp(_this, "loadContainers", _descriptor5, _this);
 
-    _initDefineProp(_this, "renameContainer", _descriptor6, _this);
+    _initDefineProp(_this, "pruneContainers", _descriptor6, _this);
 
-    _initDefineProp(_this, "restartContainer", _descriptor7, _this);
+    _initDefineProp(_this, "renameContainer", _descriptor7, _this);
 
-    _initDefineProp(_this, "startContainer", _descriptor8, _this);
+    _initDefineProp(_this, "restartContainer", _descriptor8, _this);
 
-    _initDefineProp(_this, "stopContainer", _descriptor9, _this);
+    _initDefineProp(_this, "startContainer", _descriptor9, _this);
 
-    _initDefineProp(_this, "killContainer", _descriptor10, _this);
+    _initDefineProp(_this, "stopContainer", _descriptor10, _this);
 
-    _initDefineProp(_this, "pauseContainer", _descriptor11, _this);
+    _initDefineProp(_this, "killContainer", _descriptor11, _this);
 
-    _initDefineProp(_this, "unpauseContainer", _descriptor12, _this);
+    _initDefineProp(_this, "pauseContainer", _descriptor12, _this);
+
+    _initDefineProp(_this, "unpauseContainer", _descriptor13, _this);
 
     _this.appStore = appStore;
     return _this;
@@ -616,7 +618,7 @@ var Containers = (_class = function (_BaseStore) {
     var _this2 = this;
 
     return function () {
-      var _ref = _asyncToGenerator(regeneratorRuntime.mark(function _callee(id) {
+      var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(id) {
         return regeneratorRuntime.wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
@@ -657,7 +659,7 @@ var Containers = (_class = function (_BaseStore) {
     var _this3 = this;
 
     return function () {
-      var _ref2 = _asyncToGenerator(regeneratorRuntime.mark(function _callee2(id) {
+      var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(id) {
         var res;
         return regeneratorRuntime.wrap(function _callee2$(_context2) {
           while (1) {
@@ -695,27 +697,71 @@ var Containers = (_class = function (_BaseStore) {
       };
     }();
   }
-}), _descriptor4 = _applyDecoratedDescriptor(_class.prototype, "loadContainers", [_mobx.action], {
+}), _descriptor4 = _applyDecoratedDescriptor(_class.prototype, "loadContainersLogs", [_mobx.action], {
   enumerable: true,
   initializer: function initializer() {
     var _this4 = this;
 
-    return _asyncToGenerator(regeneratorRuntime.mark(function _callee3() {
-      var res;
-      return regeneratorRuntime.wrap(function _callee3$(_context3) {
-        while (1) {
-          switch (_context3.prev = _context3.next) {
-            case 0:
-              _this4.setError();
+    return function () {
+      var _ref3 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(id) {
+        var res;
+        return regeneratorRuntime.wrap(function _callee3$(_context3) {
+          while (1) {
+            switch (_context3.prev = _context3.next) {
+              case 0:
+                _this4.setError();
 
-              _context3.prev = 1;
-              _context3.next = 4;
+                _context3.prev = 1;
+                _context3.next = 4;
+                return _axios2.default.get("containers/" + id + "/logs");
+
+              case 4:
+                res = _context3.sent;
+
+                _this4.inspect = res.data;
+                _context3.next = 11;
+                break;
+
+              case 8:
+                _context3.prev = 8;
+                _context3.t0 = _context3["catch"](1);
+
+                _this4.setError(_context3.t0);
+
+              case 11:
+              case "end":
+                return _context3.stop();
+            }
+          }
+        }, _callee3, _this4, [[1, 8]]);
+      }));
+
+      return function (_x3) {
+        return _ref3.apply(this, arguments);
+      };
+    }();
+  }
+}), _descriptor5 = _applyDecoratedDescriptor(_class.prototype, "loadContainers", [_mobx.action], {
+  enumerable: true,
+  initializer: function initializer() {
+    var _this5 = this;
+
+    return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4() {
+      var res;
+      return regeneratorRuntime.wrap(function _callee4$(_context4) {
+        while (1) {
+          switch (_context4.prev = _context4.next) {
+            case 0:
+              _this5.setError();
+
+              _context4.prev = 1;
+              _context4.next = 4;
               return _axios2.default.get('containers');
 
             case 4:
-              res = _context3.sent;
+              res = _context4.sent;
 
-              _this4.containers = (0, _lodash.sortBy)(res.data, function (container) {
+              _this5.containers = (0, _lodash.sortBy)(res.data, function (container) {
                 return -container.Created;
               }).map(function (container) {
                 var ports = (0, _lodash.sortBy)(container.Ports, function (p) {
@@ -744,106 +790,65 @@ var Containers = (_class = function (_BaseStore) {
                   state: container.State
                 };
               });
-              _context3.next = 11;
+              _context4.next = 11;
               break;
 
             case 8:
-              _context3.prev = 8;
-              _context3.t0 = _context3["catch"](1);
-
-              _this4.setError(_context3.t0);
-
-            case 11:
-            case "end":
-              return _context3.stop();
-          }
-        }
-      }, _callee3, _this4, [[1, 8]]);
-    }));
-  }
-}), _descriptor5 = _applyDecoratedDescriptor(_class.prototype, "pruneContainers", [_mobx.action], {
-  enumerable: true,
-  initializer: function initializer() {
-    var _this5 = this;
-
-    return _asyncToGenerator(regeneratorRuntime.mark(function _callee4() {
-      return regeneratorRuntime.wrap(function _callee4$(_context4) {
-        while (1) {
-          switch (_context4.prev = _context4.next) {
-            case 0:
-              _this5.setError();
-
-              _context4.prev = 1;
-              _context4.next = 4;
-              return _axios2.default.post('containers/prune');
-
-            case 4:
-              _this5.loadContainers();
-              _context4.next = 10;
-              break;
-
-            case 7:
-              _context4.prev = 7;
+              _context4.prev = 8;
               _context4.t0 = _context4["catch"](1);
 
               _this5.setError(_context4.t0);
 
-            case 10:
+            case 11:
             case "end":
               return _context4.stop();
           }
         }
-      }, _callee4, _this5, [[1, 7]]);
+      }, _callee4, _this5, [[1, 8]]);
     }));
   }
-}), _descriptor6 = _applyDecoratedDescriptor(_class.prototype, "renameContainer", [_mobx.action], {
+}), _descriptor6 = _applyDecoratedDescriptor(_class.prototype, "pruneContainers", [_mobx.action], {
   enumerable: true,
   initializer: function initializer() {
     var _this6 = this;
 
-    return function () {
-      var _ref5 = _asyncToGenerator(regeneratorRuntime.mark(function _callee5(id, name) {
-        return regeneratorRuntime.wrap(function _callee5$(_context5) {
-          while (1) {
-            switch (_context5.prev = _context5.next) {
-              case 0:
-                _this6.setError();
+    return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5() {
+      return regeneratorRuntime.wrap(function _callee5$(_context5) {
+        while (1) {
+          switch (_context5.prev = _context5.next) {
+            case 0:
+              _this6.setError();
 
-                _context5.prev = 1;
-                _context5.next = 4;
-                return _axios2.default.put("containers/" + id + "/rename", { name: name });
+              _context5.prev = 1;
+              _context5.next = 4;
+              return _axios2.default.post('containers/prune');
 
-              case 4:
-                _this6.loadContainers();
-                _context5.next = 10;
-                break;
+            case 4:
+              _this6.loadContainers();
+              _context5.next = 10;
+              break;
 
-              case 7:
-                _context5.prev = 7;
-                _context5.t0 = _context5["catch"](1);
+            case 7:
+              _context5.prev = 7;
+              _context5.t0 = _context5["catch"](1);
 
-                _this6.setError(_context5.t0);
+              _this6.setError(_context5.t0);
 
-              case 10:
-              case "end":
-                return _context5.stop();
-            }
+            case 10:
+            case "end":
+              return _context5.stop();
           }
-        }, _callee5, _this6, [[1, 7]]);
-      }));
-
-      return function (_x3, _x4) {
-        return _ref5.apply(this, arguments);
-      };
-    }();
+        }
+      }, _callee5, _this6, [[1, 7]]);
+    }));
   }
-}), _descriptor7 = _applyDecoratedDescriptor(_class.prototype, "restartContainer", [_mobx.action], {
+}), _descriptor7 = _applyDecoratedDescriptor(_class.prototype, "renameContainer", [_mobx.action], {
   enumerable: true,
   initializer: function initializer() {
     var _this7 = this;
 
     return function () {
-      var _ref6 = _asyncToGenerator(regeneratorRuntime.mark(function _callee6(id) {
+      var _ref6 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee6(id, name) {
         return regeneratorRuntime.wrap(function _callee6$(_context6) {
           while (1) {
             switch (_context6.prev = _context6.next) {
@@ -852,7 +857,7 @@ var Containers = (_class = function (_BaseStore) {
 
                 _context6.prev = 1;
                 _context6.next = 4;
-                return _axios2.default.put("containers/" + id + "/restart");
+                return _axios2.default.put("containers/" + id + "/rename", { name: name });
 
               case 4:
                 _this7.loadContainers();
@@ -873,18 +878,18 @@ var Containers = (_class = function (_BaseStore) {
         }, _callee6, _this7, [[1, 7]]);
       }));
 
-      return function (_x5) {
+      return function (_x4, _x5) {
         return _ref6.apply(this, arguments);
       };
     }();
   }
-}), _descriptor8 = _applyDecoratedDescriptor(_class.prototype, "startContainer", [_mobx.action], {
+}), _descriptor8 = _applyDecoratedDescriptor(_class.prototype, "restartContainer", [_mobx.action], {
   enumerable: true,
   initializer: function initializer() {
     var _this8 = this;
 
     return function () {
-      var _ref7 = _asyncToGenerator(regeneratorRuntime.mark(function _callee7(id) {
+      var _ref7 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee7(id) {
         return regeneratorRuntime.wrap(function _callee7$(_context7) {
           while (1) {
             switch (_context7.prev = _context7.next) {
@@ -893,7 +898,7 @@ var Containers = (_class = function (_BaseStore) {
 
                 _context7.prev = 1;
                 _context7.next = 4;
-                return _axios2.default.put("containers/" + id + "/start");
+                return _axios2.default.put("containers/" + id + "/restart");
 
               case 4:
                 _this8.loadContainers();
@@ -919,13 +924,13 @@ var Containers = (_class = function (_BaseStore) {
       };
     }();
   }
-}), _descriptor9 = _applyDecoratedDescriptor(_class.prototype, "stopContainer", [_mobx.action], {
+}), _descriptor9 = _applyDecoratedDescriptor(_class.prototype, "startContainer", [_mobx.action], {
   enumerable: true,
   initializer: function initializer() {
     var _this9 = this;
 
     return function () {
-      var _ref8 = _asyncToGenerator(regeneratorRuntime.mark(function _callee8(id) {
+      var _ref8 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee8(id) {
         return regeneratorRuntime.wrap(function _callee8$(_context8) {
           while (1) {
             switch (_context8.prev = _context8.next) {
@@ -934,7 +939,7 @@ var Containers = (_class = function (_BaseStore) {
 
                 _context8.prev = 1;
                 _context8.next = 4;
-                return _axios2.default.put("containers/" + id + "/stop");
+                return _axios2.default.put("containers/" + id + "/start");
 
               case 4:
                 _this9.loadContainers();
@@ -960,13 +965,13 @@ var Containers = (_class = function (_BaseStore) {
       };
     }();
   }
-}), _descriptor10 = _applyDecoratedDescriptor(_class.prototype, "killContainer", [_mobx.action], {
+}), _descriptor10 = _applyDecoratedDescriptor(_class.prototype, "stopContainer", [_mobx.action], {
   enumerable: true,
   initializer: function initializer() {
     var _this10 = this;
 
     return function () {
-      var _ref9 = _asyncToGenerator(regeneratorRuntime.mark(function _callee9(id) {
+      var _ref9 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee9(id) {
         return regeneratorRuntime.wrap(function _callee9$(_context9) {
           while (1) {
             switch (_context9.prev = _context9.next) {
@@ -975,7 +980,7 @@ var Containers = (_class = function (_BaseStore) {
 
                 _context9.prev = 1;
                 _context9.next = 4;
-                return _axios2.default.put("containers/" + id + "/kill");
+                return _axios2.default.put("containers/" + id + "/stop");
 
               case 4:
                 _this10.loadContainers();
@@ -1001,13 +1006,13 @@ var Containers = (_class = function (_BaseStore) {
       };
     }();
   }
-}), _descriptor11 = _applyDecoratedDescriptor(_class.prototype, "pauseContainer", [_mobx.action], {
+}), _descriptor11 = _applyDecoratedDescriptor(_class.prototype, "killContainer", [_mobx.action], {
   enumerable: true,
   initializer: function initializer() {
     var _this11 = this;
 
     return function () {
-      var _ref10 = _asyncToGenerator(regeneratorRuntime.mark(function _callee10(id) {
+      var _ref10 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee10(id) {
         return regeneratorRuntime.wrap(function _callee10$(_context10) {
           while (1) {
             switch (_context10.prev = _context10.next) {
@@ -1016,7 +1021,7 @@ var Containers = (_class = function (_BaseStore) {
 
                 _context10.prev = 1;
                 _context10.next = 4;
-                return _axios2.default.put("containers/" + id + "/pause");
+                return _axios2.default.put("containers/" + id + "/kill");
 
               case 4:
                 _this11.loadContainers();
@@ -1042,13 +1047,13 @@ var Containers = (_class = function (_BaseStore) {
       };
     }();
   }
-}), _descriptor12 = _applyDecoratedDescriptor(_class.prototype, "unpauseContainer", [_mobx.action], {
+}), _descriptor12 = _applyDecoratedDescriptor(_class.prototype, "pauseContainer", [_mobx.action], {
   enumerable: true,
   initializer: function initializer() {
     var _this12 = this;
 
     return function () {
-      var _ref11 = _asyncToGenerator(regeneratorRuntime.mark(function _callee11(id) {
+      var _ref11 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee11(id) {
         return regeneratorRuntime.wrap(function _callee11$(_context11) {
           while (1) {
             switch (_context11.prev = _context11.next) {
@@ -1057,7 +1062,7 @@ var Containers = (_class = function (_BaseStore) {
 
                 _context11.prev = 1;
                 _context11.next = 4;
-                return _axios2.default.put("containers/" + id + "/unpause");
+                return _axios2.default.put("containers/" + id + "/pause");
 
               case 4:
                 _this12.loadContainers();
@@ -1080,6 +1085,47 @@ var Containers = (_class = function (_BaseStore) {
 
       return function (_x10) {
         return _ref11.apply(this, arguments);
+      };
+    }();
+  }
+}), _descriptor13 = _applyDecoratedDescriptor(_class.prototype, "unpauseContainer", [_mobx.action], {
+  enumerable: true,
+  initializer: function initializer() {
+    var _this13 = this;
+
+    return function () {
+      var _ref12 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee12(id) {
+        return regeneratorRuntime.wrap(function _callee12$(_context12) {
+          while (1) {
+            switch (_context12.prev = _context12.next) {
+              case 0:
+                _this13.setError();
+
+                _context12.prev = 1;
+                _context12.next = 4;
+                return _axios2.default.put("containers/" + id + "/unpause");
+
+              case 4:
+                _this13.loadContainers();
+                _context12.next = 10;
+                break;
+
+              case 7:
+                _context12.prev = 7;
+                _context12.t0 = _context12["catch"](1);
+
+                _this13.setError(_context12.t0);
+
+              case 10:
+              case "end":
+                return _context12.stop();
+            }
+          }
+        }, _callee12, _this13, [[1, 7]]);
+      }));
+
+      return function (_x11) {
+        return _ref12.apply(this, arguments);
       };
     }();
   }
@@ -1208,7 +1254,7 @@ var Images = (_class = function (_BaseStore) {
     var _this2 = this;
 
     return function () {
-      var _ref = _asyncToGenerator(regeneratorRuntime.mark(function _callee(id) {
+      var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(id) {
         return regeneratorRuntime.wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
@@ -1249,7 +1295,7 @@ var Images = (_class = function (_BaseStore) {
     var _this3 = this;
 
     return function () {
-      var _ref2 = _asyncToGenerator(regeneratorRuntime.mark(function _callee2(id) {
+      var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(id) {
         var res;
         return regeneratorRuntime.wrap(function _callee2$(_context2) {
           while (1) {
@@ -1292,7 +1338,7 @@ var Images = (_class = function (_BaseStore) {
   initializer: function initializer() {
     var _this4 = this;
 
-    return _asyncToGenerator(regeneratorRuntime.mark(function _callee3() {
+    return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3() {
       var res;
       return regeneratorRuntime.wrap(function _callee3$(_context3) {
         while (1) {
@@ -1376,7 +1422,7 @@ var Images = (_class = function (_BaseStore) {
   initializer: function initializer() {
     var _this5 = this;
 
-    return _asyncToGenerator(regeneratorRuntime.mark(function _callee4() {
+    return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4() {
       return regeneratorRuntime.wrap(function _callee4$(_context4) {
         while (1) {
           switch (_context4.prev = _context4.next) {
@@ -1513,7 +1559,7 @@ var Volumes = (_class = function (_BaseStore) {
     var _this2 = this;
 
     return function () {
-      var _ref = _asyncToGenerator(regeneratorRuntime.mark(function _callee(volume) {
+      var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(volume) {
         return regeneratorRuntime.wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
@@ -1554,7 +1600,7 @@ var Volumes = (_class = function (_BaseStore) {
     var _this3 = this;
 
     return function () {
-      var _ref2 = _asyncToGenerator(regeneratorRuntime.mark(function _callee2(id) {
+      var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(id) {
         return regeneratorRuntime.wrap(function _callee2$(_context2) {
           while (1) {
             switch (_context2.prev = _context2.next) {
@@ -1595,7 +1641,7 @@ var Volumes = (_class = function (_BaseStore) {
     var _this4 = this;
 
     return function () {
-      var _ref3 = _asyncToGenerator(regeneratorRuntime.mark(function _callee3(id) {
+      var _ref3 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(id) {
         var res;
         return regeneratorRuntime.wrap(function _callee3$(_context3) {
           while (1) {
@@ -1638,7 +1684,7 @@ var Volumes = (_class = function (_BaseStore) {
   initializer: function initializer() {
     var _this5 = this;
 
-    return _asyncToGenerator(regeneratorRuntime.mark(function _callee4() {
+    return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4() {
       var res;
       return regeneratorRuntime.wrap(function _callee4$(_context4) {
         while (1) {
@@ -1683,7 +1729,7 @@ var Volumes = (_class = function (_BaseStore) {
   initializer: function initializer() {
     var _this6 = this;
 
-    return _asyncToGenerator(regeneratorRuntime.mark(function _callee5() {
+    return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5() {
       return regeneratorRuntime.wrap(function _callee5$(_context5) {
         while (1) {
           switch (_context5.prev = _context5.next) {
@@ -1828,7 +1874,7 @@ var Networks = (_class = function (_BaseStore) {
     var _this2 = this;
 
     return function () {
-      var _ref = _asyncToGenerator(regeneratorRuntime.mark(function _callee(network) {
+      var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(network) {
         return regeneratorRuntime.wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
@@ -1869,7 +1915,7 @@ var Networks = (_class = function (_BaseStore) {
     var _this3 = this;
 
     return function () {
-      var _ref2 = _asyncToGenerator(regeneratorRuntime.mark(function _callee2(id) {
+      var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(id) {
         return regeneratorRuntime.wrap(function _callee2$(_context2) {
           while (1) {
             switch (_context2.prev = _context2.next) {
@@ -1910,7 +1956,7 @@ var Networks = (_class = function (_BaseStore) {
     var _this4 = this;
 
     return function () {
-      var _ref3 = _asyncToGenerator(regeneratorRuntime.mark(function _callee3(id) {
+      var _ref3 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(id) {
         var res;
         return regeneratorRuntime.wrap(function _callee3$(_context3) {
           while (1) {
@@ -1953,7 +1999,7 @@ var Networks = (_class = function (_BaseStore) {
   initializer: function initializer() {
     var _this5 = this;
 
-    return _asyncToGenerator(regeneratorRuntime.mark(function _callee4() {
+    return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4() {
       var res;
       return regeneratorRuntime.wrap(function _callee4$(_context4) {
         while (1) {
@@ -2001,7 +2047,7 @@ var Networks = (_class = function (_BaseStore) {
   initializer: function initializer() {
     var _this6 = this;
 
-    return _asyncToGenerator(regeneratorRuntime.mark(function _callee5() {
+    return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5() {
       return regeneratorRuntime.wrap(function _callee5$(_context5) {
         while (1) {
           switch (_context5.prev = _context5.next) {
@@ -2722,6 +2768,10 @@ var Containers = (_dec = (0, _mobxReact.inject)('store'), _dec(_class = (0, _mob
 
     _this.loadContainers = function () {
       _this.containersStore.loadContainers();
+    };
+
+    _this.loadContainersLogs = function () {
+      _this.containersStore.loadContainersLogs();
     };
 
     _this.pauseContainer = function (id) {
@@ -3655,9 +3705,11 @@ ___scope___.file("app.css", function(exports, require, module, __filename, __dir
 
 require("fuse-box-css")("app.css");
 });
+return ___scope___.entry = "index.js";
 });
+FuseBox.target = "universal"
 
 FuseBox.import("default/index.js");
 FuseBox.main("default/index.js");
 })
-(function(e){function r(e){var r=e.charCodeAt(0),n=e.charCodeAt(1);if((d||58!==n)&&(r>=97&&r<=122||64===r)){if(64===r){var t=e.split("/"),i=t.splice(2,t.length).join("/");return[t[0]+"/"+t[1],i||void 0]}var o=e.indexOf("/");if(o===-1)return[e];var a=e.substring(0,o),u=e.substring(o+1);return[a,u]}}function n(e){return e.substring(0,e.lastIndexOf("/"))||"./"}function t(){for(var e=[],r=0;r<arguments.length;r++)e[r]=arguments[r];for(var n=[],t=0,i=arguments.length;t<i;t++)n=n.concat(arguments[t].split("/"));for(var o=[],t=0,i=n.length;t<i;t++){var a=n[t];a&&"."!==a&&(".."===a?o.pop():o.push(a))}return""===n[0]&&o.unshift(""),o.join("/")||(o.length?"/":".")}function i(e){var r=e.match(/\.(\w{1,})$/);return r&&r[1]?e:e+".js"}function o(e){if(d){var r,n=document,t=n.getElementsByTagName("head")[0];/\.css$/.test(e)?(r=n.createElement("link"),r.rel="stylesheet",r.type="text/css",r.href=e):(r=n.createElement("script"),r.type="text/javascript",r.src=e,r.async=!0),t.insertBefore(r,t.firstChild)}}function a(e,r){for(var n in e)e.hasOwnProperty(n)&&r(n,e[n])}function u(e){return{server:require(e)}}function f(e,n){var o=n.path||"./",a=n.pkg||"default",f=r(e);if(f&&(o="./",a=f[0],n.v&&n.v[a]&&(a=a+"@"+n.v[a]),e=f[1]),e)if(126===e.charCodeAt(0))e=e.slice(2,e.length),o="./";else if(!d&&(47===e.charCodeAt(0)||58===e.charCodeAt(1)))return u(e);var s=h[a];if(!s){if(d&&"electron"!==g.target)throw"Package not found "+a;return u(a+(e?"/"+e:""))}e=e?e:"./"+s.s.entry;var l,c=t(o,e),v=i(c),p=s.f[v];return!p&&v.indexOf("*")>-1&&(l=v),p||l||(v=t(c,"/","index.js"),p=s.f[v],p||(v=c+".js",p=s.f[v]),p||(p=s.f[c+".jsx"]),p||(v=c+"/index.jsx",p=s.f[v])),{file:p,wildcard:l,pkgName:a,versions:s.v,filePath:c,validPath:v}}function s(e,r,n){if(void 0===n&&(n={}),!d)return r(/\.(js|json)$/.test(e)?v.require(e):"");if(n&&n.ajaxed===e)return console.error(e,"does not provide a module");var i=new XMLHttpRequest;i.onreadystatechange=function(){if(4==i.readyState)if(200==i.status){var n=i.getResponseHeader("Content-Type"),o=i.responseText;/json/.test(n)?o="module.exports = "+o:/javascript/.test(n)||(o="module.exports = "+JSON.stringify(o));var a=t("./",e);g.dynamic(a,o),r(g.import(e,{ajaxed:e}))}else console.error(e,"not found on request"),r(void 0)},i.open("GET",e,!0),i.send()}function l(e,r){var n=m[e];if(n)for(var t in n){var i=n[t].apply(null,r);if(i===!1)return!1}}function c(e,r){if(void 0===r&&(r={}),58===e.charCodeAt(4)||58===e.charCodeAt(5))return o(e);var t=f(e,r);if(t.server)return t.server;var i=t.file;if(t.wildcard){var a=new RegExp(t.wildcard.replace(/\*/g,"@").replace(/[.?*+^$[\]\\(){}|-]/g,"\\$&").replace(/@@/g,".*").replace(/@/g,"[a-z0-9$_-]+"),"i"),u=h[t.pkgName];if(u){var p={};for(var m in u.f)a.test(m)&&(p[m]=c(t.pkgName+"/"+m));return p}}if(!i){var g="function"==typeof r,x=l("async",[e,r]);if(x===!1)return;return s(e,function(e){return g?r(e):null},r)}var _=t.pkgName;if(i.locals&&i.locals.module)return i.locals.module.exports;var w=i.locals={},y=n(t.validPath);w.exports={},w.module={exports:w.exports},w.require=function(e,r){return c(e,{pkg:_,path:y,v:t.versions})},w.require.main={filename:d?"./":v.require.main.filename,paths:d?[]:v.require.main.paths};var j=[w.module.exports,w.require,w.module,t.validPath,y,_];return l("before-import",j),i.fn.apply(0,j),l("after-import",j),w.module.exports}if(e.FuseBox)return e.FuseBox;var d="undefined"!=typeof window&&window.navigator,v=d?window:global;d&&(v.global=window),e=d&&"undefined"==typeof __fbx__dnm__?e:module.exports;var p=d?window.__fsbx__=window.__fsbx__||{}:v.$fsbx=v.$fsbx||{};d||(v.require=require);var h=p.p=p.p||{},m=p.e=p.e||{},g=function(){function r(){}return r.global=function(e,r){return void 0===r?v[e]:void(v[e]=r)},r.import=function(e,r){return c(e,r)},r.on=function(e,r){m[e]=m[e]||[],m[e].push(r)},r.exists=function(e){try{var r=f(e,{});return void 0!==r.file}catch(e){return!1}},r.remove=function(e){var r=f(e,{}),n=h[r.pkgName];n&&n.f[r.validPath]&&delete n.f[r.validPath]},r.main=function(e){return this.mainFile=e,r.import(e,{})},r.expose=function(r){var n=function(n){var t=r[n].alias,i=c(r[n].pkg);"*"===t?a(i,function(r,n){return e[r]=n}):"object"==typeof t?a(t,function(r,n){return e[n]=i[r]}):e[t]=i};for(var t in r)n(t)},r.dynamic=function(r,n,t){this.pkg(t&&t.pkg||"default",{},function(t){t.file(r,function(r,t,i,o,a){var u=new Function("__fbx__dnm__","exports","require","module","__filename","__dirname","__root__",n);u(!0,r,t,i,o,a,e)})})},r.flush=function(e){var r=h.default;for(var n in r.f)e&&!e(n)||delete r.f[n].locals},r.pkg=function(e,r,n){if(h[e])return n(h[e].s);var t=h[e]={};return t.f={},t.v=r,t.s={file:function(e,r){return t.f[e]={fn:r}}},n(t.s)},r.addPlugin=function(e){this.plugins.push(e)},r}();return g.packages=h,g.isBrowser=d,g.isServer=!d,g.plugins=[],d||(v.FuseBox=g),e.FuseBox=g}(this))
+(function(e){function r(e){var r=e.charCodeAt(0),n=e.charCodeAt(1);if((p||58!==n)&&(r>=97&&r<=122||64===r)){if(64===r){var t=e.split("/"),i=t.splice(2,t.length).join("/");return[t[0]+"/"+t[1],i||void 0]}var o=e.indexOf("/");if(o===-1)return[e];var a=e.substring(0,o),u=e.substring(o+1);return[a,u]}}function n(e){return e.substring(0,e.lastIndexOf("/"))||"./"}function t(){for(var e=[],r=0;r<arguments.length;r++)e[r]=arguments[r];for(var n=[],t=0,i=arguments.length;t<i;t++)n=n.concat(arguments[t].split("/"));for(var o=[],t=0,i=n.length;t<i;t++){var a=n[t];a&&"."!==a&&(".."===a?o.pop():o.push(a))}return""===n[0]&&o.unshift(""),o.join("/")||(o.length?"/":".")}function i(e){var r=e.match(/\.(\w{1,})$/);return r&&r[1]?e:e+".js"}function o(e){if(p){var r,n=document,t=n.getElementsByTagName("head")[0];/\.css$/.test(e)?(r=n.createElement("link"),r.rel="stylesheet",r.type="text/css",r.href=e):(r=n.createElement("script"),r.type="text/javascript",r.src=e,r.async=!0),t.insertBefore(r,t.firstChild)}}function a(e,r){for(var n in e)e.hasOwnProperty(n)&&r(n,e[n])}function u(e){return{server:require(e)}}function f(e,n){var o=n.path||"./",a=n.pkg||"default",f=r(e);if(f&&(o="./",a=f[0],n.v&&n.v[a]&&(a=a+"@"+n.v[a]),e=f[1]),e)if(126===e.charCodeAt(0))e=e.slice(2,e.length),o="./";else if(!p&&(47===e.charCodeAt(0)||58===e.charCodeAt(1)))return u(e);var s=g[a];if(!s){if(p&&"electron"!==x.target)throw"Package not found "+a;return u(a+(e?"/"+e:""))}e=e?e:"./"+s.s.entry;var l,c=t(o,e),d=i(c),v=s.f[d];return!v&&d.indexOf("*")>-1&&(l=d),v||l||(d=t(c,"/","index.js"),v=s.f[d],v||"."!==c||(d=s.s&&s.s.entry||"index.js",v=s.f[d]),v||(d=c+".js",v=s.f[d]),v||(v=s.f[c+".jsx"]),v||(d=c+"/index.jsx",v=s.f[d])),{file:v,wildcard:l,pkgName:a,versions:s.v,filePath:c,validPath:d}}function s(e,r,n){if(void 0===n&&(n={}),!p)return r(/\.(js|json)$/.test(e)?v.require(e):"");if(n&&n.ajaxed===e)return console.error(e,"does not provide a module");var i=new XMLHttpRequest;i.onreadystatechange=function(){if(4==i.readyState)if(200==i.status){var n=i.getResponseHeader("Content-Type"),o=i.responseText;/json/.test(n)?o="module.exports = "+o:/javascript/.test(n)||(o="module.exports = "+JSON.stringify(o));var a=t("./",e);x.dynamic(a,o),r(x.import(e,{ajaxed:e}))}else console.error(e,"not found on request"),r(void 0)},i.open("GET",e,!0),i.send()}function l(e,r){var n=h[e];if(n)for(var t in n){var i=n[t].apply(null,r);if(i===!1)return!1}}function c(e,r){if(void 0===r&&(r={}),58===e.charCodeAt(4)||58===e.charCodeAt(5))return o(e);var t=f(e,r);if(t.server)return t.server;var i=t.file;if(t.wildcard){var a=new RegExp(t.wildcard.replace(/\*/g,"@").replace(/[.?*+^$[\]\\(){}|-]/g,"\\$&").replace(/@@/g,".*").replace(/@/g,"[a-z0-9$_-]+"),"i"),u=g[t.pkgName];if(u){var d={};for(var m in u.f)a.test(m)&&(d[m]=c(t.pkgName+"/"+m));return d}}if(!i){var h="function"==typeof r,x=l("async",[e,r]);if(x===!1)return;return s(e,function(e){return h?r(e):null},r)}var _=t.pkgName;if(i.locals&&i.locals.module)return i.locals.module.exports;var y=i.locals={},w=n(t.validPath);y.exports={},y.module={exports:y.exports},y.require=function(e,r){return c(e,{pkg:_,path:w,v:t.versions})},p||!v.require.main?y.require.main={filename:"./",paths:[]}:y.require.main=v.require.main;var j=[y.module.exports,y.require,y.module,t.validPath,w,_];return l("before-import",j),i.fn.apply(0,j),l("after-import",j),y.module.exports}if(e.FuseBox)return e.FuseBox;var d="undefined"!=typeof WorkerGlobalScope,p="undefined"!=typeof window&&window.navigator||d,v=p?d?{}:window:global;p&&(v.global=d?{}:window),e=p&&"undefined"==typeof __fbx__dnm__?e:module.exports;var m=p?d?{}:window.__fsbx__=window.__fsbx__||{}:v.$fsbx=v.$fsbx||{};p||(v.require=require);var g=m.p=m.p||{},h=m.e=m.e||{},x=function(){function r(){}return r.global=function(e,r){return void 0===r?v[e]:void(v[e]=r)},r.import=function(e,r){return c(e,r)},r.on=function(e,r){h[e]=h[e]||[],h[e].push(r)},r.exists=function(e){try{var r=f(e,{});return void 0!==r.file}catch(e){return!1}},r.remove=function(e){var r=f(e,{}),n=g[r.pkgName];n&&n.f[r.validPath]&&delete n.f[r.validPath]},r.main=function(e){return this.mainFile=e,r.import(e,{})},r.expose=function(r){var n=function(n){var t=r[n].alias,i=c(r[n].pkg);"*"===t?a(i,function(r,n){return e[r]=n}):"object"==typeof t?a(t,function(r,n){return e[n]=i[r]}):e[t]=i};for(var t in r)n(t)},r.dynamic=function(r,n,t){this.pkg(t&&t.pkg||"default",{},function(t){t.file(r,function(r,t,i,o,a){var u=new Function("__fbx__dnm__","exports","require","module","__filename","__dirname","__root__",n);u(!0,r,t,i,o,a,e)})})},r.flush=function(e){var r=g.default;for(var n in r.f)e&&!e(n)||delete r.f[n].locals},r.pkg=function(e,r,n){if(g[e])return n(g[e].s);var t=g[e]={};return t.f={},t.v=r,t.s={file:function(e,r){return t.f[e]={fn:r}}},n(t.s)},r.addPlugin=function(e){this.plugins.push(e)},r.packages=g,r.isBrowser=p,r.isServer=!p,r.plugins=[],r}();return p||(v.FuseBox=x),e.FuseBox=x}(this))
