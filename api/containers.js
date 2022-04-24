@@ -3,6 +3,7 @@ const request = require('lib/request')
 module.exports = {
   list,
   read,
+  logs,
   rename,
   destroy,
   prune,
@@ -17,6 +18,15 @@ module.exports = {
 async function list(req, res) {
   try {
     res.send(await request('get', 'containers/json?all=true'))
+  }
+  catch(e) {
+    res.status(500).send(e)
+  }
+}
+
+async function logs(req, res) {
+  try {
+    res.send(await request('get', `containers/${req.params.id}/logs?stdout=true`))
   }
   catch(e) {
     res.status(500).send(e)
