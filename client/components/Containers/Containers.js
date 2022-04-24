@@ -42,7 +42,7 @@ export default class Containers extends React.Component {
   }
 
   loadContainersLogs = () => {
-    this.containersStore.loadContainersLogs();
+    this.containersStore.loadContainersLogs()
   }
 
   pauseContainer = id => {
