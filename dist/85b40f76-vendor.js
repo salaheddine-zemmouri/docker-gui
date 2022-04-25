@@ -4718,34 +4718,7 @@ if (FuseBox.isServer) {
     }
     module.exports = global.process;
 } else {
-    // Object assign polyfill
-    if (typeof Object.assign != "function") {
-        Object.assign = function(target, varArgs) { // .length of function is 2
-            "use strict";
-            if (target == null) { // TypeError if undefined or null
-                throw new TypeError("Cannot convert undefined or null to object");
-            }
-
-            var to = Object(target);
-
-            for (var index = 1; index < arguments.length; index++) {
-                var nextSource = arguments[index];
-
-                if (nextSource != null) { // Skip over if undefined or null
-                    for (var nextKey in nextSource) {
-                        // Avoid bugs when hasOwnProperty is shadowed
-                        if (Object.prototype.hasOwnProperty.call(nextSource, nextKey)) {
-                            to[nextKey] = nextSource[nextKey];
-                        }
-                    }
-                }
-            }
-            return to;
-        };
-    }
-
-
-
+    require("object-assign-polyfill");
     var productionEnv = false; //require('@system-env').production;
 
     var process = module.exports = {};
@@ -4844,6 +4817,38 @@ if (FuseBox.isServer) {
     process.umask = function() { return 0; };
 
 }
+
+});
+return ___scope___.entry = "index.js";
+});
+FuseBox.pkg("object-assign-polyfill", {}, function(___scope___){
+___scope___.file("index.js", function(exports, require, module, __filename, __dirname){
+
+if (typeof Object.assign != "function") {
+    Object.assign = function(target, varArgs) { // .length of function is 2
+        "use strict";
+        if (target == null) { // TypeError if undefined or null
+            throw new TypeError("Cannot convert undefined or null to object");
+        }
+
+        var to = Object(target);
+
+        for (var index = 1; index < arguments.length; index++) {
+            var nextSource = arguments[index];
+
+            if (nextSource != null) { // Skip over if undefined or null
+                for (var nextKey in nextSource) {
+                    // Avoid bugs when hasOwnProperty is shadowed
+                    if (Object.prototype.hasOwnProperty.call(nextSource, nextKey)) {
+                        to[nextKey] = nextSource[nextKey];
+                    }
+                }
+            }
+        }
+        return to;
+    };
+}
+
 });
 return ___scope___.entry = "index.js";
 });
@@ -27950,7 +27955,7 @@ module.exports = exports['default'];
 return ___scope___.entry = "lib/index.js";
 });
 FuseBox.pkg("invariant", {}, function(___scope___){
-___scope___.file("invariant.js", function(exports, require, module, __filename, __dirname){
+___scope___.file("browser.js", function(exports, require, module, __filename, __dirname){
 /* fuse:injection: */ var process = require("process");
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
@@ -27972,10 +27977,8 @@ ___scope___.file("invariant.js", function(exports, require, module, __filename, 
  * will remain to ensure logic does not differ in production.
  */
 
-var NODE_ENV = process.env.NODE_ENV;
-
 var invariant = function(condition, format, a, b, c, d, e, f) {
-  if (NODE_ENV !== 'production') {
+  if (process.env.NODE_ENV !== 'production') {
     if (format === undefined) {
       throw new Error('invariant requires an error message argument');
     }
@@ -28005,10 +28008,10 @@ var invariant = function(condition, format, a, b, c, d, e, f) {
 module.exports = invariant;
 
 });
-return ___scope___.entry = "invariant.js";
+return ___scope___.entry = "browser.js";
 });
 FuseBox.pkg("warning", {}, function(___scope___){
-___scope___.file("warning.js", function(exports, require, module, __filename, __dirname){
+___scope___.file("browser.js", function(exports, require, module, __filename, __dirname){
 /* fuse:injection: */ var process = require("process");
 /**
  * Copyright 2014-2015, Facebook, Inc.
@@ -28028,11 +28031,9 @@ ___scope___.file("warning.js", function(exports, require, module, __filename, __
  * same logic and follow the same code paths.
  */
 
-var __DEV__ = process.env.NODE_ENV !== 'production';
-
 var warning = function() {};
 
-if (__DEV__) {
+if (process.env.NODE_ENV !== 'production') {
   warning = function(condition, format, args) {
     var len = arguments.length;
     args = new Array(len > 2 ? len - 2 : 0);
@@ -28074,7 +28075,7 @@ if (__DEV__) {
 module.exports = warning;
 
 });
-return ___scope___.entry = "warning.js";
+return ___scope___.entry = "browser.js";
 });
 FuseBox.pkg("hoist-non-react-statics", {}, function(___scope___){
 ___scope___.file("index.js", function(exports, require, module, __filename, __dirname){
@@ -29909,7 +29910,6 @@ ___scope___.file("lib/axios.js", function(exports, require, module, __filename, 
 var utils = require('./utils');
 var bind = require('./helpers/bind');
 var Axios = require('./core/Axios');
-var mergeConfig = require('./core/mergeConfig');
 var defaults = require('./defaults');
 
 /**
@@ -29928,11 +29928,6 @@ function createInstance(defaultConfig) {
   // Copy context to instance
   utils.extend(instance, context);
 
-  // Factory for creating new instances
-  instance.create = function create(instanceConfig) {
-    return createInstance(mergeConfig(defaultConfig, instanceConfig));
-  };
-
   return instance;
 }
 
@@ -29942,20 +29937,21 @@ var axios = createInstance(defaults);
 // Expose Axios class to allow class inheritance
 axios.Axios = Axios;
 
+// Factory for creating new instances
+axios.create = function create(instanceConfig) {
+  return createInstance(utils.merge(defaults, instanceConfig));
+};
+
 // Expose Cancel & CancelToken
 axios.Cancel = require('./cancel/Cancel');
 axios.CancelToken = require('./cancel/CancelToken');
 axios.isCancel = require('./cancel/isCancel');
-axios.VERSION = require('./env/data').version;
 
 // Expose all/spread
 axios.all = function all(promises) {
   return Promise.all(promises);
 };
 axios.spread = require('./helpers/spread');
-
-// Expose isAxiosError
-axios.isAxiosError = require('./helpers/isAxiosError');
 
 module.exports = axios;
 
@@ -29968,6 +29964,9 @@ ___scope___.file("lib/utils.js", function(exports, require, module, __filename, 
 'use strict';
 
 var bind = require('./helpers/bind');
+var isBuffer = require('is-buffer');
+
+/*global toString:true*/
 
 // utils is a library of generic helper functions non-specific to axios
 
@@ -29980,28 +29979,7 @@ var toString = Object.prototype.toString;
  * @returns {boolean} True if value is an Array, otherwise false
  */
 function isArray(val) {
-  return Array.isArray(val);
-}
-
-/**
- * Determine if a value is undefined
- *
- * @param {Object} val The value to test
- * @returns {boolean} True if the value is undefined, otherwise false
- */
-function isUndefined(val) {
-  return typeof val === 'undefined';
-}
-
-/**
- * Determine if a value is a Buffer
- *
- * @param {Object} val The value to test
- * @returns {boolean} True if value is a Buffer, otherwise false
- */
-function isBuffer(val) {
-  return val !== null && !isUndefined(val) && val.constructor !== null && !isUndefined(val.constructor)
-    && typeof val.constructor.isBuffer === 'function' && val.constructor.isBuffer(val);
+  return toString.call(val) === '[object Array]';
 }
 
 /**
@@ -30021,7 +29999,7 @@ function isArrayBuffer(val) {
  * @returns {boolean} True if value is an FormData, otherwise false
  */
 function isFormData(val) {
-  return toString.call(val) === '[object FormData]';
+  return (typeof FormData !== 'undefined') && (val instanceof FormData);
 }
 
 /**
@@ -30035,7 +30013,7 @@ function isArrayBufferView(val) {
   if ((typeof ArrayBuffer !== 'undefined') && (ArrayBuffer.isView)) {
     result = ArrayBuffer.isView(val);
   } else {
-    result = (val) && (val.buffer) && (isArrayBuffer(val.buffer));
+    result = (val) && (val.buffer) && (val.buffer instanceof ArrayBuffer);
   }
   return result;
 }
@@ -30061,6 +30039,16 @@ function isNumber(val) {
 }
 
 /**
+ * Determine if a value is undefined
+ *
+ * @param {Object} val The value to test
+ * @returns {boolean} True if the value is undefined, otherwise false
+ */
+function isUndefined(val) {
+  return typeof val === 'undefined';
+}
+
+/**
  * Determine if a value is an Object
  *
  * @param {Object} val The value to test
@@ -30068,21 +30056,6 @@ function isNumber(val) {
  */
 function isObject(val) {
   return val !== null && typeof val === 'object';
-}
-
-/**
- * Determine if a value is a plain Object
- *
- * @param {Object} val The value to test
- * @return {boolean} True if value is a plain Object, otherwise false
- */
-function isPlainObject(val) {
-  if (toString.call(val) !== '[object Object]') {
-    return false;
-  }
-
-  var prototype = Object.getPrototypeOf(val);
-  return prototype === null || prototype === Object.prototype;
 }
 
 /**
@@ -30142,7 +30115,7 @@ function isStream(val) {
  * @returns {boolean} True if value is a URLSearchParams object, otherwise false
  */
 function isURLSearchParams(val) {
-  return toString.call(val) === '[object URLSearchParams]';
+  return typeof URLSearchParams !== 'undefined' && val instanceof URLSearchParams;
 }
 
 /**
@@ -30152,7 +30125,7 @@ function isURLSearchParams(val) {
  * @returns {String} The String freed of excess whitespace
  */
 function trim(str) {
-  return str.trim ? str.trim() : str.replace(/^\s+|\s+$/g, '');
+  return str.replace(/^\s*/, '').replace(/\s*$/, '');
 }
 
 /**
@@ -30167,13 +30140,9 @@ function trim(str) {
  *
  * react-native:
  *  navigator.product -> 'ReactNative'
- * nativescript
- *  navigator.product -> 'NativeScript' or 'NS'
  */
 function isStandardBrowserEnv() {
-  if (typeof navigator !== 'undefined' && (navigator.product === 'ReactNative' ||
-                                           navigator.product === 'NativeScript' ||
-                                           navigator.product === 'NS')) {
+  if (typeof navigator !== 'undefined' && navigator.product === 'ReactNative') {
     return false;
   }
   return (
@@ -30201,7 +30170,7 @@ function forEach(obj, fn) {
   }
 
   // Force an array if not already something iterable
-  if (typeof obj !== 'object') {
+  if (typeof obj !== 'object' && !isArray(obj)) {
     /*eslint no-param-reassign:0*/
     obj = [obj];
   }
@@ -30241,12 +30210,8 @@ function forEach(obj, fn) {
 function merge(/* obj1, obj2, obj3, ... */) {
   var result = {};
   function assignValue(val, key) {
-    if (isPlainObject(result[key]) && isPlainObject(val)) {
+    if (typeof result[key] === 'object' && typeof val === 'object') {
       result[key] = merge(result[key], val);
-    } else if (isPlainObject(val)) {
-      result[key] = merge({}, val);
-    } else if (isArray(val)) {
-      result[key] = val.slice();
     } else {
       result[key] = val;
     }
@@ -30277,19 +30242,6 @@ function extend(a, b, thisArg) {
   return a;
 }
 
-/**
- * Remove byte order marker. This catches EF BB BF (the UTF-8 BOM)
- *
- * @param {string} content with BOM
- * @return {string} content value without BOM
- */
-function stripBOM(content) {
-  if (content.charCodeAt(0) === 0xFEFF) {
-    content = content.slice(1);
-  }
-  return content;
-}
-
 module.exports = {
   isArray: isArray,
   isArrayBuffer: isArrayBuffer,
@@ -30299,7 +30251,6 @@ module.exports = {
   isString: isString,
   isNumber: isNumber,
   isObject: isObject,
-  isPlainObject: isPlainObject,
   isUndefined: isUndefined,
   isDate: isDate,
   isFile: isFile,
@@ -30311,8 +30262,7 @@ module.exports = {
   forEach: forEach,
   merge: merge,
   extend: extend,
-  trim: trim,
-  stripBOM: stripBOM
+  trim: trim
 };
 
 });
@@ -30335,14 +30285,13 @@ ___scope___.file("lib/core/Axios.js", function(exports, require, module, __filen
 
 'use strict';
 
+var defaults = require('./../defaults');
 var utils = require('./../utils');
-var buildURL = require('../helpers/buildURL');
 var InterceptorManager = require('./InterceptorManager');
 var dispatchRequest = require('./dispatchRequest');
-var mergeConfig = require('./mergeConfig');
-var validator = require('../helpers/validator');
+var isAbsoluteURL = require('./../helpers/isAbsoluteURL');
+var combineURLs = require('./../helpers/combineURLs');
 
-var validators = validator.validators;
 /**
  * Create a new instance of Axios
  *
@@ -30361,110 +30310,49 @@ function Axios(instanceConfig) {
  *
  * @param {Object} config The config specific for this request (merged with this.defaults)
  */
-Axios.prototype.request = function request(configOrUrl, config) {
+Axios.prototype.request = function request(config) {
   /*eslint no-param-reassign:0*/
   // Allow for axios('example/url'[, config]) a la fetch API
-  if (typeof configOrUrl === 'string') {
-    config = config || {};
-    config.url = configOrUrl;
-  } else {
-    config = configOrUrl || {};
+  if (typeof config === 'string') {
+    config = utils.merge({
+      url: arguments[0]
+    }, arguments[1]);
   }
 
-  config = mergeConfig(this.defaults, config);
+  config = utils.merge(defaults, this.defaults, { method: 'get' }, config);
+  config.method = config.method.toLowerCase();
 
-  // Set config.method
-  if (config.method) {
-    config.method = config.method.toLowerCase();
-  } else if (this.defaults.method) {
-    config.method = this.defaults.method.toLowerCase();
-  } else {
-    config.method = 'get';
+  // Support baseURL config
+  if (config.baseURL && !isAbsoluteURL(config.url)) {
+    config.url = combineURLs(config.baseURL, config.url);
   }
 
-  var transitional = config.transitional;
+  // Hook up interceptors middleware
+  var chain = [dispatchRequest, undefined];
+  var promise = Promise.resolve(config);
 
-  if (transitional !== undefined) {
-    validator.assertOptions(transitional, {
-      silentJSONParsing: validators.transitional(validators.boolean),
-      forcedJSONParsing: validators.transitional(validators.boolean),
-      clarifyTimeoutError: validators.transitional(validators.boolean)
-    }, false);
-  }
-
-  // filter out skipped interceptors
-  var requestInterceptorChain = [];
-  var synchronousRequestInterceptors = true;
   this.interceptors.request.forEach(function unshiftRequestInterceptors(interceptor) {
-    if (typeof interceptor.runWhen === 'function' && interceptor.runWhen(config) === false) {
-      return;
-    }
-
-    synchronousRequestInterceptors = synchronousRequestInterceptors && interceptor.synchronous;
-
-    requestInterceptorChain.unshift(interceptor.fulfilled, interceptor.rejected);
+    chain.unshift(interceptor.fulfilled, interceptor.rejected);
   });
 
-  var responseInterceptorChain = [];
   this.interceptors.response.forEach(function pushResponseInterceptors(interceptor) {
-    responseInterceptorChain.push(interceptor.fulfilled, interceptor.rejected);
+    chain.push(interceptor.fulfilled, interceptor.rejected);
   });
 
-  var promise;
-
-  if (!synchronousRequestInterceptors) {
-    var chain = [dispatchRequest, undefined];
-
-    Array.prototype.unshift.apply(chain, requestInterceptorChain);
-    chain = chain.concat(responseInterceptorChain);
-
-    promise = Promise.resolve(config);
-    while (chain.length) {
-      promise = promise.then(chain.shift(), chain.shift());
-    }
-
-    return promise;
-  }
-
-
-  var newConfig = config;
-  while (requestInterceptorChain.length) {
-    var onFulfilled = requestInterceptorChain.shift();
-    var onRejected = requestInterceptorChain.shift();
-    try {
-      newConfig = onFulfilled(newConfig);
-    } catch (error) {
-      onRejected(error);
-      break;
-    }
-  }
-
-  try {
-    promise = dispatchRequest(newConfig);
-  } catch (error) {
-    return Promise.reject(error);
-  }
-
-  while (responseInterceptorChain.length) {
-    promise = promise.then(responseInterceptorChain.shift(), responseInterceptorChain.shift());
+  while (chain.length) {
+    promise = promise.then(chain.shift(), chain.shift());
   }
 
   return promise;
-};
-
-Axios.prototype.getUri = function getUri(config) {
-  config = mergeConfig(this.defaults, config);
-  return buildURL(config.url, config.params, config.paramsSerializer).replace(/^\?/, '');
 };
 
 // Provide aliases for supported request methods
 utils.forEach(['delete', 'get', 'head', 'options'], function forEachMethodNoData(method) {
   /*eslint func-names:0*/
   Axios.prototype[method] = function(url, config) {
-    return this.request(mergeConfig(config || {}, {
+    return this.request(utils.merge(config || {}, {
       method: method,
-      url: url,
-      data: (config || {}).data
+      url: url
     }));
   };
 });
@@ -30472,7 +30360,7 @@ utils.forEach(['delete', 'get', 'head', 'options'], function forEachMethodNoData
 utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
   /*eslint func-names:0*/
   Axios.prototype[method] = function(url, data, config) {
-    return this.request(mergeConfig(config || {}, {
+    return this.request(utils.merge(config || {}, {
       method: method,
       url: url,
       data: data
@@ -30483,263 +30371,12 @@ utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
 module.exports = Axios;
 
 });
-___scope___.file("lib/helpers/buildURL.js", function(exports, require, module, __filename, __dirname){
-
-'use strict';
-
-var utils = require('./../utils');
-
-function encode(val) {
-  return encodeURIComponent(val).
-    replace(/%3A/gi, ':').
-    replace(/%24/g, '$').
-    replace(/%2C/gi, ',').
-    replace(/%20/g, '+').
-    replace(/%5B/gi, '[').
-    replace(/%5D/gi, ']');
-}
-
-/**
- * Build a URL by appending params to the end
- *
- * @param {string} url The base of the url (e.g., http://www.google.com)
- * @param {object} [params] The params to be appended
- * @returns {string} The formatted url
- */
-module.exports = function buildURL(url, params, paramsSerializer) {
-  /*eslint no-param-reassign:0*/
-  if (!params) {
-    return url;
-  }
-
-  var serializedParams;
-  if (paramsSerializer) {
-    serializedParams = paramsSerializer(params);
-  } else if (utils.isURLSearchParams(params)) {
-    serializedParams = params.toString();
-  } else {
-    var parts = [];
-
-    utils.forEach(params, function serialize(val, key) {
-      if (val === null || typeof val === 'undefined') {
-        return;
-      }
-
-      if (utils.isArray(val)) {
-        key = key + '[]';
-      } else {
-        val = [val];
-      }
-
-      utils.forEach(val, function parseValue(v) {
-        if (utils.isDate(v)) {
-          v = v.toISOString();
-        } else if (utils.isObject(v)) {
-          v = JSON.stringify(v);
-        }
-        parts.push(encode(key) + '=' + encode(v));
-      });
-    });
-
-    serializedParams = parts.join('&');
-  }
-
-  if (serializedParams) {
-    var hashmarkIndex = url.indexOf('#');
-    if (hashmarkIndex !== -1) {
-      url = url.slice(0, hashmarkIndex);
-    }
-
-    url += (url.indexOf('?') === -1 ? '?' : '&') + serializedParams;
-  }
-
-  return url;
-};
-
-});
-___scope___.file("lib/core/InterceptorManager.js", function(exports, require, module, __filename, __dirname){
-
-'use strict';
-
-var utils = require('./../utils');
-
-function InterceptorManager() {
-  this.handlers = [];
-}
-
-/**
- * Add a new interceptor to the stack
- *
- * @param {Function} fulfilled The function to handle `then` for a `Promise`
- * @param {Function} rejected The function to handle `reject` for a `Promise`
- *
- * @return {Number} An ID used to remove interceptor later
- */
-InterceptorManager.prototype.use = function use(fulfilled, rejected, options) {
-  this.handlers.push({
-    fulfilled: fulfilled,
-    rejected: rejected,
-    synchronous: options ? options.synchronous : false,
-    runWhen: options ? options.runWhen : null
-  });
-  return this.handlers.length - 1;
-};
-
-/**
- * Remove an interceptor from the stack
- *
- * @param {Number} id The ID that was returned by `use`
- */
-InterceptorManager.prototype.eject = function eject(id) {
-  if (this.handlers[id]) {
-    this.handlers[id] = null;
-  }
-};
-
-/**
- * Iterate over all the registered interceptors
- *
- * This method is particularly useful for skipping over any
- * interceptors that may have become `null` calling `eject`.
- *
- * @param {Function} fn The function to call for each interceptor
- */
-InterceptorManager.prototype.forEach = function forEach(fn) {
-  utils.forEach(this.handlers, function forEachHandler(h) {
-    if (h !== null) {
-      fn(h);
-    }
-  });
-};
-
-module.exports = InterceptorManager;
-
-});
-___scope___.file("lib/core/dispatchRequest.js", function(exports, require, module, __filename, __dirname){
-
-'use strict';
-
-var utils = require('./../utils');
-var transformData = require('./transformData');
-var isCancel = require('../cancel/isCancel');
-var defaults = require('../defaults');
-var Cancel = require('../cancel/Cancel');
-
-/**
- * Throws a `Cancel` if cancellation has been requested.
- */
-function throwIfCancellationRequested(config) {
-  if (config.cancelToken) {
-    config.cancelToken.throwIfRequested();
-  }
-
-  if (config.signal && config.signal.aborted) {
-    throw new Cancel('canceled');
-  }
-}
-
-/**
- * Dispatch a request to the server using the configured adapter.
- *
- * @param {object} config The config that is to be used for the request
- * @returns {Promise} The Promise to be fulfilled
- */
-module.exports = function dispatchRequest(config) {
-  throwIfCancellationRequested(config);
-
-  // Ensure headers exist
-  config.headers = config.headers || {};
-
-  // Transform request data
-  config.data = transformData.call(
-    config,
-    config.data,
-    config.headers,
-    config.transformRequest
-  );
-
-  // Flatten headers
-  config.headers = utils.merge(
-    config.headers.common || {},
-    config.headers[config.method] || {},
-    config.headers
-  );
-
-  utils.forEach(
-    ['delete', 'get', 'head', 'post', 'put', 'patch', 'common'],
-    function cleanHeaderConfig(method) {
-      delete config.headers[method];
-    }
-  );
-
-  var adapter = config.adapter || defaults.adapter;
-
-  return adapter(config).then(function onAdapterResolution(response) {
-    throwIfCancellationRequested(config);
-
-    // Transform response data
-    response.data = transformData.call(
-      config,
-      response.data,
-      response.headers,
-      config.transformResponse
-    );
-
-    return response;
-  }, function onAdapterRejection(reason) {
-    if (!isCancel(reason)) {
-      throwIfCancellationRequested(config);
-
-      // Transform response data
-      if (reason && reason.response) {
-        reason.response.data = transformData.call(
-          config,
-          reason.response.data,
-          reason.response.headers,
-          config.transformResponse
-        );
-      }
-    }
-
-    return Promise.reject(reason);
-  });
-};
-
-});
-___scope___.file("lib/core/transformData.js", function(exports, require, module, __filename, __dirname){
-
-'use strict';
-
-var utils = require('./../utils');
-var defaults = require('../defaults');
-
-/**
- * Transform the data for a request or a response
- *
- * @param {Object|String} data The data to be transformed
- * @param {Array} headers The headers for the request or response
- * @param {Array|Function} fns A single function or Array of functions
- * @returns {*} The resulting transformed data
- */
-module.exports = function transformData(data, headers, fns) {
-  var context = this || defaults;
-  /*eslint no-param-reassign:0*/
-  utils.forEach(fns, function transform(fn) {
-    data = fn.call(context, data, headers);
-  });
-
-  return data;
-};
-
-});
-___scope___.file("lib/defaults/index.js", function(exports, require, module, __filename, __dirname){
+___scope___.file("lib/defaults.js", function(exports, require, module, __filename, __dirname){
 /* fuse:injection: */ var process = require("process");
 'use strict';
 
-var utils = require('../utils');
-var normalizeHeaderName = require('../helpers/normalizeHeaderName');
-var enhanceError = require('../core/enhanceError');
-var transitionalDefaults = require('./transitional');
+var utils = require('./utils');
+var normalizeHeaderName = require('./helpers/normalizeHeaderName');
 
 var DEFAULT_CONTENT_TYPE = {
   'Content-Type': 'application/x-www-form-urlencoded'
@@ -30755,39 +30392,19 @@ function getDefaultAdapter() {
   var adapter;
   if (typeof XMLHttpRequest !== 'undefined') {
     // For browsers use XHR adapter
-    adapter = require('../adapters/xhr');
-  } else if (typeof process !== 'undefined' && Object.prototype.toString.call(process) === '[object process]') {
+    adapter = require('./adapters/xhr');
+  } else if (typeof process !== 'undefined') {
     // For node use HTTP adapter
-    adapter = require('../adapters/http');
+    adapter = require('./adapters/http');
   }
   return adapter;
 }
 
-function stringifySafely(rawValue, parser, encoder) {
-  if (utils.isString(rawValue)) {
-    try {
-      (parser || JSON.parse)(rawValue);
-      return utils.trim(rawValue);
-    } catch (e) {
-      if (e.name !== 'SyntaxError') {
-        throw e;
-      }
-    }
-  }
-
-  return (encoder || JSON.stringify)(rawValue);
-}
-
 var defaults = {
-
-  transitional: transitionalDefaults,
-
   adapter: getDefaultAdapter(),
 
   transformRequest: [function transformRequest(data, headers) {
-    normalizeHeaderName(headers, 'Accept');
     normalizeHeaderName(headers, 'Content-Type');
-
     if (utils.isFormData(data) ||
       utils.isArrayBuffer(data) ||
       utils.isBuffer(data) ||
@@ -30804,55 +30421,38 @@ var defaults = {
       setContentTypeIfUnset(headers, 'application/x-www-form-urlencoded;charset=utf-8');
       return data.toString();
     }
-    if (utils.isObject(data) || (headers && headers['Content-Type'] === 'application/json')) {
-      setContentTypeIfUnset(headers, 'application/json');
-      return stringifySafely(data);
+    if (utils.isObject(data)) {
+      setContentTypeIfUnset(headers, 'application/json;charset=utf-8');
+      return JSON.stringify(data);
     }
     return data;
   }],
 
   transformResponse: [function transformResponse(data) {
-    var transitional = this.transitional || defaults.transitional;
-    var silentJSONParsing = transitional && transitional.silentJSONParsing;
-    var forcedJSONParsing = transitional && transitional.forcedJSONParsing;
-    var strictJSONParsing = !silentJSONParsing && this.responseType === 'json';
-
-    if (strictJSONParsing || (forcedJSONParsing && utils.isString(data) && data.length)) {
+    /*eslint no-param-reassign:0*/
+    if (typeof data === 'string') {
       try {
-        return JSON.parse(data);
-      } catch (e) {
-        if (strictJSONParsing) {
-          if (e.name === 'SyntaxError') {
-            throw enhanceError(e, this, 'E_JSON_PARSE');
-          }
-          throw e;
-        }
-      }
+        data = JSON.parse(data);
+      } catch (e) { /* Ignore */ }
     }
-
     return data;
   }],
 
-  /**
-   * A timeout in milliseconds to abort a request. If set to 0 (default) a
-   * timeout is not created.
-   */
   timeout: 0,
 
   xsrfCookieName: 'XSRF-TOKEN',
   xsrfHeaderName: 'X-XSRF-TOKEN',
 
   maxContentLength: -1,
-  maxBodyLength: -1,
 
   validateStatus: function validateStatus(status) {
     return status >= 200 && status < 300;
-  },
+  }
+};
 
-  headers: {
-    common: {
-      'Accept': 'application/json, text/plain, */*'
-    }
+defaults.headers = {
+  common: {
+    'Accept': 'application/json, text/plain, */*'
   }
 };
 
@@ -30883,173 +30483,85 @@ module.exports = function normalizeHeaderName(headers, normalizedName) {
 };
 
 });
-___scope___.file("lib/core/enhanceError.js", function(exports, require, module, __filename, __dirname){
-
-'use strict';
-
-/**
- * Update an Error with the specified config, error code, and response.
- *
- * @param {Error} error The error to update.
- * @param {Object} config The config.
- * @param {string} [code] The error code (for example, 'ECONNABORTED').
- * @param {Object} [request] The request.
- * @param {Object} [response] The response.
- * @returns {Error} The error.
- */
-module.exports = function enhanceError(error, config, code, request, response) {
-  error.config = config;
-  if (code) {
-    error.code = code;
-  }
-
-  error.request = request;
-  error.response = response;
-  error.isAxiosError = true;
-
-  error.toJSON = function toJSON() {
-    return {
-      // Standard
-      message: this.message,
-      name: this.name,
-      // Microsoft
-      description: this.description,
-      number: this.number,
-      // Mozilla
-      fileName: this.fileName,
-      lineNumber: this.lineNumber,
-      columnNumber: this.columnNumber,
-      stack: this.stack,
-      // Axios
-      config: this.config,
-      code: this.code,
-      status: this.response && this.response.status ? this.response.status : null
-    };
-  };
-  return error;
-};
-
-});
-___scope___.file("lib/defaults/transitional.js", function(exports, require, module, __filename, __dirname){
-
-'use strict';
-
-module.exports = {
-  silentJSONParsing: true,
-  forcedJSONParsing: true,
-  clarifyTimeoutError: false
-};
-
-});
 ___scope___.file("lib/adapters/xhr.js", function(exports, require, module, __filename, __dirname){
-
+/* fuse:injection: */ var process = require("process");
 'use strict';
 
 var utils = require('./../utils');
 var settle = require('./../core/settle');
-var cookies = require('./../helpers/cookies');
 var buildURL = require('./../helpers/buildURL');
-var buildFullPath = require('../core/buildFullPath');
 var parseHeaders = require('./../helpers/parseHeaders');
 var isURLSameOrigin = require('./../helpers/isURLSameOrigin');
 var createError = require('../core/createError');
-var transitionalDefaults = require('../defaults/transitional');
-var Cancel = require('../cancel/Cancel');
+var btoa = (typeof window !== 'undefined' && window.btoa && window.btoa.bind(window)) || require('./../helpers/btoa');
 
 module.exports = function xhrAdapter(config) {
   return new Promise(function dispatchXhrRequest(resolve, reject) {
     var requestData = config.data;
     var requestHeaders = config.headers;
-    var responseType = config.responseType;
-    var onCanceled;
-    function done() {
-      if (config.cancelToken) {
-        config.cancelToken.unsubscribe(onCanceled);
-      }
-
-      if (config.signal) {
-        config.signal.removeEventListener('abort', onCanceled);
-      }
-    }
 
     if (utils.isFormData(requestData)) {
       delete requestHeaders['Content-Type']; // Let the browser set it
     }
 
     var request = new XMLHttpRequest();
+    var loadEvent = 'onreadystatechange';
+    var xDomain = false;
+
+    // For IE 8/9 CORS support
+    // Only supports POST and GET calls and doesn't returns the response headers.
+    // DON'T do this for testing b/c XMLHttpRequest is mocked, not XDomainRequest.
+    if (process.env.NODE_ENV !== 'test' &&
+        typeof window !== 'undefined' &&
+        window.XDomainRequest && !('withCredentials' in request) &&
+        !isURLSameOrigin(config.url)) {
+      request = new window.XDomainRequest();
+      loadEvent = 'onload';
+      xDomain = true;
+      request.onprogress = function handleProgress() {};
+      request.ontimeout = function handleTimeout() {};
+    }
 
     // HTTP basic authentication
     if (config.auth) {
       var username = config.auth.username || '';
-      var password = config.auth.password ? unescape(encodeURIComponent(config.auth.password)) : '';
+      var password = config.auth.password || '';
       requestHeaders.Authorization = 'Basic ' + btoa(username + ':' + password);
     }
 
-    var fullPath = buildFullPath(config.baseURL, config.url);
-    request.open(config.method.toUpperCase(), buildURL(fullPath, config.params, config.paramsSerializer), true);
+    request.open(config.method.toUpperCase(), buildURL(config.url, config.params, config.paramsSerializer), true);
 
     // Set the request timeout in MS
     request.timeout = config.timeout;
 
-    function onloadend() {
-      if (!request) {
+    // Listen for ready state
+    request[loadEvent] = function handleLoad() {
+      if (!request || (request.readyState !== 4 && !xDomain)) {
         return;
       }
+
+      // The request errored out and we didn't get a response, this will be
+      // handled by onerror instead
+      // With one exception: request that using file: protocol, most browsers
+      // will return status as 0 even though it's a successful request
+      if (request.status === 0 && !(request.responseURL && request.responseURL.indexOf('file:') === 0)) {
+        return;
+      }
+
       // Prepare the response
       var responseHeaders = 'getAllResponseHeaders' in request ? parseHeaders(request.getAllResponseHeaders()) : null;
-      var responseData = !responseType || responseType === 'text' ||  responseType === 'json' ?
-        request.responseText : request.response;
+      var responseData = !config.responseType || config.responseType === 'text' ? request.responseText : request.response;
       var response = {
         data: responseData,
-        status: request.status,
-        statusText: request.statusText,
+        // IE sends 1223 instead of 204 (https://github.com/mzabriskie/axios/issues/201)
+        status: request.status === 1223 ? 204 : request.status,
+        statusText: request.status === 1223 ? 'No Content' : request.statusText,
         headers: responseHeaders,
         config: config,
         request: request
       };
 
-      settle(function _resolve(value) {
-        resolve(value);
-        done();
-      }, function _reject(err) {
-        reject(err);
-        done();
-      }, response);
-
-      // Clean up request
-      request = null;
-    }
-
-    if ('onloadend' in request) {
-      // Use onloadend if available
-      request.onloadend = onloadend;
-    } else {
-      // Listen for ready state to emulate onloadend
-      request.onreadystatechange = function handleLoad() {
-        if (!request || request.readyState !== 4) {
-          return;
-        }
-
-        // The request errored out and we didn't get a response, this will be
-        // handled by onerror instead
-        // With one exception: request that using file: protocol, most browsers
-        // will return status as 0 even though it's a successful request
-        if (request.status === 0 && !(request.responseURL && request.responseURL.indexOf('file:') === 0)) {
-          return;
-        }
-        // readystate handler is calling before onerror or ontimeout handlers,
-        // so we should call onloadend on the next 'tick'
-        setTimeout(onloadend);
-      };
-    }
-
-    // Handle browser request cancellation (as opposed to a manual cancellation)
-    request.onabort = function handleAbort() {
-      if (!request) {
-        return;
-      }
-
-      reject(createError('Request aborted', config, 'ECONNABORTED', request));
+      settle(resolve, reject, response);
 
       // Clean up request
       request = null;
@@ -31067,15 +30579,7 @@ module.exports = function xhrAdapter(config) {
 
     // Handle timeout
     request.ontimeout = function handleTimeout() {
-      var timeoutErrorMessage = config.timeout ? 'timeout of ' + config.timeout + 'ms exceeded' : 'timeout exceeded';
-      var transitional = config.transitional || transitionalDefaults;
-      if (config.timeoutErrorMessage) {
-        timeoutErrorMessage = config.timeoutErrorMessage;
-      }
-      reject(createError(
-        timeoutErrorMessage,
-        config,
-        transitional.clarifyTimeoutError ? 'ETIMEDOUT' : 'ECONNABORTED',
+      reject(createError('timeout of ' + config.timeout + 'ms exceeded', config, 'ECONNABORTED',
         request));
 
       // Clean up request
@@ -31086,10 +30590,12 @@ module.exports = function xhrAdapter(config) {
     // This is only done if running in a standard browser environment.
     // Specifically not if we're in a web worker, or react-native.
     if (utils.isStandardBrowserEnv()) {
+      var cookies = require('./../helpers/cookies');
+
       // Add xsrf header
-      var xsrfValue = (config.withCredentials || isURLSameOrigin(fullPath)) && config.xsrfCookieName ?
-        cookies.read(config.xsrfCookieName) :
-        undefined;
+      var xsrfValue = (config.withCredentials || isURLSameOrigin(config.url)) && config.xsrfCookieName ?
+          cookies.read(config.xsrfCookieName) :
+          undefined;
 
       if (xsrfValue) {
         requestHeaders[config.xsrfHeaderName] = xsrfValue;
@@ -31110,13 +30616,21 @@ module.exports = function xhrAdapter(config) {
     }
 
     // Add withCredentials to request if needed
-    if (!utils.isUndefined(config.withCredentials)) {
-      request.withCredentials = !!config.withCredentials;
+    if (config.withCredentials) {
+      request.withCredentials = true;
     }
 
     // Add responseType to request if needed
-    if (responseType && responseType !== 'json') {
-      request.responseType = config.responseType;
+    if (config.responseType) {
+      try {
+        request.responseType = config.responseType;
+      } catch (e) {
+        // Expected DOMException thrown by browsers not compatible XMLHttpRequest Level 2.
+        // But, this can be suppressed for 'json' type as it can be parsed by default 'transformResponse' function.
+        if (config.responseType !== 'json') {
+          throw e;
+        }
+      }
     }
 
     // Handle progress if needed
@@ -31129,25 +30643,21 @@ module.exports = function xhrAdapter(config) {
       request.upload.addEventListener('progress', config.onUploadProgress);
     }
 
-    if (config.cancelToken || config.signal) {
+    if (config.cancelToken) {
       // Handle cancellation
-      // eslint-disable-next-line func-names
-      onCanceled = function(cancel) {
+      config.cancelToken.promise.then(function onCanceled(cancel) {
         if (!request) {
           return;
         }
-        reject(!cancel || (cancel && cancel.type) ? new Cancel('canceled') : cancel);
-        request.abort();
-        request = null;
-      };
 
-      config.cancelToken && config.cancelToken.subscribe(onCanceled);
-      if (config.signal) {
-        config.signal.aborted ? onCanceled() : config.signal.addEventListener('abort', onCanceled);
-      }
+        request.abort();
+        reject(cancel);
+        // Clean up request
+        request = null;
+      });
     }
 
-    if (!requestData) {
+    if (requestData === undefined) {
       requestData = null;
     }
 
@@ -31172,6 +30682,7 @@ var createError = require('./createError');
  */
 module.exports = function settle(resolve, reject, response) {
   var validateStatus = response.config.validateStatus;
+  // Note: status is not exposed by XDomainRequest
   if (!response.status || !validateStatus || validateStatus(response.status)) {
     resolve(response);
   } else {
@@ -31208,120 +30719,100 @@ module.exports = function createError(message, config, code, request, response) 
 };
 
 });
-___scope___.file("lib/helpers/cookies.js", function(exports, require, module, __filename, __dirname){
+___scope___.file("lib/core/enhanceError.js", function(exports, require, module, __filename, __dirname){
+
+'use strict';
+
+/**
+ * Update an Error with the specified config, error code, and response.
+ *
+ * @param {Error} error The error to update.
+ * @param {Object} config The config.
+ * @param {string} [code] The error code (for example, 'ECONNABORTED').
+ * @param {Object} [request] The request.
+ * @param {Object} [response] The response.
+ * @returns {Error} The error.
+ */
+module.exports = function enhanceError(error, config, code, request, response) {
+  error.config = config;
+  if (code) {
+    error.code = code;
+  }
+  error.request = request;
+  error.response = response;
+  return error;
+};
+
+});
+___scope___.file("lib/helpers/buildURL.js", function(exports, require, module, __filename, __dirname){
 
 'use strict';
 
 var utils = require('./../utils');
 
-module.exports = (
-  utils.isStandardBrowserEnv() ?
-
-  // Standard browser envs support document.cookie
-    (function standardBrowserEnv() {
-      return {
-        write: function write(name, value, expires, path, domain, secure) {
-          var cookie = [];
-          cookie.push(name + '=' + encodeURIComponent(value));
-
-          if (utils.isNumber(expires)) {
-            cookie.push('expires=' + new Date(expires).toGMTString());
-          }
-
-          if (utils.isString(path)) {
-            cookie.push('path=' + path);
-          }
-
-          if (utils.isString(domain)) {
-            cookie.push('domain=' + domain);
-          }
-
-          if (secure === true) {
-            cookie.push('secure');
-          }
-
-          document.cookie = cookie.join('; ');
-        },
-
-        read: function read(name) {
-          var match = document.cookie.match(new RegExp('(^|;\\s*)(' + name + ')=([^;]*)'));
-          return (match ? decodeURIComponent(match[3]) : null);
-        },
-
-        remove: function remove(name) {
-          this.write(name, '', Date.now() - 86400000);
-        }
-      };
-    })() :
-
-  // Non standard browser env (web workers, react-native) lack needed support.
-    (function nonStandardBrowserEnv() {
-      return {
-        write: function write() {},
-        read: function read() { return null; },
-        remove: function remove() {}
-      };
-    })()
-);
-
-});
-___scope___.file("lib/core/buildFullPath.js", function(exports, require, module, __filename, __dirname){
-
-'use strict';
-
-var isAbsoluteURL = require('../helpers/isAbsoluteURL');
-var combineURLs = require('../helpers/combineURLs');
+function encode(val) {
+  return encodeURIComponent(val).
+    replace(/%40/gi, '@').
+    replace(/%3A/gi, ':').
+    replace(/%24/g, '$').
+    replace(/%2C/gi, ',').
+    replace(/%20/g, '+').
+    replace(/%5B/gi, '[').
+    replace(/%5D/gi, ']');
+}
 
 /**
- * Creates a new URL by combining the baseURL with the requestedURL,
- * only when the requestedURL is not already an absolute URL.
- * If the requestURL is absolute, this function returns the requestedURL untouched.
+ * Build a URL by appending params to the end
  *
- * @param {string} baseURL The base URL
- * @param {string} requestedURL Absolute or relative URL to combine
- * @returns {string} The combined full path
+ * @param {string} url The base of the url (e.g., http://www.google.com)
+ * @param {object} [params] The params to be appended
+ * @returns {string} The formatted url
  */
-module.exports = function buildFullPath(baseURL, requestedURL) {
-  if (baseURL && !isAbsoluteURL(requestedURL)) {
-    return combineURLs(baseURL, requestedURL);
+module.exports = function buildURL(url, params, paramsSerializer) {
+  /*eslint no-param-reassign:0*/
+  if (!params) {
+    return url;
   }
-  return requestedURL;
-};
 
-});
-___scope___.file("lib/helpers/isAbsoluteURL.js", function(exports, require, module, __filename, __dirname){
+  var serializedParams;
+  if (paramsSerializer) {
+    serializedParams = paramsSerializer(params);
+  } else if (utils.isURLSearchParams(params)) {
+    serializedParams = params.toString();
+  } else {
+    var parts = [];
 
-'use strict';
+    utils.forEach(params, function serialize(val, key) {
+      if (val === null || typeof val === 'undefined') {
+        return;
+      }
 
-/**
- * Determines whether the specified URL is absolute
- *
- * @param {string} url The URL to test
- * @returns {boolean} True if the specified URL is absolute, otherwise false
- */
-module.exports = function isAbsoluteURL(url) {
-  // A URL is considered absolute if it begins with "<scheme>://" or "//" (protocol-relative URL).
-  // RFC 3986 defines scheme name as a sequence of characters beginning with a letter and followed
-  // by any combination of letters, digits, plus, period, or hyphen.
-  return /^([a-z][a-z\d+\-.]*:)?\/\//i.test(url);
-};
+      if (utils.isArray(val)) {
+        key = key + '[]';
+      }
 
-});
-___scope___.file("lib/helpers/combineURLs.js", function(exports, require, module, __filename, __dirname){
+      if (!utils.isArray(val)) {
+        val = [val];
+      }
 
-'use strict';
+      utils.forEach(val, function parseValue(v) {
+        if (utils.isDate(v)) {
+          v = v.toISOString();
+        } else if (utils.isObject(v)) {
+          v = JSON.stringify(v);
+        }
+        parts.push(encode(key) + '=' + encode(v));
+      });
+    });
 
-/**
- * Creates a new URL by combining the specified URLs
- *
- * @param {string} baseURL The base URL
- * @param {string} relativeURL The relative URL
- * @returns {string} The combined URL
- */
-module.exports = function combineURLs(baseURL, relativeURL) {
-  return relativeURL
-    ? baseURL.replace(/\/+$/, '') + '/' + relativeURL.replace(/^\/+/, '')
-    : baseURL;
+    serializedParams = parts.join('&');
+  }
+
+  if (serializedParams) {
+    url += (url.indexOf('?') === -1 ? '?' : '&') + serializedParams;
+  }
+
+  return url;
 };
 
 });
@@ -31330,15 +30821,6 @@ ___scope___.file("lib/helpers/parseHeaders.js", function(exports, require, modul
 'use strict';
 
 var utils = require('./../utils');
-
-// Headers whose duplicates are ignored by node
-// c.f. https://nodejs.org/api/http.html#http_message_headers
-var ignoreDuplicateOf = [
-  'age', 'authorization', 'content-length', 'content-type', 'etag',
-  'expires', 'from', 'host', 'if-modified-since', 'if-unmodified-since',
-  'last-modified', 'location', 'max-forwards', 'proxy-authorization',
-  'referer', 'retry-after', 'user-agent'
-];
 
 /**
  * Parse headers into an object
@@ -31367,14 +30849,7 @@ module.exports = function parseHeaders(headers) {
     val = utils.trim(line.substr(i + 1));
 
     if (key) {
-      if (parsed[key] && ignoreDuplicateOf.indexOf(key) >= 0) {
-        return;
-      }
-      if (key === 'set-cookie') {
-        parsed[key] = (parsed[key] ? parsed[key] : []).concat([val]);
-      } else {
-        parsed[key] = parsed[key] ? parsed[key] + ', ' + val : val;
-      }
+      parsed[key] = parsed[key] ? parsed[key] + ', ' + val : val;
     }
   });
 
@@ -31393,88 +30868,162 @@ module.exports = (
 
   // Standard browser envs have full support of the APIs needed to test
   // whether the request URL is of the same origin as current location.
-    (function standardBrowserEnv() {
-      var msie = /(msie|trident)/i.test(navigator.userAgent);
-      var urlParsingNode = document.createElement('a');
-      var originURL;
+  (function standardBrowserEnv() {
+    var msie = /(msie|trident)/i.test(navigator.userAgent);
+    var urlParsingNode = document.createElement('a');
+    var originURL;
 
-      /**
+    /**
     * Parse a URL to discover it's components
     *
     * @param {String} url The URL to be parsed
     * @returns {Object}
     */
-      function resolveURL(url) {
-        var href = url;
+    function resolveURL(url) {
+      var href = url;
 
-        if (msie) {
+      if (msie) {
         // IE needs attribute set twice to normalize properties
-          urlParsingNode.setAttribute('href', href);
-          href = urlParsingNode.href;
-        }
-
         urlParsingNode.setAttribute('href', href);
-
-        // urlParsingNode provides the UrlUtils interface - http://url.spec.whatwg.org/#urlutils
-        return {
-          href: urlParsingNode.href,
-          protocol: urlParsingNode.protocol ? urlParsingNode.protocol.replace(/:$/, '') : '',
-          host: urlParsingNode.host,
-          search: urlParsingNode.search ? urlParsingNode.search.replace(/^\?/, '') : '',
-          hash: urlParsingNode.hash ? urlParsingNode.hash.replace(/^#/, '') : '',
-          hostname: urlParsingNode.hostname,
-          port: urlParsingNode.port,
-          pathname: (urlParsingNode.pathname.charAt(0) === '/') ?
-            urlParsingNode.pathname :
-            '/' + urlParsingNode.pathname
-        };
+        href = urlParsingNode.href;
       }
 
-      originURL = resolveURL(window.location.href);
+      urlParsingNode.setAttribute('href', href);
 
-      /**
+      // urlParsingNode provides the UrlUtils interface - http://url.spec.whatwg.org/#urlutils
+      return {
+        href: urlParsingNode.href,
+        protocol: urlParsingNode.protocol ? urlParsingNode.protocol.replace(/:$/, '') : '',
+        host: urlParsingNode.host,
+        search: urlParsingNode.search ? urlParsingNode.search.replace(/^\?/, '') : '',
+        hash: urlParsingNode.hash ? urlParsingNode.hash.replace(/^#/, '') : '',
+        hostname: urlParsingNode.hostname,
+        port: urlParsingNode.port,
+        pathname: (urlParsingNode.pathname.charAt(0) === '/') ?
+                  urlParsingNode.pathname :
+                  '/' + urlParsingNode.pathname
+      };
+    }
+
+    originURL = resolveURL(window.location.href);
+
+    /**
     * Determine if a URL shares the same origin as the current location
     *
     * @param {String} requestURL The URL to test
     * @returns {boolean} True if URL shares the same origin, otherwise false
     */
-      return function isURLSameOrigin(requestURL) {
-        var parsed = (utils.isString(requestURL)) ? resolveURL(requestURL) : requestURL;
-        return (parsed.protocol === originURL.protocol &&
+    return function isURLSameOrigin(requestURL) {
+      var parsed = (utils.isString(requestURL)) ? resolveURL(requestURL) : requestURL;
+      return (parsed.protocol === originURL.protocol &&
             parsed.host === originURL.host);
-      };
-    })() :
+    };
+  })() :
 
   // Non standard browser envs (web workers, react-native) lack needed support.
-    (function nonStandardBrowserEnv() {
-      return function isURLSameOrigin() {
-        return true;
-      };
-    })()
+  (function nonStandardBrowserEnv() {
+    return function isURLSameOrigin() {
+      return true;
+    };
+  })()
 );
 
 });
-___scope___.file("lib/cancel/Cancel.js", function(exports, require, module, __filename, __dirname){
+___scope___.file("lib/helpers/btoa.js", function(exports, require, module, __filename, __dirname){
 
 'use strict';
 
-/**
- * A `Cancel` is an object that is thrown when an operation is canceled.
- *
- * @class
- * @param {string=} message The message.
- */
-function Cancel(message) {
-  this.message = message;
+// btoa polyfill for IE<10 courtesy https://github.com/davidchambers/Base64.js
+
+var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+
+function E() {
+  this.message = 'String contains an invalid character';
+}
+E.prototype = new Error;
+E.prototype.code = 5;
+E.prototype.name = 'InvalidCharacterError';
+
+function btoa(input) {
+  var str = String(input);
+  var output = '';
+  for (
+    // initialize result and counter
+    var block, charCode, idx = 0, map = chars;
+    // if the next str index does not exist:
+    //   change the mapping table to "="
+    //   check if d has no fractional digits
+    str.charAt(idx | 0) || (map = '=', idx % 1);
+    // "8 - idx % 1 * 8" generates the sequence 2, 4, 6, 8
+    output += map.charAt(63 & block >> 8 - idx % 1 * 8)
+  ) {
+    charCode = str.charCodeAt(idx += 3 / 4);
+    if (charCode > 0xFF) {
+      throw new E();
+    }
+    block = block << 8 | charCode;
+  }
+  return output;
 }
 
-Cancel.prototype.toString = function toString() {
-  return 'Cancel' + (this.message ? ': ' + this.message : '');
-};
+module.exports = btoa;
 
-Cancel.prototype.__CANCEL__ = true;
+});
+___scope___.file("lib/helpers/cookies.js", function(exports, require, module, __filename, __dirname){
 
-module.exports = Cancel;
+'use strict';
+
+var utils = require('./../utils');
+
+module.exports = (
+  utils.isStandardBrowserEnv() ?
+
+  // Standard browser envs support document.cookie
+  (function standardBrowserEnv() {
+    return {
+      write: function write(name, value, expires, path, domain, secure) {
+        var cookie = [];
+        cookie.push(name + '=' + encodeURIComponent(value));
+
+        if (utils.isNumber(expires)) {
+          cookie.push('expires=' + new Date(expires).toGMTString());
+        }
+
+        if (utils.isString(path)) {
+          cookie.push('path=' + path);
+        }
+
+        if (utils.isString(domain)) {
+          cookie.push('domain=' + domain);
+        }
+
+        if (secure === true) {
+          cookie.push('secure');
+        }
+
+        document.cookie = cookie.join('; ');
+      },
+
+      read: function read(name) {
+        var match = document.cookie.match(new RegExp('(^|;\\s*)(' + name + ')=([^;]*)'));
+        return (match ? decodeURIComponent(match[3]) : null);
+      },
+
+      remove: function remove(name) {
+        this.write(name, '', Date.now() - 86400000);
+      }
+    };
+  })() :
+
+  // Non standard browser env (web workers, react-native) lack needed support.
+  (function nonStandardBrowserEnv() {
+    return {
+      write: function write() {},
+      read: function read() { return null; },
+      remove: function remove() {}
+    };
+  })()
+);
 
 });
 ___scope___.file("lib/adapters/http.js", function(exports, require, module, __filename, __dirname){
@@ -31484,7 +31033,6 @@ ___scope___.file("lib/adapters/http.js", function(exports, require, module, __fi
 
 var utils = require('./../utils');
 var settle = require('./../core/settle');
-var buildFullPath = require('../core/buildFullPath');
 var buildURL = require('./../helpers/buildURL');
 var http = require('http');
 var https = require('https');
@@ -31492,90 +31040,32 @@ var httpFollow = require('follow-redirects').http;
 var httpsFollow = require('follow-redirects').https;
 var url = require('url');
 var zlib = require('zlib');
-var VERSION = require('./../env/data').version;
+var pkg = require('./../../package.json');
 var createError = require('../core/createError');
 var enhanceError = require('../core/enhanceError');
-var transitionalDefaults = require('../defaults/transitional');
-var Cancel = require('../cancel/Cancel');
-
-var isHttps = /https:?/;
-
-/**
- *
- * @param {http.ClientRequestArgs} options
- * @param {AxiosProxyConfig} proxy
- * @param {string} location
- */
-function setProxy(options, proxy, location) {
-  options.hostname = proxy.host;
-  options.host = proxy.host;
-  options.port = proxy.port;
-  options.path = location;
-
-  // Basic proxy authorization
-  if (proxy.auth) {
-    var base64 = Buffer.from(proxy.auth.username + ':' + proxy.auth.password, 'utf8').toString('base64');
-    options.headers['Proxy-Authorization'] = 'Basic ' + base64;
-  }
-
-  // If a proxy is used, any redirects must also pass through the proxy
-  options.beforeRedirect = function beforeRedirect(redirection) {
-    redirection.headers.host = redirection.host;
-    setProxy(redirection, proxy, redirection.href);
-  };
-}
 
 /*eslint consistent-return:0*/
 module.exports = function httpAdapter(config) {
-  return new Promise(function dispatchHttpRequest(resolvePromise, rejectPromise) {
-    var onCanceled;
-    function done() {
-      if (config.cancelToken) {
-        config.cancelToken.unsubscribe(onCanceled);
-      }
-
-      if (config.signal) {
-        config.signal.removeEventListener('abort', onCanceled);
-      }
-    }
-    var resolve = function resolve(value) {
-      done();
-      resolvePromise(value);
-    };
-    var rejected = false;
-    var reject = function reject(value) {
-      done();
-      rejected = true;
-      rejectPromise(value);
-    };
+  return new Promise(function dispatchHttpRequest(resolve, reject) {
     var data = config.data;
     var headers = config.headers;
-    var headerNames = {};
-
-    Object.keys(headers).forEach(function storeLowerName(name) {
-      headerNames[name.toLowerCase()] = name;
-    });
+    var timer;
+    var aborted = false;
 
     // Set User-Agent (required by some servers)
-    // See https://github.com/axios/axios/issues/69
-    if ('user-agent' in headerNames) {
-      // User-Agent is specified; handle case where no UA header is desired
-      if (!headers[headerNames['user-agent']]) {
-        delete headers[headerNames['user-agent']];
-      }
-      // Otherwise, use specified value
-    } else {
-      // Only set header if it hasn't been set in config
-      headers['User-Agent'] = 'axios/' + VERSION;
+    // Only set header if it hasn't been set in config
+    // See https://github.com/mzabriskie/axios/issues/69
+    if (!headers['User-Agent'] && !headers['user-agent']) {
+      headers['User-Agent'] = 'axios/' + pkg.version;
     }
 
     if (data && !utils.isStream(data)) {
       if (Buffer.isBuffer(data)) {
         // Nothing to do...
       } else if (utils.isArrayBuffer(data)) {
-        data = Buffer.from(new Uint8Array(data));
+        data = new Buffer(new Uint8Array(data));
       } else if (utils.isString(data)) {
-        data = Buffer.from(data, 'utf-8');
+        data = new Buffer(data, 'utf-8');
       } else {
         return reject(createError(
           'Data after transformation must be a string, an ArrayBuffer, a Buffer, or a Stream',
@@ -31583,14 +31073,8 @@ module.exports = function httpAdapter(config) {
         ));
       }
 
-      if (config.maxBodyLength > -1 && data.length > config.maxBodyLength) {
-        return reject(createError('Request body larger than maxBodyLength limit', config));
-      }
-
       // Add Content-Length header if data exists
-      if (!headerNames['content-length']) {
-        headers['Content-Length'] = data.length;
-      }
+      headers['Content-Length'] = data.length;
     }
 
     // HTTP basic authentication
@@ -31602,8 +31086,7 @@ module.exports = function httpAdapter(config) {
     }
 
     // Parse url
-    var fullPath = buildFullPath(config.baseURL, config.url);
-    var parsed = url.parse(fullPath);
+    var parsed = url.parse(config.url);
     var protocol = parsed.protocol || 'http:';
 
     if (!auth && parsed.auth) {
@@ -31613,139 +31096,93 @@ module.exports = function httpAdapter(config) {
       auth = urlUsername + ':' + urlPassword;
     }
 
-    if (auth && headerNames.authorization) {
-      delete headers[headerNames.authorization];
+    if (auth) {
+      delete headers.Authorization;
     }
 
-    var isHttpsRequest = isHttps.test(protocol);
-    var agent = isHttpsRequest ? config.httpsAgent : config.httpAgent;
-
-    try {
-      buildURL(parsed.path, config.params, config.paramsSerializer).replace(/^\?/, '');
-    } catch (err) {
-      var customErr = new Error(err.message);
-      customErr.config = config;
-      customErr.url = config.url;
-      customErr.exists = true;
-      reject(customErr);
-    }
+    var isHttps = protocol === 'https:';
+    var agent = isHttps ? config.httpsAgent : config.httpAgent;
 
     var options = {
+      hostname: parsed.hostname,
+      port: parsed.port,
       path: buildURL(parsed.path, config.params, config.paramsSerializer).replace(/^\?/, ''),
-      method: config.method.toUpperCase(),
+      method: config.method,
       headers: headers,
       agent: agent,
-      agents: { http: config.httpAgent, https: config.httpsAgent },
       auth: auth
     };
 
-    if (config.socketPath) {
-      options.socketPath = config.socketPath;
-    } else {
-      options.hostname = parsed.hostname;
-      options.port = parsed.port;
-    }
-
     var proxy = config.proxy;
-    if (!proxy && proxy !== false) {
+    if (!proxy) {
       var proxyEnv = protocol.slice(0, -1) + '_proxy';
       var proxyUrl = process.env[proxyEnv] || process.env[proxyEnv.toUpperCase()];
       if (proxyUrl) {
         var parsedProxyUrl = url.parse(proxyUrl);
-        var noProxyEnv = process.env.no_proxy || process.env.NO_PROXY;
-        var shouldProxy = true;
+        proxy = {
+          host: parsedProxyUrl.hostname,
+          port: parsedProxyUrl.port
+        };
 
-        if (noProxyEnv) {
-          var noProxy = noProxyEnv.split(',').map(function trim(s) {
-            return s.trim();
-          });
-
-          shouldProxy = !noProxy.some(function proxyMatch(proxyElement) {
-            if (!proxyElement) {
-              return false;
-            }
-            if (proxyElement === '*') {
-              return true;
-            }
-            if (proxyElement[0] === '.' &&
-                parsed.hostname.substr(parsed.hostname.length - proxyElement.length) === proxyElement) {
-              return true;
-            }
-
-            return parsed.hostname === proxyElement;
-          });
-        }
-
-        if (shouldProxy) {
-          proxy = {
-            host: parsedProxyUrl.hostname,
-            port: parsedProxyUrl.port,
-            protocol: parsedProxyUrl.protocol
+        if (parsedProxyUrl.auth) {
+          var proxyUrlAuth = parsedProxyUrl.auth.split(':');
+          proxy.auth = {
+            username: proxyUrlAuth[0],
+            password: proxyUrlAuth[1]
           };
-
-          if (parsedProxyUrl.auth) {
-            var proxyUrlAuth = parsedProxyUrl.auth.split(':');
-            proxy.auth = {
-              username: proxyUrlAuth[0],
-              password: proxyUrlAuth[1]
-            };
-          }
         }
       }
     }
 
     if (proxy) {
+      options.hostname = proxy.host;
+      options.host = proxy.host;
       options.headers.host = parsed.hostname + (parsed.port ? ':' + parsed.port : '');
-      setProxy(options, proxy, protocol + '//' + parsed.hostname + (parsed.port ? ':' + parsed.port : '') + options.path);
+      options.port = proxy.port;
+      options.path = protocol + '//' + parsed.hostname + (parsed.port ? ':' + parsed.port : '') + options.path;
+
+      // Basic proxy authorization
+      if (proxy.auth) {
+        var base64 = new Buffer(proxy.auth.username + ':' + proxy.auth.password, 'utf8').toString('base64');
+        options.headers['Proxy-Authorization'] = 'Basic ' + base64;
+      }
     }
 
     var transport;
-    var isHttpsProxy = isHttpsRequest && (proxy ? isHttps.test(proxy.protocol) : true);
-    if (config.transport) {
-      transport = config.transport;
-    } else if (config.maxRedirects === 0) {
-      transport = isHttpsProxy ? https : http;
+    if (config.maxRedirects === 0) {
+      transport = isHttps ? https : http;
     } else {
       if (config.maxRedirects) {
         options.maxRedirects = config.maxRedirects;
       }
-      transport = isHttpsProxy ? httpsFollow : httpFollow;
-    }
-
-    if (config.maxBodyLength > -1) {
-      options.maxBodyLength = config.maxBodyLength;
-    }
-
-    if (config.insecureHTTPParser) {
-      options.insecureHTTPParser = config.insecureHTTPParser;
+      transport = isHttps ? httpsFollow : httpFollow;
     }
 
     // Create the request
     var req = transport.request(options, function handleResponse(res) {
-      if (req.aborted) return;
+      if (aborted) return;
+
+      // Response has been received so kill timer that handles request timeout
+      clearTimeout(timer);
+      timer = null;
 
       // uncompress the response body transparently if required
       var stream = res;
+      switch (res.headers['content-encoding']) {
+      /*eslint default-case:0*/
+      case 'gzip':
+      case 'compress':
+      case 'deflate':
+        // add the unzipper to the body stream processing pipeline
+        stream = stream.pipe(zlib.createUnzip());
+
+        // remove the content-encoding in order to not confuse downstream operations
+        delete res.headers['content-encoding'];
+        break;
+      }
 
       // return the last request in case of redirects
       var lastRequest = res.req || req;
-
-
-      // if no content, is HEAD request or decompress disabled we should not decompress
-      if (res.statusCode !== 204 && lastRequest.method !== 'HEAD' && config.decompress !== false) {
-        switch (res.headers['content-encoding']) {
-        /*eslint default-case:0*/
-        case 'gzip':
-        case 'compress':
-        case 'deflate':
-        // add the unzipper to the body stream processing pipeline
-          stream = stream.pipe(zlib.createUnzip());
-
-          // remove the content-encoding in order to not confuse downstream operations
-          delete res.headers['content-encoding'];
-          break;
-        }
-      }
 
       var response = {
         status: res.statusCode,
@@ -31760,47 +31197,28 @@ module.exports = function httpAdapter(config) {
         settle(resolve, reject, response);
       } else {
         var responseBuffer = [];
-        var totalResponseBytes = 0;
         stream.on('data', function handleStreamData(chunk) {
           responseBuffer.push(chunk);
-          totalResponseBytes += chunk.length;
 
           // make sure the content length is not over the maxContentLength if specified
-          if (config.maxContentLength > -1 && totalResponseBytes > config.maxContentLength) {
-            // stream.destoy() emit aborted event before calling reject() on Node.js v16
-            rejected = true;
-            stream.destroy();
+          if (config.maxContentLength > -1 && Buffer.concat(responseBuffer).length > config.maxContentLength) {
             reject(createError('maxContentLength size of ' + config.maxContentLength + ' exceeded',
               config, null, lastRequest));
           }
         });
 
-        stream.on('aborted', function handlerStreamAborted() {
-          if (rejected) {
-            return;
-          }
-          stream.destroy();
-          reject(createError('error request aborted', config, 'ERR_REQUEST_ABORTED', lastRequest));
-        });
-
         stream.on('error', function handleStreamError(err) {
-          if (req.aborted) return;
+          if (aborted) return;
           reject(enhanceError(err, config, null, lastRequest));
         });
 
         stream.on('end', function handleStreamEnd() {
-          try {
-            var responseData = responseBuffer.length === 1 ? responseBuffer[0] : Buffer.concat(responseBuffer);
-            if (config.responseType !== 'arraybuffer') {
-              responseData = responseData.toString(config.responseEncoding);
-              if (!config.responseEncoding || config.responseEncoding === 'utf8') {
-                responseData = utils.stripBOM(responseData);
-              }
-            }
-            response.data = responseData;
-          } catch (err) {
-            reject(enhanceError(err, config, err.code, response.request, response));
+          var responseData = Buffer.concat(responseBuffer);
+          if (config.responseType !== 'arraybuffer') {
+            responseData = responseData.toString('utf8');
           }
+
+          response.data = responseData;
           settle(resolve, reject, response);
         });
       }
@@ -31808,77 +31226,35 @@ module.exports = function httpAdapter(config) {
 
     // Handle errors
     req.on('error', function handleRequestError(err) {
-      if (req.aborted && err.code !== 'ERR_FR_TOO_MANY_REDIRECTS') return;
+      if (aborted) return;
       reject(enhanceError(err, config, null, req));
     });
 
-    // set tcp keep alive to prevent drop connection by peer
-    req.on('socket', function handleRequestSocket(socket) {
-      // default interval of sending ack packet is 1 minute
-      socket.setKeepAlive(true, 1000 * 60);
-    });
-
     // Handle request timeout
-    if (config.timeout) {
-      // This is forcing a int timeout to avoid problems if the `req` interface doesn't handle other types.
-      var timeout = parseInt(config.timeout, 10);
-
-      if (isNaN(timeout)) {
-        reject(createError(
-          'error trying to parse `config.timeout` to int',
-          config,
-          'ERR_PARSE_TIMEOUT',
-          req
-        ));
-
-        return;
-      }
-
-      // Sometime, the response will be very slow, and does not respond, the connect event will be block by event loop system.
-      // And timer callback will be fired, and abort() will be invoked before connection, then get "socket hang up" and code ECONNRESET.
-      // At this time, if we have a large number of request, nodejs will hang up some socket on background. and the number will up and up.
-      // And then these socket which be hang up will devoring CPU little by little.
-      // ClientRequest.setTimeout will be fired on the specify milliseconds, and can make sure that abort() will be fired after connect.
-      req.setTimeout(timeout, function handleRequestTimeout() {
+    if (config.timeout && !timer) {
+      timer = setTimeout(function handleRequestTimeout() {
         req.abort();
-        var timeoutErrorMessage = '';
-        if (config.timeoutErrorMessage) {
-          timeoutErrorMessage = config.timeoutErrorMessage;
-        } else {
-          timeoutErrorMessage = 'timeout of ' + config.timeout + 'ms exceeded';
+        reject(createError('timeout of ' + config.timeout + 'ms exceeded', config, 'ECONNABORTED', req));
+        aborted = true;
+      }, config.timeout);
+    }
+
+    if (config.cancelToken) {
+      // Handle cancellation
+      config.cancelToken.promise.then(function onCanceled(cancel) {
+        if (aborted) {
+          return;
         }
-        var transitional = config.transitional || transitionalDefaults;
-        reject(createError(
-          timeoutErrorMessage,
-          config,
-          transitional.clarifyTimeoutError ? 'ETIMEDOUT' : 'ECONNABORTED',
-          req
-        ));
+
+        req.abort();
+        reject(cancel);
+        aborted = true;
       });
     }
 
-    if (config.cancelToken || config.signal) {
-      // Handle cancellation
-      // eslint-disable-next-line func-names
-      onCanceled = function(cancel) {
-        if (req.aborted) return;
-
-        req.abort();
-        reject(!cancel || (cancel && cancel.type) ? new Cancel('canceled') : cancel);
-      };
-
-      config.cancelToken && config.cancelToken.subscribe(onCanceled);
-      if (config.signal) {
-        config.signal.aborted ? onCanceled() : config.signal.addEventListener('abort', onCanceled);
-      }
-    }
-
-
     // Send the request
     if (utils.isStream(data)) {
-      data.on('error', function handleStreamError(err) {
-        reject(enhanceError(err, config, null, req));
-      }).pipe(req);
+      data.pipe(req);
     } else {
       req.end(data);
     }
@@ -31886,13 +31262,9 @@ module.exports = function httpAdapter(config) {
 };
 
 });
-___scope___.file("lib/env/data.js", function(exports, require, module, __filename, __dirname){
+___scope___.file("package.json", function(exports, require, module, __filename, __dirname){
 
 module.exports = {
-<<<<<<< HEAD:dist/4d666053-vendor.js
-  "version": "0.26.1"
-};
-=======
   "_from": "axios@0.16.2",
   "_id": "axios@0.16.2",
   "_inBundle": false,
@@ -31998,7 +31370,169 @@ module.exports = {
   "version": "0.16.2"
 }
 ;
->>>>>>> Add Logs page to the router:dist/248bd47e-vendor.js
+});
+___scope___.file("lib/core/InterceptorManager.js", function(exports, require, module, __filename, __dirname){
+
+'use strict';
+
+var utils = require('./../utils');
+
+function InterceptorManager() {
+  this.handlers = [];
+}
+
+/**
+ * Add a new interceptor to the stack
+ *
+ * @param {Function} fulfilled The function to handle `then` for a `Promise`
+ * @param {Function} rejected The function to handle `reject` for a `Promise`
+ *
+ * @return {Number} An ID used to remove interceptor later
+ */
+InterceptorManager.prototype.use = function use(fulfilled, rejected) {
+  this.handlers.push({
+    fulfilled: fulfilled,
+    rejected: rejected
+  });
+  return this.handlers.length - 1;
+};
+
+/**
+ * Remove an interceptor from the stack
+ *
+ * @param {Number} id The ID that was returned by `use`
+ */
+InterceptorManager.prototype.eject = function eject(id) {
+  if (this.handlers[id]) {
+    this.handlers[id] = null;
+  }
+};
+
+/**
+ * Iterate over all the registered interceptors
+ *
+ * This method is particularly useful for skipping over any
+ * interceptors that may have become `null` calling `eject`.
+ *
+ * @param {Function} fn The function to call for each interceptor
+ */
+InterceptorManager.prototype.forEach = function forEach(fn) {
+  utils.forEach(this.handlers, function forEachHandler(h) {
+    if (h !== null) {
+      fn(h);
+    }
+  });
+};
+
+module.exports = InterceptorManager;
+
+});
+___scope___.file("lib/core/dispatchRequest.js", function(exports, require, module, __filename, __dirname){
+
+'use strict';
+
+var utils = require('./../utils');
+var transformData = require('./transformData');
+var isCancel = require('../cancel/isCancel');
+var defaults = require('../defaults');
+
+/**
+ * Throws a `Cancel` if cancellation has been requested.
+ */
+function throwIfCancellationRequested(config) {
+  if (config.cancelToken) {
+    config.cancelToken.throwIfRequested();
+  }
+}
+
+/**
+ * Dispatch a request to the server using the configured adapter.
+ *
+ * @param {object} config The config that is to be used for the request
+ * @returns {Promise} The Promise to be fulfilled
+ */
+module.exports = function dispatchRequest(config) {
+  throwIfCancellationRequested(config);
+
+  // Ensure headers exist
+  config.headers = config.headers || {};
+
+  // Transform request data
+  config.data = transformData(
+    config.data,
+    config.headers,
+    config.transformRequest
+  );
+
+  // Flatten headers
+  config.headers = utils.merge(
+    config.headers.common || {},
+    config.headers[config.method] || {},
+    config.headers || {}
+  );
+
+  utils.forEach(
+    ['delete', 'get', 'head', 'post', 'put', 'patch', 'common'],
+    function cleanHeaderConfig(method) {
+      delete config.headers[method];
+    }
+  );
+
+  var adapter = config.adapter || defaults.adapter;
+
+  return adapter(config).then(function onAdapterResolution(response) {
+    throwIfCancellationRequested(config);
+
+    // Transform response data
+    response.data = transformData(
+      response.data,
+      response.headers,
+      config.transformResponse
+    );
+
+    return response;
+  }, function onAdapterRejection(reason) {
+    if (!isCancel(reason)) {
+      throwIfCancellationRequested(config);
+
+      // Transform response data
+      if (reason && reason.response) {
+        reason.response.data = transformData(
+          reason.response.data,
+          reason.response.headers,
+          config.transformResponse
+        );
+      }
+    }
+
+    return Promise.reject(reason);
+  });
+};
+
+});
+___scope___.file("lib/core/transformData.js", function(exports, require, module, __filename, __dirname){
+
+'use strict';
+
+var utils = require('./../utils');
+
+/**
+ * Transform the data for a request or a response
+ *
+ * @param {Object|String} data The data to be transformed
+ * @param {Array} headers The headers for the request or response
+ * @param {Array|Function} fns A single function or Array of functions
+ * @returns {*} The resulting transformed data
+ */
+module.exports = function transformData(data, headers, fns) {
+  /*eslint no-param-reassign:0*/
+  utils.forEach(fns, function transform(fn) {
+    data = fn(data, headers);
+  });
+
+  return data;
+};
+
 });
 ___scope___.file("lib/cancel/isCancel.js", function(exports, require, module, __filename, __dirname){
 
@@ -32009,193 +31543,63 @@ module.exports = function isCancel(value) {
 };
 
 });
-___scope___.file("lib/core/mergeConfig.js", function(exports, require, module, __filename, __dirname){
+___scope___.file("lib/helpers/isAbsoluteURL.js", function(exports, require, module, __filename, __dirname){
 
 'use strict';
 
-var utils = require('../utils');
-
 /**
- * Config-specific merge-function which creates a new config-object
- * by merging two configuration objects together.
+ * Determines whether the specified URL is absolute
  *
- * @param {Object} config1
- * @param {Object} config2
- * @returns {Object} New object resulting from merging config2 to config1
+ * @param {string} url The URL to test
+ * @returns {boolean} True if the specified URL is absolute, otherwise false
  */
-module.exports = function mergeConfig(config1, config2) {
-  // eslint-disable-next-line no-param-reassign
-  config2 = config2 || {};
-  var config = {};
-
-  function getMergedValue(target, source) {
-    if (utils.isPlainObject(target) && utils.isPlainObject(source)) {
-      return utils.merge(target, source);
-    } else if (utils.isPlainObject(source)) {
-      return utils.merge({}, source);
-    } else if (utils.isArray(source)) {
-      return source.slice();
-    }
-    return source;
-  }
-
-  // eslint-disable-next-line consistent-return
-  function mergeDeepProperties(prop) {
-    if (!utils.isUndefined(config2[prop])) {
-      return getMergedValue(config1[prop], config2[prop]);
-    } else if (!utils.isUndefined(config1[prop])) {
-      return getMergedValue(undefined, config1[prop]);
-    }
-  }
-
-  // eslint-disable-next-line consistent-return
-  function valueFromConfig2(prop) {
-    if (!utils.isUndefined(config2[prop])) {
-      return getMergedValue(undefined, config2[prop]);
-    }
-  }
-
-  // eslint-disable-next-line consistent-return
-  function defaultToConfig2(prop) {
-    if (!utils.isUndefined(config2[prop])) {
-      return getMergedValue(undefined, config2[prop]);
-    } else if (!utils.isUndefined(config1[prop])) {
-      return getMergedValue(undefined, config1[prop]);
-    }
-  }
-
-  // eslint-disable-next-line consistent-return
-  function mergeDirectKeys(prop) {
-    if (prop in config2) {
-      return getMergedValue(config1[prop], config2[prop]);
-    } else if (prop in config1) {
-      return getMergedValue(undefined, config1[prop]);
-    }
-  }
-
-  var mergeMap = {
-    'url': valueFromConfig2,
-    'method': valueFromConfig2,
-    'data': valueFromConfig2,
-    'baseURL': defaultToConfig2,
-    'transformRequest': defaultToConfig2,
-    'transformResponse': defaultToConfig2,
-    'paramsSerializer': defaultToConfig2,
-    'timeout': defaultToConfig2,
-    'timeoutMessage': defaultToConfig2,
-    'withCredentials': defaultToConfig2,
-    'adapter': defaultToConfig2,
-    'responseType': defaultToConfig2,
-    'xsrfCookieName': defaultToConfig2,
-    'xsrfHeaderName': defaultToConfig2,
-    'onUploadProgress': defaultToConfig2,
-    'onDownloadProgress': defaultToConfig2,
-    'decompress': defaultToConfig2,
-    'maxContentLength': defaultToConfig2,
-    'maxBodyLength': defaultToConfig2,
-    'transport': defaultToConfig2,
-    'httpAgent': defaultToConfig2,
-    'httpsAgent': defaultToConfig2,
-    'cancelToken': defaultToConfig2,
-    'socketPath': defaultToConfig2,
-    'responseEncoding': defaultToConfig2,
-    'validateStatus': mergeDirectKeys
-  };
-
-  utils.forEach(Object.keys(config1).concat(Object.keys(config2)), function computeConfigValue(prop) {
-    var merge = mergeMap[prop] || mergeDeepProperties;
-    var configValue = merge(prop);
-    (utils.isUndefined(configValue) && merge !== mergeDirectKeys) || (config[prop] = configValue);
-  });
-
-  return config;
+module.exports = function isAbsoluteURL(url) {
+  // A URL is considered absolute if it begins with "<scheme>://" or "//" (protocol-relative URL).
+  // RFC 3986 defines scheme name as a sequence of characters beginning with a letter and followed
+  // by any combination of letters, digits, plus, period, or hyphen.
+  return /^([a-z][a-z\d\+\-\.]*:)?\/\//i.test(url);
 };
 
 });
-___scope___.file("lib/helpers/validator.js", function(exports, require, module, __filename, __dirname){
+___scope___.file("lib/helpers/combineURLs.js", function(exports, require, module, __filename, __dirname){
 
 'use strict';
 
-var VERSION = require('../env/data').version;
-
-var validators = {};
-
-// eslint-disable-next-line func-names
-['object', 'boolean', 'number', 'function', 'string', 'symbol'].forEach(function(type, i) {
-  validators[type] = function validator(thing) {
-    return typeof thing === type || 'a' + (i < 1 ? 'n ' : ' ') + type;
-  };
-});
-
-var deprecatedWarnings = {};
-
 /**
- * Transitional option validator
- * @param {function|boolean?} validator - set to false if the transitional option has been removed
- * @param {string?} version - deprecated version / removed since version
- * @param {string?} message - some message with additional info
- * @returns {function}
+ * Creates a new URL by combining the specified URLs
+ *
+ * @param {string} baseURL The base URL
+ * @param {string} relativeURL The relative URL
+ * @returns {string} The combined URL
  */
-validators.transitional = function transitional(validator, version, message) {
-  function formatMessage(opt, desc) {
-    return '[Axios v' + VERSION + '] Transitional option \'' + opt + '\'' + desc + (message ? '. ' + message : '');
-  }
-
-  // eslint-disable-next-line func-names
-  return function(value, opt, opts) {
-    if (validator === false) {
-      throw new Error(formatMessage(opt, ' has been removed' + (version ? ' in ' + version : '')));
-    }
-
-    if (version && !deprecatedWarnings[opt]) {
-      deprecatedWarnings[opt] = true;
-      // eslint-disable-next-line no-console
-      console.warn(
-        formatMessage(
-          opt,
-          ' has been deprecated since v' + version + ' and will be removed in the near future'
-        )
-      );
-    }
-
-    return validator ? validator(value, opt, opts) : true;
-  };
+module.exports = function combineURLs(baseURL, relativeURL) {
+  return relativeURL
+    ? baseURL.replace(/\/+$/, '') + '/' + relativeURL.replace(/^\/+/, '')
+    : baseURL;
 };
 
-/**
- * Assert object's properties type
- * @param {object} options
- * @param {object} schema
- * @param {boolean?} allowUnknown
- */
+});
+___scope___.file("lib/cancel/Cancel.js", function(exports, require, module, __filename, __dirname){
 
-function assertOptions(options, schema, allowUnknown) {
-  if (typeof options !== 'object') {
-    throw new TypeError('options must be an object');
-  }
-  var keys = Object.keys(options);
-  var i = keys.length;
-  while (i-- > 0) {
-    var opt = keys[i];
-    var validator = schema[opt];
-    if (validator) {
-      var value = options[opt];
-      var result = value === undefined || validator(value, opt, options);
-      if (result !== true) {
-        throw new TypeError('option ' + opt + ' must be ' + result);
-      }
-      continue;
-    }
-    if (allowUnknown !== true) {
-      throw Error('Unknown option ' + opt);
-    }
-  }
+'use strict';
+
+/**
+ * A `Cancel` is an object that is thrown when an operation is canceled.
+ *
+ * @class
+ * @param {string=} message The message.
+ */
+function Cancel(message) {
+  this.message = message;
 }
 
-module.exports = {
-  assertOptions: assertOptions,
-  validators: validators
+Cancel.prototype.toString = function toString() {
+  return 'Cancel' + (this.message ? ': ' + this.message : '');
 };
+
+Cancel.prototype.__CANCEL__ = true;
+
+module.exports = Cancel;
 
 });
 ___scope___.file("lib/cancel/CancelToken.js", function(exports, require, module, __filename, __dirname){
@@ -32216,42 +31620,11 @@ function CancelToken(executor) {
   }
 
   var resolvePromise;
-
   this.promise = new Promise(function promiseExecutor(resolve) {
     resolvePromise = resolve;
   });
 
   var token = this;
-
-  // eslint-disable-next-line func-names
-  this.promise.then(function(cancel) {
-    if (!token._listeners) return;
-
-    var i;
-    var l = token._listeners.length;
-
-    for (i = 0; i < l; i++) {
-      token._listeners[i](cancel);
-    }
-    token._listeners = null;
-  });
-
-  // eslint-disable-next-line func-names
-  this.promise.then = function(onfulfilled) {
-    var _resolve;
-    // eslint-disable-next-line func-names
-    var promise = new Promise(function(resolve) {
-      token.subscribe(resolve);
-      _resolve = resolve;
-    }).then(onfulfilled);
-
-    promise.cancel = function reject() {
-      token.unsubscribe(_resolve);
-    };
-
-    return promise;
-  };
-
   executor(function cancel(message) {
     if (token.reason) {
       // Cancellation has already been requested
@@ -32269,37 +31642,6 @@ function CancelToken(executor) {
 CancelToken.prototype.throwIfRequested = function throwIfRequested() {
   if (this.reason) {
     throw this.reason;
-  }
-};
-
-/**
- * Subscribe to the cancel signal
- */
-
-CancelToken.prototype.subscribe = function subscribe(listener) {
-  if (this.reason) {
-    listener(this.reason);
-    return;
-  }
-
-  if (this._listeners) {
-    this._listeners.push(listener);
-  } else {
-    this._listeners = [listener];
-  }
-};
-
-/**
- * Unsubscribe from the cancel signal
- */
-
-CancelToken.prototype.unsubscribe = function unsubscribe(listener) {
-  if (!this._listeners) {
-    return;
-  }
-  var index = this._listeners.indexOf(listener);
-  if (index !== -1) {
-    this._listeners.splice(index, 1);
   }
 };
 
@@ -32352,11 +31694,11 @@ module.exports = function spread(callback) {
 };
 
 });
-___scope___.file("lib/helpers/isAxiosError.js", function(exports, require, module, __filename, __dirname){
+return ___scope___.entry = "index.js";
+});
+FuseBox.pkg("is-buffer", {}, function(___scope___){
+___scope___.file("index.js", function(exports, require, module, __filename, __dirname){
 
-<<<<<<< HEAD:dist/4d666053-vendor.js
-'use strict';
-=======
 /*!
  * Determine if an object is a Buffer
  *
@@ -32369,19 +31711,15 @@ ___scope___.file("lib/helpers/isAxiosError.js", function(exports, require, modul
 module.exports = function (obj) {
   return obj != null && (isBuffer(obj) || isSlowBuffer(obj) || !!obj._isBuffer)
 }
->>>>>>> Add Logs page to the router:dist/248bd47e-vendor.js
 
-var utils = require('./../utils');
+function isBuffer (obj) {
+  return !!obj.constructor && typeof obj.constructor.isBuffer === 'function' && obj.constructor.isBuffer(obj)
+}
 
-/**
- * Determines whether the payload is an error thrown by Axios
- *
- * @param {*} payload The value to test
- * @returns {boolean} True if the payload is an error thrown by Axios, otherwise false
- */
-module.exports = function isAxiosError(payload) {
-  return utils.isObject(payload) && (payload.isAxiosError === true);
-};
+// For Node v0.10 support. Remove this eventually.
+function isSlowBuffer (obj) {
+  return typeof obj.readFloatLE === 'function' && typeof obj.slice === 'function' && isBuffer(obj.slice(0, 0))
+}
 
 });
 return ___scope___.entry = "index.js";
@@ -32474,7 +31812,6 @@ function RedirectableRequest(options, responseCallback) {
 
   // Perform the first request
   this._performRequest();
-<<<<<<< HEAD:dist/4d666053-vendor.js
 }
 RedirectableRequest.prototype = Object.create(Writable.prototype);
 
@@ -33016,1897 +32353,6 @@ ___scope___.file("index.js", function(exports, require, module, __filename, __di
 
 if (FuseBox.isServer) {
     module.exports = global.require("url");
-}
-else {
-    // Copyright Joyent, Inc. and other Node contributors.
-    //
-    // Permission is hereby granted, free of charge, to any person obtaining a
-    // copy of this software and associated documentation files (the
-    // "Software"), to deal in the Software without restriction, including
-    // without limitation the rights to use, copy, modify, merge, publish,
-    // distribute, sublicense, and/or sell copies of the Software, and to permit
-    // persons to whom the Software is furnished to do so, subject to the
-    // following conditions:
-    //
-    // The above copyright notice and this permission notice shall be included
-    // in all copies or substantial portions of the Software.
-    //
-    // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-    // OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-    // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-    // NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-    // DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-    // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-    // USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-    'use strict';
-
-    var punycode = require('punycode');
-    var util = {
-        isString: function(arg) {
-            return typeof(arg) === 'string';
-        },
-        isObject: function(arg) {
-            return typeof(arg) === 'object' && arg !== null;
-        },
-        isNull: function(arg) {
-            return arg === null;
-        },
-        isNullOrUndefined: function(arg) {
-            return arg == null;
-        }
-    };
-
-
-    exports.parse = urlParse;
-    exports.resolve = urlResolve;
-    exports.resolveObject = urlResolveObject;
-    exports.format = urlFormat;
-
-    exports.Url = Url;
-
-    function Url() {
-        this.protocol = null;
-        this.slashes = null;
-        this.auth = null;
-        this.host = null;
-        this.port = null;
-        this.hostname = null;
-        this.hash = null;
-        this.search = null;
-        this.query = null;
-        this.pathname = null;
-        this.path = null;
-        this.href = null;
-    }
-
-    // Reference: RFC 3986, RFC 1808, RFC 2396
-
-    // define these here so at least they only have to be
-    // compiled once on the first module load.
-    var protocolPattern = /^([a-z0-9.+-]+:)/i,
-        portPattern = /:[0-9]*$/,
-
-        // Special case for a simple path URL
-        simplePathPattern = /^(\/\/?(?!\/)[^\?\s]*)(\?[^\s]*)?$/,
-
-        // RFC 2396: characters reserved for delimiting URLs.
-        // We actually just auto-escape these.
-        delims = ['<', '>', '"', '`', ' ', '\r', '\n', '\t'],
-
-        // RFC 2396: characters not allowed for various reasons.
-        unwise = ['{', '}', '|', '\\', '^', '`'].concat(delims),
-
-        // Allowed by RFCs, but cause of XSS attacks.  Always escape these.
-        autoEscape = ['\''].concat(unwise),
-        // Characters that are never ever allowed in a hostname.
-        // Note that any invalid chars are also handled, but these
-        // are the ones that are *expected* to be seen, so we fast-path
-        // them.
-        nonHostChars = ['%', '/', '?', ';', '#'].concat(autoEscape),
-        hostEndingChars = ['/', '?', '#'],
-        hostnameMaxLen = 255,
-        hostnamePartPattern = /^[+a-z0-9A-Z_-]{0,63}$/,
-        hostnamePartStart = /^([+a-z0-9A-Z_-]{0,63})(.*)$/,
-        // protocols that can allow "unsafe" and "unwise" chars.
-        unsafeProtocol = {
-            'javascript': true,
-            'javascript:': true
-        },
-        // protocols that never have a hostname.
-        hostlessProtocol = {
-            'javascript': true,
-            'javascript:': true
-        },
-        // protocols that always contain a // bit.
-        slashedProtocol = {
-            'http': true,
-            'https': true,
-            'ftp': true,
-            'gopher': true,
-            'file': true,
-            'http:': true,
-            'https:': true,
-            'ftp:': true,
-            'gopher:': true,
-            'file:': true
-        },
-        querystring = require('querystring');
-
-    function urlParse(url, parseQueryString, slashesDenoteHost) {
-        if (url && util.isObject(url) && url instanceof Url) return url;
-
-        var u = new Url;
-        u.parse(url, parseQueryString, slashesDenoteHost);
-        return u;
-    }
-
-    Url.prototype.parse = function(url, parseQueryString, slashesDenoteHost) {
-        if (!util.isString(url)) {
-            throw new TypeError("Parameter 'url' must be a string, not " + typeof url);
-        }
-
-        // Copy chrome, IE, opera backslash-handling behavior.
-        // Back slashes before the query string get converted to forward slashes
-        // See: https://code.google.com/p/chromium/issues/detail?id=25916
-        var queryIndex = url.indexOf('?'),
-            splitter =
-            (queryIndex !== -1 && queryIndex < url.indexOf('#')) ? '?' : '#',
-            uSplit = url.split(splitter),
-            slashRegex = /\\/g;
-        uSplit[0] = uSplit[0].replace(slashRegex, '/');
-        url = uSplit.join(splitter);
-
-        var rest = url;
-
-        // trim before proceeding.
-        // This is to support parse stuff like "  http://foo.com  \n"
-        rest = rest.trim();
-
-        if (!slashesDenoteHost && url.split('#').length === 1) {
-            // Try fast path regexp
-            var simplePath = simplePathPattern.exec(rest);
-            if (simplePath) {
-                this.path = rest;
-                this.href = rest;
-                this.pathname = simplePath[1];
-                if (simplePath[2]) {
-                    this.search = simplePath[2];
-                    if (parseQueryString) {
-                        this.query = querystring.parse(this.search.substr(1));
-                    }
-                    else {
-                        this.query = this.search.substr(1);
-                    }
-                }
-                else if (parseQueryString) {
-                    this.search = '';
-                    this.query = {};
-                }
-                return this;
-            }
-        }
-
-        var proto = protocolPattern.exec(rest);
-        if (proto) {
-            proto = proto[0];
-            var lowerProto = proto.toLowerCase();
-            this.protocol = lowerProto;
-            rest = rest.substr(proto.length);
-        }
-
-        // figure out if it's got a host
-        // user@server is *always* interpreted as a hostname, and url
-        // resolution will treat //foo/bar as host=foo,path=bar because that's
-        // how the browser resolves relative URLs.
-        if (slashesDenoteHost || proto || rest.match(/^\/\/[^@\/]+@[^@\/]+/)) {
-            var slashes = rest.substr(0, 2) === '//';
-            if (slashes && !(proto && hostlessProtocol[proto])) {
-                rest = rest.substr(2);
-                this.slashes = true;
-            }
-        }
-
-        if (!hostlessProtocol[proto] &&
-            (slashes || (proto && !slashedProtocol[proto]))) {
-
-            // there's a hostname.
-            // the first instance of /, ?, ;, or # ends the host.
-            //
-            // If there is an @ in the hostname, then non-host chars *are* allowed
-            // to the left of the last @ sign, unless some host-ending character
-            // comes *before* the @-sign.
-            // URLs are obnoxious.
-            //
-            // ex:
-            // http://a@b@c/ => user:a@b host:c
-            // http://a@b?@c => user:a host:c path:/?@c
-
-            // v0.12 TODO(isaacs): This is not quite how Chrome does things.
-            // Review our test case against browsers more comprehensively.
-
-            // find the first instance of any hostEndingChars
-            var hostEnd = -1;
-            for (var i = 0; i < hostEndingChars.length; i++) {
-                var hec = rest.indexOf(hostEndingChars[i]);
-                if (hec !== -1 && (hostEnd === -1 || hec < hostEnd))
-                    hostEnd = hec;
-            }
-
-            // at this point, either we have an explicit point where the
-            // auth portion cannot go past, or the last @ char is the decider.
-            var auth, atSign;
-            if (hostEnd === -1) {
-                // atSign can be anywhere.
-                atSign = rest.lastIndexOf('@');
-            }
-            else {
-                // atSign must be in auth portion.
-                // http://a@b/c@d => host:b auth:a path:/c@d
-                atSign = rest.lastIndexOf('@', hostEnd);
-            }
-
-            // Now we have a portion which is definitely the auth.
-            // Pull that off.
-            if (atSign !== -1) {
-                auth = rest.slice(0, atSign);
-                rest = rest.slice(atSign + 1);
-                this.auth = decodeURIComponent(auth);
-            }
-
-            // the host is the remaining to the left of the first non-host char
-            hostEnd = -1;
-            for (var i = 0; i < nonHostChars.length; i++) {
-                var hec = rest.indexOf(nonHostChars[i]);
-                if (hec !== -1 && (hostEnd === -1 || hec < hostEnd))
-                    hostEnd = hec;
-            }
-            // if we still have not hit it, then the entire thing is a host.
-            if (hostEnd === -1)
-                hostEnd = rest.length;
-
-            this.host = rest.slice(0, hostEnd);
-            rest = rest.slice(hostEnd);
-
-            // pull out port.
-            this.parseHost();
-
-            // we've indicated that there is a hostname,
-            // so even if it's empty, it has to be present.
-            this.hostname = this.hostname || '';
-
-            // if hostname begins with [ and ends with ]
-            // assume that it's an IPv6 address.
-            var ipv6Hostname = this.hostname[0] === '[' &&
-                this.hostname[this.hostname.length - 1] === ']';
-
-            // validate a little.
-            if (!ipv6Hostname) {
-                var hostparts = this.hostname.split(/\./);
-                for (var i = 0, l = hostparts.length; i < l; i++) {
-                    var part = hostparts[i];
-                    if (!part) continue;
-                    if (!part.match(hostnamePartPattern)) {
-                        var newpart = '';
-                        for (var j = 0, k = part.length; j < k; j++) {
-                            if (part.charCodeAt(j) > 127) {
-                                // we replace non-ASCII char with a temporary placeholder
-                                // we need this to make sure size of hostname is not
-                                // broken by replacing non-ASCII by nothing
-                                newpart += 'x';
-                            }
-                            else {
-                                newpart += part[j];
-                            }
-                        }
-                        // we test again with ASCII char only
-                        if (!newpart.match(hostnamePartPattern)) {
-                            var validParts = hostparts.slice(0, i);
-                            var notHost = hostparts.slice(i + 1);
-                            var bit = part.match(hostnamePartStart);
-                            if (bit) {
-                                validParts.push(bit[1]);
-                                notHost.unshift(bit[2]);
-                            }
-                            if (notHost.length) {
-                                rest = '/' + notHost.join('.') + rest;
-                            }
-                            this.hostname = validParts.join('.');
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (this.hostname.length > hostnameMaxLen) {
-                this.hostname = '';
-            }
-            else {
-                // hostnames are always lower case.
-                this.hostname = this.hostname.toLowerCase();
-            }
-
-            if (!ipv6Hostname) {
-                // IDNA Support: Returns a punycoded representation of "domain".
-                // It only converts parts of the domain name that
-                // have non-ASCII characters, i.e. it doesn't matter if
-                // you call it with a domain that already is ASCII-only.
-                this.hostname = punycode.toASCII(this.hostname);
-            }
-
-            var p = this.port ? ':' + this.port : '';
-            var h = this.hostname || '';
-            this.host = h + p;
-            this.href += this.host;
-
-            // strip [ and ] from the hostname
-            // the host field still retains them, though
-            if (ipv6Hostname) {
-                this.hostname = this.hostname.substr(1, this.hostname.length - 2);
-                if (rest[0] !== '/') {
-                    rest = '/' + rest;
-                }
-            }
-        }
-
-        // now rest is set to the post-host stuff.
-        // chop off any delim chars.
-        if (!unsafeProtocol[lowerProto]) {
-
-            // First, make 100% sure that any "autoEscape" chars get
-            // escaped, even if encodeURIComponent doesn't think they
-            // need to be.
-            for (var i = 0, l = autoEscape.length; i < l; i++) {
-                var ae = autoEscape[i];
-                if (rest.indexOf(ae) === -1)
-                    continue;
-                var esc = encodeURIComponent(ae);
-                if (esc === ae) {
-                    esc = escape(ae);
-                }
-                rest = rest.split(ae).join(esc);
-            }
-        }
-
-
-        // chop off from the tail first.
-        var hash = rest.indexOf('#');
-        if (hash !== -1) {
-            // got a fragment string.
-            this.hash = rest.substr(hash);
-            rest = rest.slice(0, hash);
-        }
-        var qm = rest.indexOf('?');
-        if (qm !== -1) {
-            this.search = rest.substr(qm);
-            this.query = rest.substr(qm + 1);
-            if (parseQueryString) {
-                this.query = querystring.parse(this.query);
-            }
-            rest = rest.slice(0, qm);
-        }
-        else if (parseQueryString) {
-            // no query string, but parseQueryString still requested
-            this.search = '';
-            this.query = {};
-        }
-        if (rest) this.pathname = rest;
-        if (slashedProtocol[lowerProto] &&
-            this.hostname && !this.pathname) {
-            this.pathname = '/';
-        }
-
-        //to support http.request
-        if (this.pathname || this.search) {
-            var p = this.pathname || '';
-            var s = this.search || '';
-            this.path = p + s;
-        }
-
-        // finally, reconstruct the href based on what has been validated.
-        this.href = this.format();
-        return this;
-    };
-
-    // format a parsed object into a url string
-    function urlFormat(obj) {
-        // ensure it's an object, and not a string url.
-        // If it's an obj, this is a no-op.
-        // this way, you can call url_format() on strings
-        // to clean up potentially wonky urls.
-        if (util.isString(obj)) obj = urlParse(obj);
-        if (!(obj instanceof Url)) return Url.prototype.format.call(obj);
-        return obj.format();
-    }
-
-    Url.prototype.format = function() {
-        var auth = this.auth || '';
-        if (auth) {
-            auth = encodeURIComponent(auth);
-            auth = auth.replace(/%3A/i, ':');
-            auth += '@';
-        }
-
-        var protocol = this.protocol || '',
-            pathname = this.pathname || '',
-            hash = this.hash || '',
-            host = false,
-            query = '';
-
-        if (this.host) {
-            host = auth + this.host;
-        }
-        else if (this.hostname) {
-            host = auth + (this.hostname.indexOf(':') === -1 ?
-                this.hostname :
-                '[' + this.hostname + ']');
-            if (this.port) {
-                host += ':' + this.port;
-            }
-        }
-
-        if (this.query &&
-            util.isObject(this.query) &&
-            Object.keys(this.query).length) {
-            query = querystring.stringify(this.query);
-        }
-
-        var search = this.search || (query && ('?' + query)) || '';
-
-        if (protocol && protocol.substr(-1) !== ':') protocol += ':';
-
-        // only the slashedProtocols get the //.  Not mailto:, xmpp:, etc.
-        // unless they had them to begin with.
-        if (this.slashes ||
-            (!protocol || slashedProtocol[protocol]) && host !== false) {
-            host = '//' + (host || '');
-            if (pathname && pathname.charAt(0) !== '/') pathname = '/' + pathname;
-        }
-        else if (!host) {
-            host = '';
-        }
-
-        if (hash && hash.charAt(0) !== '#') hash = '#' + hash;
-        if (search && search.charAt(0) !== '?') search = '?' + search;
-
-        pathname = pathname.replace(/[?#]/g, function(match) {
-            return encodeURIComponent(match);
-        });
-        search = search.replace('#', '%23');
-
-        return protocol + host + pathname + search + hash;
-    };
-
-    function urlResolve(source, relative) {
-        return urlParse(source, false, true).resolve(relative);
-    }
-
-    Url.prototype.resolve = function(relative) {
-        return this.resolveObject(urlParse(relative, false, true)).format();
-    };
-
-    function urlResolveObject(source, relative) {
-        if (!source) return relative;
-        return urlParse(source, false, true).resolveObject(relative);
-    }
-
-    Url.prototype.resolveObject = function(relative) {
-        if (util.isString(relative)) {
-            var rel = new Url();
-            rel.parse(relative, false, true);
-            relative = rel;
-        }
-
-        var result = new Url();
-        var tkeys = Object.keys(this);
-        for (var tk = 0; tk < tkeys.length; tk++) {
-            var tkey = tkeys[tk];
-            result[tkey] = this[tkey];
-        }
-
-        // hash is always overridden, no matter what.
-        // even href="" will remove it.
-        result.hash = relative.hash;
-
-        // if the relative url is empty, then there's nothing left to do here.
-        if (relative.href === '') {
-            result.href = result.format();
-            return result;
-        }
-
-        // hrefs like //foo/bar always cut to the protocol.
-        if (relative.slashes && !relative.protocol) {
-            // take everything except the protocol from relative
-            var rkeys = Object.keys(relative);
-            for (var rk = 0; rk < rkeys.length; rk++) {
-                var rkey = rkeys[rk];
-                if (rkey !== 'protocol')
-                    result[rkey] = relative[rkey];
-            }
-
-            //urlParse appends trailing / to urls like http://www.example.com
-            if (slashedProtocol[result.protocol] &&
-                result.hostname && !result.pathname) {
-                result.path = result.pathname = '/';
-            }
-
-            result.href = result.format();
-            return result;
-        }
-
-        if (relative.protocol && relative.protocol !== result.protocol) {
-            // if it's a known url protocol, then changing
-            // the protocol does weird things
-            // first, if it's not file:, then we MUST have a host,
-            // and if there was a path
-            // to begin with, then we MUST have a path.
-            // if it is file:, then the host is dropped,
-            // because that's known to be hostless.
-            // anything else is assumed to be absolute.
-            if (!slashedProtocol[relative.protocol]) {
-                var keys = Object.keys(relative);
-                for (var v = 0; v < keys.length; v++) {
-                    var k = keys[v];
-                    result[k] = relative[k];
-                }
-                result.href = result.format();
-                return result;
-            }
-
-            result.protocol = relative.protocol;
-            if (!relative.host && !hostlessProtocol[relative.protocol]) {
-                var relPath = (relative.pathname || '').split('/');
-                while (relPath.length && !(relative.host = relPath.shift()));
-                if (!relative.host) relative.host = '';
-                if (!relative.hostname) relative.hostname = '';
-                if (relPath[0] !== '') relPath.unshift('');
-                if (relPath.length < 2) relPath.unshift('');
-                result.pathname = relPath.join('/');
-            }
-            else {
-                result.pathname = relative.pathname;
-            }
-            result.search = relative.search;
-            result.query = relative.query;
-            result.host = relative.host || '';
-            result.auth = relative.auth;
-            result.hostname = relative.hostname || relative.host;
-            result.port = relative.port;
-            // to support http.request
-            if (result.pathname || result.search) {
-                var p = result.pathname || '';
-                var s = result.search || '';
-                result.path = p + s;
-            }
-            result.slashes = result.slashes || relative.slashes;
-            result.href = result.format();
-            return result;
-        }
-
-        var isSourceAbs = (result.pathname && result.pathname.charAt(0) === '/'),
-            isRelAbs = (
-                relative.host ||
-                relative.pathname && relative.pathname.charAt(0) === '/'
-            ),
-            mustEndAbs = (isRelAbs || isSourceAbs ||
-                (result.host && relative.pathname)),
-            removeAllDots = mustEndAbs,
-            srcPath = result.pathname && result.pathname.split('/') || [],
-            relPath = relative.pathname && relative.pathname.split('/') || [],
-            psychotic = result.protocol && !slashedProtocol[result.protocol];
-
-        // if the url is a non-slashed url, then relative
-        // links like ../.. should be able
-        // to crawl up to the hostname, as well.  This is strange.
-        // result.protocol has already been set by now.
-        // Later on, put the first path part into the host field.
-        if (psychotic) {
-            result.hostname = '';
-            result.port = null;
-            if (result.host) {
-                if (srcPath[0] === '') srcPath[0] = result.host;
-                else srcPath.unshift(result.host);
-            }
-            result.host = '';
-            if (relative.protocol) {
-                relative.hostname = null;
-                relative.port = null;
-                if (relative.host) {
-                    if (relPath[0] === '') relPath[0] = relative.host;
-                    else relPath.unshift(relative.host);
-                }
-                relative.host = null;
-            }
-            mustEndAbs = mustEndAbs && (relPath[0] === '' || srcPath[0] === '');
-        }
-
-        if (isRelAbs) {
-            // it's absolute.
-            result.host = (relative.host || relative.host === '') ?
-                relative.host : result.host;
-            result.hostname = (relative.hostname || relative.hostname === '') ?
-                relative.hostname : result.hostname;
-            result.search = relative.search;
-            result.query = relative.query;
-            srcPath = relPath;
-            // fall through to the dot-handling below.
-        }
-        else if (relPath.length) {
-            // it's relative
-            // throw away the existing file, and take the new path instead.
-            if (!srcPath) srcPath = [];
-            srcPath.pop();
-            srcPath = srcPath.concat(relPath);
-            result.search = relative.search;
-            result.query = relative.query;
-        }
-        else if (!util.isNullOrUndefined(relative.search)) {
-            // just pull out the search.
-            // like href='?foo'.
-            // Put this after the other two cases because it simplifies the booleans
-            if (psychotic) {
-                result.hostname = result.host = srcPath.shift();
-                //occationaly the auth can get stuck only in host
-                //this especially happens in cases like
-                //url.resolveObject('mailto:local1@domain1', 'local2@domain2')
-                var authInHost = result.host && result.host.indexOf('@') > 0 ?
-                    result.host.split('@') : false;
-                if (authInHost) {
-                    result.auth = authInHost.shift();
-                    result.host = result.hostname = authInHost.shift();
-                }
-            }
-            result.search = relative.search;
-            result.query = relative.query;
-            //to support http.request
-            if (!util.isNull(result.pathname) || !util.isNull(result.search)) {
-                result.path = (result.pathname ? result.pathname : '') +
-                    (result.search ? result.search : '');
-            }
-            result.href = result.format();
-            return result;
-        }
-
-        if (!srcPath.length) {
-            // no path at all.  easy.
-            // we've already handled the other stuff above.
-            result.pathname = null;
-            //to support http.request
-            if (result.search) {
-                result.path = '/' + result.search;
-            }
-            else {
-                result.path = null;
-            }
-            result.href = result.format();
-            return result;
-        }
-
-        // if a url ENDs in . or .., then it must get a trailing slash.
-        // however, if it ends in anything else non-slashy,
-        // then it must NOT get a trailing slash.
-        var last = srcPath.slice(-1)[0];
-        var hasTrailingSlash = (
-            (result.host || relative.host || srcPath.length > 1) &&
-            (last === '.' || last === '..') || last === '');
-
-        // strip single dots, resolve double dots to parent dir
-        // if the path tries to go above the root, `up` ends up > 0
-        var up = 0;
-        for (var i = srcPath.length; i >= 0; i--) {
-            last = srcPath[i];
-            if (last === '.') {
-                srcPath.splice(i, 1);
-            }
-            else if (last === '..') {
-                srcPath.splice(i, 1);
-                up++;
-            }
-            else if (up) {
-                srcPath.splice(i, 1);
-                up--;
-            }
-        }
-
-        // if the path is allowed to go above the root, restore leading ..s
-        if (!mustEndAbs && !removeAllDots) {
-            for (; up--; up) {
-                srcPath.unshift('..');
-            }
-        }
-
-        if (mustEndAbs && srcPath[0] !== '' &&
-            (!srcPath[0] || srcPath[0].charAt(0) !== '/')) {
-            srcPath.unshift('');
-        }
-
-        if (hasTrailingSlash && (srcPath.join('/').substr(-1) !== '/')) {
-            srcPath.push('');
-        }
-
-        var isAbsolute = srcPath[0] === '' ||
-            (srcPath[0] && srcPath[0].charAt(0) === '/');
-
-        // put the host back
-        if (psychotic) {
-            result.hostname = result.host = isAbsolute ? '' :
-                srcPath.length ? srcPath.shift() : '';
-            //occationaly the auth can get stuck only in host
-            //this especially happens in cases like
-            //url.resolveObject('mailto:local1@domain1', 'local2@domain2')
-            var authInHost = result.host && result.host.indexOf('@') > 0 ?
-                result.host.split('@') : false;
-            if (authInHost) {
-                result.auth = authInHost.shift();
-                result.host = result.hostname = authInHost.shift();
-            }
-        }
-
-        mustEndAbs = mustEndAbs || (result.host && srcPath.length);
-
-        if (mustEndAbs && !isAbsolute) {
-            srcPath.unshift('');
-        }
-
-        if (!srcPath.length) {
-            result.pathname = null;
-            result.path = null;
-        }
-        else {
-            result.pathname = srcPath.join('/');
-        }
-
-        //to support request.http
-        if (!util.isNull(result.pathname) || !util.isNull(result.search)) {
-            result.path = (result.pathname ? result.pathname : '') +
-                (result.search ? result.search : '');
-        }
-        result.auth = relative.auth || result.auth;
-        result.slashes = result.slashes || relative.slashes;
-        result.href = result.format();
-        return result;
-    };
-
-    Url.prototype.parseHost = function() {
-        var host = this.host;
-        var port = portPattern.exec(host);
-        if (port) {
-            port = port[0];
-            if (port !== ':') {
-                this.port = port.substr(1);
-            }
-            host = host.substr(0, host.length - port.length);
-        }
-        if (host) this.hostname = host;
-    };
-}
-
-});
-return ___scope___.entry = "index.js";
-});
-FuseBox.pkg("punycode", {}, function(___scope___){
-___scope___.file("punycode.js", function(exports, require, module, __filename, __dirname){
-
-'use strict';
-
-/** Highest positive signed 32-bit float value */
-const maxInt = 2147483647; // aka. 0x7FFFFFFF or 2^31-1
-
-/** Bootstring parameters */
-const base = 36;
-const tMin = 1;
-const tMax = 26;
-const skew = 38;
-const damp = 700;
-const initialBias = 72;
-const initialN = 128; // 0x80
-const delimiter = '-'; // '\x2D'
-
-/** Regular expressions */
-const regexPunycode = /^xn--/;
-const regexNonASCII = /[^\0-\x7E]/; // non-ASCII chars
-const regexSeparators = /[\x2E\u3002\uFF0E\uFF61]/g; // RFC 3490 separators
-
-/** Error messages */
-const errors = {
-	'overflow': 'Overflow: input needs wider integers to process',
-	'not-basic': 'Illegal input >= 0x80 (not a basic code point)',
-	'invalid-input': 'Invalid input'
-};
-
-/** Convenience shortcuts */
-const baseMinusTMin = base - tMin;
-const floor = Math.floor;
-const stringFromCharCode = String.fromCharCode;
-
-/*--------------------------------------------------------------------------*/
-
-/**
- * A generic error utility function.
- * @private
- * @param {String} type The error type.
- * @returns {Error} Throws a `RangeError` with the applicable error message.
- */
-function error(type) {
-	throw new RangeError(errors[type]);
-}
-
-/**
- * A generic `Array#map` utility function.
- * @private
- * @param {Array} array The array to iterate over.
- * @param {Function} callback The function that gets called for every array
- * item.
- * @returns {Array} A new array of values returned by the callback function.
- */
-function map(array, fn) {
-	const result = [];
-	let length = array.length;
-	while (length--) {
-		result[length] = fn(array[length]);
-	}
-	return result;
-}
-
-/**
- * A simple `Array#map`-like wrapper to work with domain name strings or email
- * addresses.
- * @private
- * @param {String} domain The domain name or email address.
- * @param {Function} callback The function that gets called for every
- * character.
- * @returns {Array} A new string of characters returned by the callback
- * function.
- */
-function mapDomain(string, fn) {
-	const parts = string.split('@');
-	let result = '';
-	if (parts.length > 1) {
-		// In email addresses, only the domain name should be punycoded. Leave
-		// the local part (i.e. everything up to `@`) intact.
-		result = parts[0] + '@';
-		string = parts[1];
-	}
-	// Avoid `split(regex)` for IE8 compatibility. See #17.
-	string = string.replace(regexSeparators, '\x2E');
-	const labels = string.split('.');
-	const encoded = map(labels, fn).join('.');
-	return result + encoded;
-}
-
-/**
- * Creates an array containing the numeric code points of each Unicode
- * character in the string. While JavaScript uses UCS-2 internally,
- * this function will convert a pair of surrogate halves (each of which
- * UCS-2 exposes as separate characters) into a single code point,
- * matching UTF-16.
- * @see `punycode.ucs2.encode`
- * @see <https://mathiasbynens.be/notes/javascript-encoding>
- * @memberOf punycode.ucs2
- * @name decode
- * @param {String} string The Unicode input string (UCS-2).
- * @returns {Array} The new array of code points.
- */
-function ucs2decode(string) {
-	const output = [];
-	let counter = 0;
-	const length = string.length;
-	while (counter < length) {
-		const value = string.charCodeAt(counter++);
-		if (value >= 0xD800 && value <= 0xDBFF && counter < length) {
-			// It's a high surrogate, and there is a next character.
-			const extra = string.charCodeAt(counter++);
-			if ((extra & 0xFC00) == 0xDC00) { // Low surrogate.
-				output.push(((value & 0x3FF) << 10) + (extra & 0x3FF) + 0x10000);
-			} else {
-				// It's an unmatched surrogate; only append this code unit, in case the
-				// next code unit is the high surrogate of a surrogate pair.
-				output.push(value);
-				counter--;
-			}
-		} else {
-			output.push(value);
-		}
-	}
-	return output;
-=======
->>>>>>> Add Logs page to the router:dist/248bd47e-vendor.js
-}
-
-<<<<<<< HEAD:dist/4d666053-vendor.js
-/**
- * Creates a string based on an array of numeric code points.
- * @see `punycode.ucs2.decode`
- * @memberOf punycode.ucs2
- * @name encode
- * @param {Array} codePoints The array of numeric code points.
- * @returns {String} The new Unicode string (UCS-2).
- */
-const ucs2encode = array => String.fromCodePoint(...array);
-
-/**
- * Converts a basic code point into a digit/integer.
- * @see `digitToBasic()`
- * @private
- * @param {Number} codePoint The basic numeric code point value.
- * @returns {Number} The numeric value of a basic code point (for use in
- * representing integers) in the range `0` to `base - 1`, or `base` if
- * the code point does not represent a value.
- */
-const basicToDigit = function(codePoint) {
-	if (codePoint - 0x30 < 0x0A) {
-		return codePoint - 0x16;
-	}
-	if (codePoint - 0x41 < 0x1A) {
-		return codePoint - 0x41;
-	}
-	if (codePoint - 0x61 < 0x1A) {
-		return codePoint - 0x61;
-	}
-	return base;
-};
-
-/**
- * Converts a digit/integer into a basic code point.
- * @see `basicToDigit()`
- * @private
- * @param {Number} digit The numeric value of a basic code point.
- * @returns {Number} The basic code point whose value (when used for
- * representing integers) is `digit`, which needs to be in the range
- * `0` to `base - 1`. If `flag` is non-zero, the uppercase form is
- * used; else, the lowercase form is used. The behavior is undefined
- * if `flag` is non-zero and `digit` has no uppercase form.
- */
-const digitToBasic = function(digit, flag) {
-	//  0..25 map to ASCII a..z or A..Z
-	// 26..35 map to ASCII 0..9
-	return digit + 22 + 75 * (digit < 26) - ((flag != 0) << 5);
-};
-
-/**
- * Bias adaptation function as per section 3.4 of RFC 3492.
- * https://tools.ietf.org/html/rfc3492#section-3.4
- * @private
- */
-const adapt = function(delta, numPoints, firstTime) {
-	let k = 0;
-	delta = firstTime ? floor(delta / damp) : delta >> 1;
-	delta += floor(delta / numPoints);
-	for (/* no initialization */; delta > baseMinusTMin * tMax >> 1; k += base) {
-		delta = floor(delta / baseMinusTMin);
-	}
-	return floor(k + (baseMinusTMin + 1) * delta / (delta + skew));
-};
-
-/**
- * Converts a Punycode string of ASCII-only symbols to a string of Unicode
- * symbols.
- * @memberOf punycode
- * @param {String} input The Punycode string of ASCII-only symbols.
- * @returns {String} The resulting string of Unicode symbols.
- */
-const decode = function(input) {
-	// Don't use UCS-2.
-	const output = [];
-	const inputLength = input.length;
-	let i = 0;
-	let n = initialN;
-	let bias = initialBias;
-
-	// Handle the basic code points: let `basic` be the number of input code
-	// points before the last delimiter, or `0` if there is none, then copy
-	// the first basic code points to the output.
-
-	let basic = input.lastIndexOf(delimiter);
-	if (basic < 0) {
-		basic = 0;
-	}
-
-	for (let j = 0; j < basic; ++j) {
-		// if it's not a basic code point
-		if (input.charCodeAt(j) >= 0x80) {
-			error('not-basic');
-		}
-		output.push(input.charCodeAt(j));
-	}
-
-	// Main decoding loop: start just after the last delimiter if any basic code
-	// points were copied; start at the beginning otherwise.
-
-	for (let index = basic > 0 ? basic + 1 : 0; index < inputLength; /* no final expression */) {
-
-		// `index` is the index of the next character to be consumed.
-		// Decode a generalized variable-length integer into `delta`,
-		// which gets added to `i`. The overflow checking is easier
-		// if we increase `i` as we go, then subtract off its starting
-		// value at the end to obtain `delta`.
-		let oldi = i;
-		for (let w = 1, k = base; /* no condition */; k += base) {
-
-			if (index >= inputLength) {
-				error('invalid-input');
-			}
-
-			const digit = basicToDigit(input.charCodeAt(index++));
-
-			if (digit >= base || digit > floor((maxInt - i) / w)) {
-				error('overflow');
-			}
-
-			i += digit * w;
-			const t = k <= bias ? tMin : (k >= bias + tMax ? tMax : k - bias);
-
-			if (digit < t) {
-				break;
-			}
-
-			const baseMinusT = base - t;
-			if (w > floor(maxInt / baseMinusT)) {
-				error('overflow');
-			}
-
-			w *= baseMinusT;
-
-		}
-
-		const out = output.length + 1;
-		bias = adapt(i - oldi, out, oldi == 0);
-
-		// `i` was supposed to wrap around from `out` to `0`,
-		// incrementing `n` each time, so we'll fix that now:
-		if (floor(i / out) > maxInt - n) {
-			error('overflow');
-		}
-
-		n += floor(i / out);
-		i %= out;
-
-		// Insert `n` at position `i` of the output.
-		output.splice(i++, 0, n);
-
-	}
-
-	return String.fromCodePoint(...output);
-};
-
-/**
- * Converts a string of Unicode symbols (e.g. a domain name label) to a
- * Punycode string of ASCII-only symbols.
- * @memberOf punycode
- * @param {String} input The string of Unicode symbols.
- * @returns {String} The resulting Punycode string of ASCII-only symbols.
- */
-const encode = function(input) {
-	const output = [];
-
-	// Convert the input in UCS-2 to an array of Unicode code points.
-	input = ucs2decode(input);
-
-	// Cache the length.
-	let inputLength = input.length;
-
-	// Initialize the state.
-	let n = initialN;
-	let delta = 0;
-	let bias = initialBias;
-
-	// Handle the basic code points.
-	for (const currentValue of input) {
-		if (currentValue < 0x80) {
-			output.push(stringFromCharCode(currentValue));
-		}
-	}
-
-	let basicLength = output.length;
-	let handledCPCount = basicLength;
-
-	// `handledCPCount` is the number of code points that have been handled;
-	// `basicLength` is the number of basic code points.
-
-	// Finish the basic string with a delimiter unless it's empty.
-	if (basicLength) {
-		output.push(delimiter);
-	}
-
-	// Main encoding loop:
-	while (handledCPCount < inputLength) {
-
-		// All non-basic code points < n have been handled already. Find the next
-		// larger one:
-		let m = maxInt;
-		for (const currentValue of input) {
-			if (currentValue >= n && currentValue < m) {
-				m = currentValue;
-			}
-		}
-
-		// Increase `delta` enough to advance the decoder's <n,i> state to <m,0>,
-		// but guard against overflow.
-		const handledCPCountPlusOne = handledCPCount + 1;
-		if (m - n > floor((maxInt - delta) / handledCPCountPlusOne)) {
-			error('overflow');
-		}
-
-		delta += (m - n) * handledCPCountPlusOne;
-		n = m;
-
-		for (const currentValue of input) {
-			if (currentValue < n && ++delta > maxInt) {
-				error('overflow');
-			}
-			if (currentValue == n) {
-				// Represent delta as a generalized variable-length integer.
-				let q = delta;
-				for (let k = base; /* no condition */; k += base) {
-					const t = k <= bias ? tMin : (k >= bias + tMax ? tMax : k - bias);
-					if (q < t) {
-						break;
-					}
-					const qMinusT = q - t;
-					const baseMinusT = base - t;
-					output.push(
-						stringFromCharCode(digitToBasic(t + qMinusT % baseMinusT, 0))
-					);
-					q = floor(qMinusT / baseMinusT);
-				}
-
-				output.push(stringFromCharCode(digitToBasic(q, 0)));
-				bias = adapt(delta, handledCPCountPlusOne, handledCPCount == basicLength);
-				delta = 0;
-				++handledCPCount;
-			}
-		}
-
-		++delta;
-		++n;
-
-	}
-	return output.join('');
-};
-
-/**
- * Converts a Punycode string representing a domain name or an email address
- * to Unicode. Only the Punycoded parts of the input will be converted, i.e.
- * it doesn't matter if you call it on a string that has already been
- * converted to Unicode.
- * @memberOf punycode
- * @param {String} input The Punycoded domain name or email address to
- * convert to Unicode.
- * @returns {String} The Unicode representation of the given Punycode
- * string.
- */
-const toUnicode = function(input) {
-	return mapDomain(input, function(string) {
-		return regexPunycode.test(string)
-			? decode(string.slice(4).toLowerCase())
-			: string;
-	});
-};
-
-/**
- * Converts a Unicode string representing a domain name or an email address to
- * Punycode. Only the non-ASCII parts of the domain name will be converted,
- * i.e. it doesn't matter if you call it with a domain that's already in
- * ASCII.
- * @memberOf punycode
- * @param {String} input The domain name or email address to convert, as a
- * Unicode string.
- * @returns {String} The Punycode representation of the given domain name or
- * email address.
- */
-const toASCII = function(input) {
-	return mapDomain(input, function(string) {
-		return regexNonASCII.test(string)
-			? 'xn--' + encode(string)
-			: string;
-	});
-};
-
-/*--------------------------------------------------------------------------*/
-
-/** Define the public API */
-const punycode = {
-	/**
-	 * A string representing the current Punycode.js version number.
-	 * @memberOf punycode
-	 * @type String
-	 */
-	'version': '2.1.0',
-	/**
-	 * An object of methods to convert from JavaScript's internal character
-	 * representation (UCS-2) to Unicode code points, and back.
-	 * @see <https://mathiasbynens.be/notes/javascript-encoding>
-	 * @memberOf punycode
-	 * @type Object
-	 */
-	'ucs2': {
-		'decode': ucs2decode,
-		'encode': ucs2encode
-	},
-	'decode': decode,
-	'encode': encode,
-	'toASCII': toASCII,
-	'toUnicode': toUnicode
-};
-
-module.exports = punycode;
-
-});
-return ___scope___.entry = "punycode.js";
-});
-FuseBox.pkg("querystring", {}, function(___scope___){
-___scope___.file("index.js", function(exports, require, module, __filename, __dirname){
-
-if (FuseBox.isServer) {
-    module.exports = global.require("querystring");
-} else {
-
-    // Copyright Joyent, Inc. and other Node contributors.
-    //
-    // Permission is hereby granted, free of charge, to any person obtaining a
-    // copy of this software and associated documentation files (the
-    // "Software"), to deal in the Software without restriction, including
-    // without limitation the rights to use, copy, modify, merge, publish,
-    // distribute, sublicense, and/or sell copies of the Software, and to permit
-    // persons to whom the Software is furnished to do so, subject to the
-    // following conditions:
-    //
-    // The above copyright notice and this permission notice shall be included
-    // in all copies or substantial portions of the Software.
-    //
-    // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-    // OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-    // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-    // NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-    // DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-    // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-    // USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-    "use strict";
-
-    exports.decode = exports.parse = decode;
-    exports.encode = exports.stringify = encode;
-
-    // If obj.hasOwnProperty has been overridden, then calling
-    // obj.hasOwnProperty(prop) will break.
-    // See: https://github.com/joyent/node/issues/1707
-    function hasOwnProperty(obj, prop) {
-        return Object.prototype.hasOwnProperty.call(obj, prop);
-    }
-
-    function decode(qs, sep, eq, options) {
-        sep = sep || "&";
-        eq = eq || "=";
-        var obj = {};
-
-        if (typeof qs !== "string" || qs.length === 0) {
-            return obj;
-        }
-
-        var regexp = /\+/g;
-        qs = qs.split(sep);
-
-        var maxKeys = 1000;
-        if (options && typeof options.maxKeys === "number") {
-            maxKeys = options.maxKeys;
-        }
-
-        var len = qs.length;
-        // maxKeys <= 0 means that we should not limit keys count
-        if (maxKeys > 0 && len > maxKeys) {
-            len = maxKeys;
-        }
-
-        for (var i = 0; i < len; ++i) {
-            var x = qs[i].replace(regexp, "%20"),
-                idx = x.indexOf(eq),
-                kstr, vstr, k, v;
-
-            if (idx >= 0) {
-                kstr = x.substr(0, idx);
-                vstr = x.substr(idx + 1);
-            } else {
-                kstr = x;
-                vstr = "";
-            }
-
-            k = decodeURIComponent(kstr);
-            v = decodeURIComponent(vstr);
-
-            if (!hasOwnProperty(obj, k)) {
-                obj[k] = v;
-            } else if (Array.isArray(obj[k])) {
-                obj[k].push(v);
-            } else {
-                obj[k] = [obj[k], v];
-            }
-        }
-
-        return obj;
-    }
-
-    var stringifyPrimitive = function(v) {
-        switch (typeof v) {
-            case "string":
-                return v;
-
-            case "boolean":
-                return v ? "true" : "false";
-
-            case "number":
-                return isFinite(v) ? v : "";
-
-            default:
-                return "";
-        }
-    };
-
-    function encode(obj, sep, eq, name) {
-        sep = sep || "&";
-        eq = eq || "=";
-        if (obj === null) {
-            obj = undefined;
-        }
-
-        if (typeof obj === "object") {
-            return Object.keys(obj).map(function(k) {
-                var ks = encodeURIComponent(stringifyPrimitive(k)) + eq;
-                if (Array.isArray(obj[k])) {
-                    return obj[k].map(function(v) {
-                        return ks + encodeURIComponent(stringifyPrimitive(v));
-                    }).join(sep);
-                } else {
-                    return ks + encodeURIComponent(stringifyPrimitive(obj[k]));
-                }
-            }).join(sep);
-
-        }
-
-        if (!name) return "";
-        return encodeURIComponent(stringifyPrimitive(name)) + eq +
-            encodeURIComponent(stringifyPrimitive(obj));
-    }
-}
-=======
-RedirectableRequest.prototype.abort = function () {
-  abortRequest(this._currentRequest);
-  this.emit("abort");
-};
-
-// Writes buffered data to the current native request
-RedirectableRequest.prototype.write = function (data, encoding, callback) {
-  // Writing is not allowed if end has been called
-  if (this._ending) {
-    throw new WriteAfterEndError();
-  }
-
-  // Validate input and shift parameters if necessary
-  if (!(typeof data === "string" || typeof data === "object" && ("length" in data))) {
-    throw new TypeError("data should be a string, Buffer or Uint8Array");
-  }
-  if (typeof encoding === "function") {
-    callback = encoding;
-    encoding = null;
-  }
-
-  // Ignore empty buffers, since writing them doesn't invoke the callback
-  // https://github.com/nodejs/node/issues/22066
-  if (data.length === 0) {
-    if (callback) {
-      callback();
-    }
-    return;
-  }
-  // Only write when we don't exceed the maximum body length
-  if (this._requestBodyLength + data.length <= this._options.maxBodyLength) {
-    this._requestBodyLength += data.length;
-    this._requestBodyBuffers.push({ data: data, encoding: encoding });
-    this._currentRequest.write(data, encoding, callback);
-  }
-  // Error when we exceed the maximum body length
-  else {
-    this.emit("error", new MaxBodyLengthExceededError());
-    this.abort();
-  }
-};
-
-// Ends the current native request
-RedirectableRequest.prototype.end = function (data, encoding, callback) {
-  // Shift parameters if necessary
-  if (typeof data === "function") {
-    callback = data;
-    data = encoding = null;
-  }
-  else if (typeof encoding === "function") {
-    callback = encoding;
-    encoding = null;
-  }
-
-  // Write data if needed and end
-  if (!data) {
-    this._ended = this._ending = true;
-    this._currentRequest.end(null, null, callback);
-  }
-  else {
-    var self = this;
-    var currentRequest = this._currentRequest;
-    this.write(data, encoding, function () {
-      self._ended = true;
-      currentRequest.end(null, null, callback);
-    });
-    this._ending = true;
-  }
-};
-
-// Sets a header value on the current native request
-RedirectableRequest.prototype.setHeader = function (name, value) {
-  this._options.headers[name] = value;
-  this._currentRequest.setHeader(name, value);
-};
-
-// Clears a header value on the current native request
-RedirectableRequest.prototype.removeHeader = function (name) {
-  delete this._options.headers[name];
-  this._currentRequest.removeHeader(name);
-};
-
-// Global timeout for all underlying requests
-RedirectableRequest.prototype.setTimeout = function (msecs, callback) {
-  var self = this;
-
-  // Destroys the socket on timeout
-  function destroyOnTimeout(socket) {
-    socket.setTimeout(msecs);
-    socket.removeListener("timeout", socket.destroy);
-    socket.addListener("timeout", socket.destroy);
-  }
-
-  // Sets up a timer to trigger a timeout event
-  function startTimer(socket) {
-    if (self._timeout) {
-      clearTimeout(self._timeout);
-    }
-    self._timeout = setTimeout(function () {
-      self.emit("timeout");
-      clearTimer();
-    }, msecs);
-    destroyOnTimeout(socket);
-  }
-
-  // Stops a timeout from triggering
-  function clearTimer() {
-    // Clear the timeout
-    if (self._timeout) {
-      clearTimeout(self._timeout);
-      self._timeout = null;
-    }
-
-    // Clean up all attached listeners
-    self.removeListener("abort", clearTimer);
-    self.removeListener("error", clearTimer);
-    self.removeListener("response", clearTimer);
-    if (callback) {
-      self.removeListener("timeout", callback);
-    }
-    if (!self.socket) {
-      self._currentRequest.removeListener("socket", startTimer);
-    }
-  }
-
-  // Attach callback if passed
-  if (callback) {
-    this.on("timeout", callback);
-  }
-
-  // Start the timer if or when the socket is opened
-  if (this.socket) {
-    startTimer(this.socket);
-  }
-  else {
-    this._currentRequest.once("socket", startTimer);
-  }
-
-  // Clean up on events
-  this.on("socket", destroyOnTimeout);
-  this.on("abort", clearTimer);
-  this.on("error", clearTimer);
-  this.on("response", clearTimer);
-
-  return this;
-};
-
-// Proxy all other public ClientRequest methods
-[
-  "flushHeaders", "getHeader",
-  "setNoDelay", "setSocketKeepAlive",
-].forEach(function (method) {
-  RedirectableRequest.prototype[method] = function (a, b) {
-    return this._currentRequest[method](a, b);
-  };
-});
-
-// Proxy all public ClientRequest properties
-["aborted", "connection", "socket"].forEach(function (property) {
-  Object.defineProperty(RedirectableRequest.prototype, property, {
-    get: function () { return this._currentRequest[property]; },
-  });
-});
-
-RedirectableRequest.prototype._sanitizeOptions = function (options) {
-  // Ensure headers are always present
-  if (!options.headers) {
-    options.headers = {};
-  }
-
-  // Since http.request treats host as an alias of hostname,
-  // but the url module interprets host as hostname plus port,
-  // eliminate the host property to avoid confusion.
-  if (options.host) {
-    // Use hostname if set, because it has precedence
-    if (!options.hostname) {
-      options.hostname = options.host;
-    }
-    delete options.host;
-  }
-
-  // Complete the URL object when necessary
-  if (!options.pathname && options.path) {
-    var searchPos = options.path.indexOf("?");
-    if (searchPos < 0) {
-      options.pathname = options.path;
-    }
-    else {
-      options.pathname = options.path.substring(0, searchPos);
-      options.search = options.path.substring(searchPos);
-    }
-  }
-};
-
-
-// Executes the next native request (initial or redirect)
-RedirectableRequest.prototype._performRequest = function () {
-  // Load the native protocol
-  var protocol = this._options.protocol;
-  var nativeProtocol = this._options.nativeProtocols[protocol];
-  if (!nativeProtocol) {
-    this.emit("error", new TypeError("Unsupported protocol " + protocol));
-    return;
-  }
-
-  // If specified, use the agent corresponding to the protocol
-  // (HTTP and HTTPS use different types of agents)
-  if (this._options.agents) {
-    var scheme = protocol.substr(0, protocol.length - 1);
-    this._options.agent = this._options.agents[scheme];
-  }
-
-  // Create the native request
-  var request = this._currentRequest =
-        nativeProtocol.request(this._options, this._onNativeResponse);
-  this._currentUrl = url.format(this._options);
-
-  // Set up event handlers
-  request._redirectable = this;
-  for (var e = 0; e < events.length; e++) {
-    request.on(events[e], eventHandlers[events[e]]);
-  }
-
-  // End a redirected request
-  // (The first request must be ended explicitly with RedirectableRequest#end)
-  if (this._isRedirect) {
-    // Write the request entity and end.
-    var i = 0;
-    var self = this;
-    var buffers = this._requestBodyBuffers;
-    (function writeNext(error) {
-      // Only write if this request has not been redirected yet
-      /* istanbul ignore else */
-      if (request === self._currentRequest) {
-        // Report any write errors
-        /* istanbul ignore if */
-        if (error) {
-          self.emit("error", error);
-        }
-        // Write the next buffer if there are still left
-        else if (i < buffers.length) {
-          var buffer = buffers[i++];
-          /* istanbul ignore else */
-          if (!request.finished) {
-            request.write(buffer.data, buffer.encoding, writeNext);
-          }
-        }
-        // End the request if `end` has been called on us
-        else if (self._ended) {
-          request.end();
-        }
-      }
-    }());
-  }
-};
-
-// Processes a response from the current native request
-RedirectableRequest.prototype._processResponse = function (response) {
-  // Store the redirected response
-  var statusCode = response.statusCode;
-  if (this._options.trackRedirects) {
-    this._redirects.push({
-      url: this._currentUrl,
-      headers: response.headers,
-      statusCode: statusCode,
-    });
-  }
-
-  // RFC7231§6.4: The 3xx (Redirection) class of status code indicates
-  // that further action needs to be taken by the user agent in order to
-  // fulfill the request. If a Location header field is provided,
-  // the user agent MAY automatically redirect its request to the URI
-  // referenced by the Location field value,
-  // even if the specific status code is not understood.
-
-  // If the response is not a redirect; return it as-is
-  var location = response.headers.location;
-  if (!location || this._options.followRedirects === false ||
-      statusCode < 300 || statusCode >= 400) {
-    response.responseUrl = this._currentUrl;
-    response.redirects = this._redirects;
-    this.emit("response", response);
-
-    // Clean up
-    this._requestBodyBuffers = [];
-    return;
-  }
-
-  // The response is a redirect, so abort the current request
-  abortRequest(this._currentRequest);
-  // Discard the remainder of the response to avoid waiting for data
-  response.destroy();
-
-  // RFC7231§6.4: A client SHOULD detect and intervene
-  // in cyclical redirections (i.e., "infinite" redirection loops).
-  if (++this._redirectCount > this._options.maxRedirects) {
-    this.emit("error", new TooManyRedirectsError());
-    return;
-  }
-
-  // RFC7231§6.4: Automatic redirection needs to done with
-  // care for methods not known to be safe, […]
-  // RFC7231§6.4.2–3: For historical reasons, a user agent MAY change
-  // the request method from POST to GET for the subsequent request.
-  if ((statusCode === 301 || statusCode === 302) && this._options.method === "POST" ||
-      // RFC7231§6.4.4: The 303 (See Other) status code indicates that
-      // the server is redirecting the user agent to a different resource […]
-      // A user agent can perform a retrieval request targeting that URI
-      // (a GET or HEAD request if using HTTP) […]
-      (statusCode === 303) && !/^(?:GET|HEAD)$/.test(this._options.method)) {
-    this._options.method = "GET";
-    // Drop a possible entity and headers related to it
-    this._requestBodyBuffers = [];
-    removeMatchingHeaders(/^content-/i, this._options.headers);
-  }
-
-  // Drop the Host header, as the redirect might lead to a different host
-  var currentHostHeader = removeMatchingHeaders(/^host$/i, this._options.headers);
-
-  // If the redirect is relative, carry over the host of the last request
-  var currentUrlParts = url.parse(this._currentUrl);
-  var currentHost = currentHostHeader || currentUrlParts.host;
-  var currentUrl = /^\w+:/.test(location) ? this._currentUrl :
-    url.format(Object.assign(currentUrlParts, { host: currentHost }));
-
-  // Determine the URL of the redirection
-  var redirectUrl;
-  try {
-    redirectUrl = url.resolve(currentUrl, location);
-  }
-  catch (cause) {
-    this.emit("error", new RedirectionError(cause));
-    return;
-  }
-
-  // Create the redirected request
-  debug("redirecting to", redirectUrl);
-  this._isRedirect = true;
-  var redirectUrlParts = url.parse(redirectUrl);
-  Object.assign(this._options, redirectUrlParts);
-
-  // Drop confidential headers when redirecting to a less secure protocol
-  // or to a different domain that is not a superdomain
-  if (redirectUrlParts.protocol !== currentUrlParts.protocol &&
-     redirectUrlParts.protocol !== "https:" ||
-     redirectUrlParts.host !== currentHost &&
-     !isSubdomain(redirectUrlParts.host, currentHost)) {
-    removeMatchingHeaders(/^(?:authorization|cookie)$/i, this._options.headers);
-  }
-
-  // Evaluate the beforeRedirect callback
-  if (typeof this._options.beforeRedirect === "function") {
-    var responseDetails = { headers: response.headers };
-    try {
-      this._options.beforeRedirect.call(null, this._options, responseDetails);
-    }
-    catch (err) {
-      this.emit("error", err);
-      return;
-    }
-    this._sanitizeOptions(this._options);
-  }
-
-  // Perform the redirected request
-  try {
-    this._performRequest();
-  }
-  catch (cause) {
-    this.emit("error", new RedirectionError(cause));
-  }
-};
-
-// Wraps the key/value object of protocols with redirect functionality
-function wrap(protocols) {
-  // Default settings
-  var exports = {
-    maxRedirects: 21,
-    maxBodyLength: 10 * 1024 * 1024,
-  };
-
-  // Wrap each protocol
-  var nativeProtocols = {};
-  Object.keys(protocols).forEach(function (scheme) {
-    var protocol = scheme + ":";
-    var nativeProtocol = nativeProtocols[protocol] = protocols[scheme];
-    var wrappedProtocol = exports[scheme] = Object.create(nativeProtocol);
-
-    // Executes a request, following redirects
-    function request(input, options, callback) {
-      // Parse parameters
-      if (typeof input === "string") {
-        var urlStr = input;
-        try {
-          input = urlToOptions(new URL(urlStr));
-        }
-        catch (err) {
-          /* istanbul ignore next */
-          input = url.parse(urlStr);
-        }
-      }
-      else if (URL && (input instanceof URL)) {
-        input = urlToOptions(input);
-      }
-      else {
-        callback = options;
-        options = input;
-        input = { protocol: protocol };
-      }
-      if (typeof options === "function") {
-        callback = options;
-        options = null;
-      }
-
-      // Set defaults
-      options = Object.assign({
-        maxRedirects: exports.maxRedirects,
-        maxBodyLength: exports.maxBodyLength,
-      }, input, options);
-      options.nativeProtocols = nativeProtocols;
-
-      assert.equal(options.protocol, protocol, "protocol mismatch");
-      debug("options", options);
-      return new RedirectableRequest(options, callback);
-    }
-
-    // Executes a GET request, following redirects
-    function get(input, options, callback) {
-      var wrappedRequest = wrappedProtocol.request(input, options, callback);
-      wrappedRequest.end();
-      return wrappedRequest;
-    }
-
-    // Expose the properties on the wrapped protocol
-    Object.defineProperties(wrappedProtocol, {
-      request: { value: request, configurable: true, enumerable: true, writable: true },
-      get: { value: get, configurable: true, enumerable: true, writable: true },
-    });
-  });
-  return exports;
-}
-
-/* istanbul ignore next */
-function noop() { /* empty */ }
-
-// from https://github.com/nodejs/node/blob/master/lib/internal/url.js
-function urlToOptions(urlObject) {
-  var options = {
-    protocol: urlObject.protocol,
-    hostname: urlObject.hostname.startsWith("[") ?
-      /* istanbul ignore next */
-      urlObject.hostname.slice(1, -1) :
-      urlObject.hostname,
-    hash: urlObject.hash,
-    search: urlObject.search,
-    pathname: urlObject.pathname,
-    path: urlObject.pathname + urlObject.search,
-    href: urlObject.href,
-  };
-  if (urlObject.port !== "") {
-    options.port = Number(urlObject.port);
-  }
-  return options;
-}
-
-function removeMatchingHeaders(regex, headers) {
-  var lastValue;
-  for (var header in headers) {
-    if (regex.test(header)) {
-      lastValue = headers[header];
-      delete headers[header];
-    }
-  }
-  return (lastValue === null || typeof lastValue === "undefined") ?
-    undefined : String(lastValue).trim();
-}
-
-function createErrorType(code, defaultMessage) {
-  function CustomError(cause) {
-    Error.captureStackTrace(this, this.constructor);
-    if (!cause) {
-      this.message = defaultMessage;
-    }
-    else {
-      this.message = defaultMessage + ": " + cause.message;
-      this.cause = cause;
-    }
-  }
-  CustomError.prototype = new Error();
-  CustomError.prototype.constructor = CustomError;
-  CustomError.prototype.name = "Error [" + code + "]";
-  CustomError.prototype.code = code;
-  return CustomError;
-}
-
-function abortRequest(request) {
-  for (var e = 0; e < events.length; e++) {
-    request.removeListener(events[e], eventHandlers[events[e]]);
-  }
-  request.on("error", noop);
-  request.abort();
-}
-
-function isSubdomain(subdomain, domain) {
-  const dot = subdomain.length - domain.length - 1;
-  return dot > 0 && subdomain[dot] === "." && subdomain.endsWith(domain);
-}
-
-// Exports
-module.exports = wrap({ http: http, https: https });
-module.exports.wrap = wrap;
-
-});
-___scope___.file("debug.js", function(exports, require, module, __filename, __dirname){
-
-var debug;
-
-module.exports = function () {
-  if (!debug) {
-    try {
-      /* eslint global-require: off */
-      debug = require("debug")("follow-redirects");
-    }
-    catch (error) { /* */ }
-    if (typeof debug !== "function") {
-      debug = function () { /* */ };
-    }
-  }
-  debug.apply(null, arguments);
-};
->>>>>>> Add Logs page to the router:dist/248bd47e-vendor.js
-
-});
-return ___scope___.entry = "index.js";
-});
-FuseBox.pkg("stream", {}, function(___scope___){
-___scope___.file("index.js", function(exports, require, module, __filename, __dirname){
-
-if (FuseBox.isServer) {
-    module.exports = global.require("stream");
 } else {
     module.exports = {};
 }
@@ -37899,23 +35345,6 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 return ___scope___.entry = "index.js";
 });
 FuseBox.pkg("debug", {}, function(___scope___){
-<<<<<<< HEAD:dist/4d666053-vendor.js
-___scope___.file("src/index.js", function(exports, require, module, __filename, __dirname){
-/* fuse:injection: */ var process = require("process");
-/**
- * Detect Electron renderer process, which is node, but we should
- * treat as a browser.
- */
-
-if (typeof process !== 'undefined' && process.type === 'renderer') {
-  module.exports = require('./browser.js');
-} else {
-  module.exports = require('./node.js');
-}
-
-});
-=======
->>>>>>> Add Logs page to the router:dist/248bd47e-vendor.js
 ___scope___.file("src/browser.js", function(exports, require, module, __filename, __dirname){
 /* fuse:injection: */ var process = require("process");
 /**
@@ -37960,20 +35389,20 @@ function useColors() {
   // NB: In an Electron preload script, document will be defined but not fully
   // initialized. Since we know we're in Chrome, we'll just detect this case
   // explicitly
-  if (typeof window !== 'undefined' && window.process && window.process.type === 'renderer') {
+  if (window && window.process && window.process.type === 'renderer') {
     return true;
   }
 
   // is webkit? http://stackoverflow.com/a/16459606/376773
   // document is undefined in react-native: https://github.com/facebook/react-native/pull/1632
-  return (typeof document !== 'undefined' && document.documentElement && document.documentElement.style && document.documentElement.style.WebkitAppearance) ||
+  return (document && document.documentElement && document.documentElement.style && document.documentElement.style.WebkitAppearance) ||
     // is firebug? http://stackoverflow.com/a/398120/376773
-    (typeof window !== 'undefined' && window.console && (window.console.firebug || (window.console.exception && window.console.table))) ||
+    (window && window.console && (window.console.firebug || (window.console.exception && window.console.table))) ||
     // is firefox >= v31?
     // https://developer.mozilla.org/en-US/docs/Tools/Web_Console#Styling_messages
-    (typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/) && parseInt(RegExp.$1, 10) >= 31) ||
+    (navigator && navigator.userAgent && navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/) && parseInt(RegExp.$1, 10) >= 31) ||
     // double check webkit in userAgent just in case we are in a worker
-    (typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.toLowerCase().match(/applewebkit\/(\d+)/));
+    (navigator && navigator.userAgent && navigator.userAgent.toLowerCase().match(/applewebkit\/(\d+)/));
 }
 
 /**
@@ -38311,259 +35740,7 @@ function coerce(val) {
 }
 
 });
-___scope___.file("src/node.js", function(exports, require, module, __filename, __dirname){
-/* fuse:injection: */ var process = require("process");
-/**
- * Module dependencies.
- */
-
-var tty = require('tty');
-var util = require('util');
-
-/**
- * This is the Node.js implementation of `debug()`.
- *
- * Expose `debug()` as the module.
- */
-
-exports = module.exports = require('./debug');
-exports.init = init;
-exports.log = log;
-exports.formatArgs = formatArgs;
-exports.save = save;
-exports.load = load;
-exports.useColors = useColors;
-
-/**
- * Colors.
- */
-
-exports.colors = [6, 2, 3, 4, 5, 1];
-
-/**
- * Build up the default `inspectOpts` object from the environment variables.
- *
- *   $ DEBUG_COLORS=no DEBUG_DEPTH=10 DEBUG_SHOW_HIDDEN=enabled node script.js
- */
-
-exports.inspectOpts = Object.keys(process.env).filter(function (key) {
-  return /^debug_/i.test(key);
-}).reduce(function (obj, key) {
-  // camel-case
-  var prop = key
-    .substring(6)
-    .toLowerCase()
-    .replace(/_([a-z])/g, function (_, k) { return k.toUpperCase() });
-
-  // coerce string value into JS value
-  var val = process.env[key];
-  if (/^(yes|on|true|enabled)$/i.test(val)) val = true;
-  else if (/^(no|off|false|disabled)$/i.test(val)) val = false;
-  else if (val === 'null') val = null;
-  else val = Number(val);
-
-  obj[prop] = val;
-  return obj;
-}, {});
-
-/**
- * The file descriptor to write the `debug()` calls to.
- * Set the `DEBUG_FD` env variable to override with another value. i.e.:
- *
- *   $ DEBUG_FD=3 node script.js 3>debug.log
- */
-
-var fd = parseInt(process.env.DEBUG_FD, 10) || 2;
-
-if (1 !== fd && 2 !== fd) {
-  util.deprecate(function(){}, 'except for stderr(2) and stdout(1), any other usage of DEBUG_FD is deprecated. Override debug.log if you want to use a different log function (https://git.io/debug_fd)')()
-}
-
-var stream = 1 === fd ? process.stdout :
-             2 === fd ? process.stderr :
-             createWritableStdioStream(fd);
-
-/**
- * Is stdout a TTY? Colored output is enabled when `true`.
- */
-
-function useColors() {
-  return 'colors' in exports.inspectOpts
-    ? Boolean(exports.inspectOpts.colors)
-    : tty.isatty(fd);
-}
-
-/**
- * Map %o to `util.inspect()`, all on a single line.
- */
-
-exports.formatters.o = function(v) {
-  this.inspectOpts.colors = this.useColors;
-  return util.inspect(v, this.inspectOpts)
-    .split('\n').map(function(str) {
-      return str.trim()
-    }).join(' ');
-};
-
-/**
- * Map %o to `util.inspect()`, allowing multiple lines if needed.
- */
-
-exports.formatters.O = function(v) {
-  this.inspectOpts.colors = this.useColors;
-  return util.inspect(v, this.inspectOpts);
-};
-
-/**
- * Adds ANSI color escape codes if enabled.
- *
- * @api public
- */
-
-function formatArgs(args) {
-  var name = this.namespace;
-  var useColors = this.useColors;
-
-  if (useColors) {
-    var c = this.color;
-    var prefix = '  \u001b[3' + c + ';1m' + name + ' ' + '\u001b[0m';
-
-    args[0] = prefix + args[0].split('\n').join('\n' + prefix);
-    args.push('\u001b[3' + c + 'm+' + exports.humanize(this.diff) + '\u001b[0m');
-  } else {
-    args[0] = new Date().toUTCString()
-      + ' ' + name + ' ' + args[0];
-  }
-}
-
-/**
- * Invokes `util.format()` with the specified arguments and writes to `stream`.
- */
-
-function log() {
-  return stream.write(util.format.apply(util, arguments) + '\n');
-}
-
-/**
- * Save `namespaces`.
- *
- * @param {String} namespaces
- * @api private
- */
-
-function save(namespaces) {
-  if (null == namespaces) {
-    // If you set a process.env field to null or undefined, it gets cast to the
-    // string 'null' or 'undefined'. Just delete instead.
-    delete process.env.DEBUG;
-  } else {
-    process.env.DEBUG = namespaces;
-  }
-}
-
-/**
- * Load `namespaces`.
- *
- * @return {String} returns the previously persisted debug modes
- * @api private
- */
-
-function load() {
-  return process.env.DEBUG;
-}
-
-/**
- * Copied from `node/src/node.js`.
- *
- * XXX: It's lame that node doesn't expose this API out-of-the-box. It also
- * relies on the undocumented `tty_wrap.guessHandleType()` which is also lame.
- */
-
-function createWritableStdioStream (fd) {
-  var stream;
-  var tty_wrap = process.binding('tty_wrap');
-
-  // Note stream._type is used for test-module-load-list.js
-
-  switch (tty_wrap.guessHandleType(fd)) {
-    case 'TTY':
-      stream = new tty.WriteStream(fd);
-      stream._type = 'tty';
-
-      // Hack to have stream not keep the event loop alive.
-      // See https://github.com/joyent/node/issues/1726
-      if (stream._handle && stream._handle.unref) {
-        stream._handle.unref();
-      }
-      break;
-
-    case 'FILE':
-      var fs = require('fs');
-      stream = new fs.SyncWriteStream(fd, { autoClose: false });
-      stream._type = 'fs';
-      break;
-
-    case 'PIPE':
-    case 'TCP':
-      var net = require('net');
-      stream = new net.Socket({
-        fd: fd,
-        readable: false,
-        writable: true
-      });
-
-      // FIXME Should probably have an option in net.Socket to create a
-      // stream from an existing fd which is writable only. But for now
-      // we'll just add this hack and set the `readable` member to false.
-      // Test: ./node test/fixtures/echo.js < /etc/passwd
-      stream.readable = false;
-      stream.read = null;
-      stream._type = 'pipe';
-
-      // FIXME Hack to have stream not keep the event loop alive.
-      // See https://github.com/joyent/node/issues/1726
-      if (stream._handle && stream._handle.unref) {
-        stream._handle.unref();
-      }
-      break;
-
-    default:
-      // Probably an error on in uv_guess_handle()
-      throw new Error('Implement me. Unknown stream file type!');
-  }
-
-  // For supporting legacy API we put the FD here.
-  stream.fd = fd;
-
-  stream._isStdio = true;
-
-  return stream;
-}
-
-/**
- * Init logic for `debug` instances.
- *
- * Create a new `inspectOpts` object in case `useColors` is set
- * differently for a particular `debug` instance.
- */
-
-function init (debug) {
-  debug.inspectOpts = {};
-
-  var keys = Object.keys(exports.inspectOpts);
-  for (var i = 0; i < keys.length; i++) {
-    debug.inspectOpts[keys[i]] = exports.inspectOpts[keys[i]];
-  }
-}
-
-/**
- * Enable namespaces listed in `process.env.DEBUG` initially.
- */
-
-exports.enable(load());
-
-});
-return ___scope___.entry = "src/index.js";
+return ___scope___.entry = "src/browser.js";
 });
 FuseBox.pkg("ms", {}, function(___scope___){
 ___scope___.file("index.js", function(exports, require, module, __filename, __dirname){
@@ -38724,45 +35901,6 @@ function plural(ms, n, name) {
 });
 return ___scope___.entry = "index.js";
 });
-FuseBox.pkg("tty", {}, function(___scope___){
-___scope___.file("index.js", function(exports, require, module, __filename, __dirname){
-
-if (FuseBox.isServer) {
-    module.exports = global.require("tty");
-} else {
-    module.exports = {
-        isatty: function() {
-            return false;
-        }
-    };
-}
-});
-return ___scope___.entry = "index.js";
-});
-FuseBox.pkg("fs", {}, function(___scope___){
-___scope___.file("index.js", function(exports, require, module, __filename, __dirname){
-
-if (FuseBox.isServer) {
-    module.exports = global.require("fs");
-} else {
-    module.exports = {};
-}
-
-});
-return ___scope___.entry = "index.js";
-});
-FuseBox.pkg("net", {}, function(___scope___){
-___scope___.file("index.js", function(exports, require, module, __filename, __dirname){
-
-if (FuseBox.isServer) {
-    module.exports = global.require("net");
-} else {
-    module.exports = {};
-}
-
-});
-return ___scope___.entry = "index.js";
-});
 FuseBox.pkg("zlib", {}, function(___scope___){
 ___scope___.file("index.js", function(exports, require, module, __filename, __dirname){
 
@@ -38781,7 +35919,7 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
 /**
  * @license
  * Lodash <https://lodash.com/>
- * Copyright OpenJS Foundation and other contributors <https://openjsf.org/>
+ * Copyright JS Foundation and other contributors <https://js.foundation/>
  * Released under MIT license <https://lodash.com/license>
  * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
  * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -38792,15 +35930,14 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
   var undefined;
 
   /** Used as the semantic version number. */
-  var VERSION = '4.17.21';
+  var VERSION = '4.17.4';
 
   /** Used as the size to enable large array optimizations. */
   var LARGE_ARRAY_SIZE = 200;
 
   /** Error message constants. */
   var CORE_ERROR_TEXT = 'Unsupported core-js use. Try https://npms.io/search?q=ponyfill.',
-      FUNC_ERROR_TEXT = 'Expected a function',
-      INVALID_TEMPL_VAR_ERROR_TEXT = 'Invalid `variable` option passed into `_.template`';
+      FUNC_ERROR_TEXT = 'Expected a function';
 
   /** Used to stand-in for `undefined` hash values. */
   var HASH_UNDEFINED = '__lodash_hash_undefined__';
@@ -38924,6 +36061,7 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
   /** Used to match property names within property paths. */
   var reIsDeepProp = /\.|\[(?:[^[\]]*|(["'])(?:(?!\1)[^\\]|\\.)*?\1)\]/,
       reIsPlainProp = /^\w*$/,
+      reLeadingDot = /^\./,
       rePropName = /[^.[\]]+|\[(?:(-?\d+(?:\.\d+)?)|(["'])((?:(?!\2)[^\\]|\\.)*?)\2)\]|(?=(?:\.|\[\])(?:\.|\[\]|$))/g;
 
   /**
@@ -38933,11 +36071,10 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
   var reRegExpChar = /[\\^$.*+?()[\]{}|]/g,
       reHasRegExpChar = RegExp(reRegExpChar.source);
 
-  /** Used to match leading whitespace. */
-  var reTrimStart = /^\s+/;
-
-  /** Used to match a single whitespace character. */
-  var reWhitespace = /\s/;
+  /** Used to match leading and trailing whitespace. */
+  var reTrim = /^\s+|\s+$/g,
+      reTrimStart = /^\s+/,
+      reTrimEnd = /\s+$/;
 
   /** Used to match wrap detail comments. */
   var reWrapComment = /\{(?:\n\/\* \[wrapped with .+\] \*\/)?\n?/,
@@ -38946,18 +36083,6 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
 
   /** Used to match words composed of alphanumeric characters. */
   var reAsciiWord = /[^\x00-\x2f\x3a-\x40\x5b-\x60\x7b-\x7f]+/g;
-
-  /**
-   * Used to validate the `validate` option in `_.template` variable.
-   *
-   * Forbids characters which could potentially change the meaning of the function argument definition:
-   * - "()," (modification of function parameters)
-   * - "=" (default value)
-   * - "[]{}" (destructuring of function parameters)
-   * - "/" (beginning of a comment)
-   * - whitespace
-   */
-  var reForbiddenIdentifierChars = /[()=,{}\[\]\/\s]/;
 
   /** Used to match backslashes in property paths. */
   var reEscapeChar = /\\(\\)?/g;
@@ -39036,8 +36161,8 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
       reOptMod = rsModifier + '?',
       rsOptVar = '[' + rsVarRange + ']?',
       rsOptJoin = '(?:' + rsZWJ + '(?:' + [rsNonAstral, rsRegional, rsSurrPair].join('|') + ')' + rsOptVar + reOptMod + ')*',
-      rsOrdLower = '\\d*(?:1st|2nd|3rd|(?![123])\\dth)(?=\\b|[A-Z_])',
-      rsOrdUpper = '\\d*(?:1ST|2ND|3RD|(?![123])\\dTH)(?=\\b|[a-z_])',
+      rsOrdLower = '\\d*(?:(?:1st|2nd|3rd|(?![123])\\dth)\\b)',
+      rsOrdUpper = '\\d*(?:(?:1ST|2ND|3RD|(?![123])\\dTH)\\b)',
       rsSeq = rsOptVar + reOptMod + rsOptJoin,
       rsEmoji = '(?:' + [rsDingbat, rsRegional, rsSurrPair].join('|') + ')' + rsSeq,
       rsSymbol = '(?:' + [rsNonAstral + rsCombo + '?', rsCombo, rsRegional, rsSurrPair, rsAstral].join('|') + ')';
@@ -39070,7 +36195,7 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
   var reHasUnicode = RegExp('[' + rsZWJ + rsAstralRange  + rsComboRange + rsVarRange + ']');
 
   /** Used to detect strings that need a more robust regexp to match words. */
-  var reHasUnicodeWord = /[a-z][A-Z]|[A-Z]{2}[a-z]|[0-9][a-zA-Z]|[a-zA-Z][0-9]|[^a-zA-Z0-9 ]/;
+  var reHasUnicodeWord = /[a-z][A-Z]|[A-Z]{2,}[a-z]|[0-9][a-zA-Z]|[a-zA-Z][0-9]|[^a-zA-Z0-9 ]/;
 
   /** Used to assign default `context` object properties. */
   var contextProps = [
@@ -39230,14 +36355,6 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
   /** Used to access faster Node.js helpers. */
   var nodeUtil = (function() {
     try {
-      // Use `util.types` for Node.js 10+.
-      var types = freeModule && freeModule.require && freeModule.require('util').types;
-
-      if (types) {
-        return types;
-      }
-
-      // Legacy `process.binding('util')` for Node.js < 10.
       return freeProcess && freeProcess.binding && freeProcess.binding('util');
     } catch (e) {}
   }());
@@ -39251,6 +36368,34 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
       nodeIsTypedArray = nodeUtil && nodeUtil.isTypedArray;
 
   /*--------------------------------------------------------------------------*/
+
+  /**
+   * Adds the key-value `pair` to `map`.
+   *
+   * @private
+   * @param {Object} map The map to modify.
+   * @param {Array} pair The key-value pair to add.
+   * @returns {Object} Returns `map`.
+   */
+  function addMapEntry(map, pair) {
+    // Don't return `map.set` because it's not chainable in IE 11.
+    map.set(pair[0], pair[1]);
+    return map;
+  }
+
+  /**
+   * Adds `value` to `set`.
+   *
+   * @private
+   * @param {Object} set The set to modify.
+   * @param {*} value The value to add.
+   * @returns {Object} Returns `set`.
+   */
+  function addSetEntry(set, value) {
+    // Don't return `set.add` because it's not chainable in IE 11.
+    set.add(value);
+    return set;
+  }
 
   /**
    * A faster alternative to `Function#apply`, this function invokes `func`
@@ -39788,19 +36933,6 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
   }
 
   /**
-   * The base implementation of `_.trim`.
-   *
-   * @private
-   * @param {string} string The string to trim.
-   * @returns {string} Returns the trimmed string.
-   */
-  function baseTrim(string) {
-    return string
-      ? string.slice(0, trimmedEndIndex(string) + 1).replace(reTrimStart, '')
-      : string;
-  }
-
-  /**
    * The base implementation of `_.unary` without support for storing metadata.
    *
    * @private
@@ -40131,21 +37263,6 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
     return hasUnicode(string)
       ? unicodeToArray(string)
       : asciiToArray(string);
-  }
-
-  /**
-   * Used by `_.trim` and `_.trimEnd` to get the index of the last non-whitespace
-   * character of `string`.
-   *
-   * @private
-   * @param {string} string The string to inspect.
-   * @returns {number} Returns the index of the last non-whitespace character.
-   */
-  function trimmedEndIndex(string) {
-    var index = string.length;
-
-    while (index-- && reWhitespace.test(string.charAt(index))) {}
-    return index;
   }
 
   /**
@@ -41478,7 +38595,7 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
           if (!cloneableTags[tag]) {
             return object ? value : {};
           }
-          result = initCloneByTag(value, tag, isDeep);
+          result = initCloneByTag(value, tag, baseClone, isDeep);
         }
       }
       // Check for circular references and return its corresponding clone.
@@ -41488,16 +38605,6 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
         return stacked;
       }
       stack.set(value, result);
-
-      if (isSet(value)) {
-        value.forEach(function(subValue) {
-          result.add(baseClone(subValue, bitmask, customizer, subValue, value, stack));
-        });
-      } else if (isMap(value)) {
-        value.forEach(function(subValue, key) {
-          result.set(key, baseClone(subValue, bitmask, customizer, key, value, stack));
-        });
-      }
 
       var keysFunc = isFull
         ? (isFlat ? getAllKeysIn : getAllKeys)
@@ -42420,13 +39527,13 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
         return;
       }
       baseFor(source, function(srcValue, key) {
-        stack || (stack = new Stack);
         if (isObject(srcValue)) {
+          stack || (stack = new Stack);
           baseMergeDeep(object, source, key, srcIndex, baseMerge, customizer, stack);
         }
         else {
           var newValue = customizer
-            ? customizer(safeGet(object, key), srcValue, (key + ''), object, source, stack)
+            ? customizer(object[key], srcValue, (key + ''), object, source, stack)
             : undefined;
 
           if (newValue === undefined) {
@@ -42453,8 +39560,8 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
      *  counterparts.
      */
     function baseMergeDeep(object, source, key, srcIndex, mergeFunc, customizer, stack) {
-      var objValue = safeGet(object, key),
-          srcValue = safeGet(source, key),
+      var objValue = object[key],
+          srcValue = source[key],
           stacked = stack.get(srcValue);
 
       if (stacked) {
@@ -42497,7 +39604,7 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
           if (isArguments(objValue)) {
             newValue = toPlainObject(objValue);
           }
-          else if (!isObject(objValue) || isFunction(objValue)) {
+          else if (!isObject(objValue) || (srcIndex && isFunction(objValue))) {
             newValue = initCloneObject(srcValue);
           }
         }
@@ -42541,21 +39648,8 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
      * @returns {Array} Returns the new sorted array.
      */
     function baseOrderBy(collection, iteratees, orders) {
-      if (iteratees.length) {
-        iteratees = arrayMap(iteratees, function(iteratee) {
-          if (isArray(iteratee)) {
-            return function(value) {
-              return baseGet(value, iteratee.length === 1 ? iteratee[0] : iteratee);
-            }
-          }
-          return iteratee;
-        });
-      } else {
-        iteratees = [identity];
-      }
-
       var index = -1;
-      iteratees = arrayMap(iteratees, baseUnary(getIteratee()));
+      iteratees = arrayMap(iteratees.length ? iteratees : [identity], baseUnary(getIteratee()));
 
       var result = baseMap(collection, function(value, key, collection) {
         var criteria = arrayMap(iteratees, function(iteratee) {
@@ -42812,10 +39906,6 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
         var key = toKey(path[index]),
             newValue = value;
 
-        if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
-          return object;
-        }
-
         if (index != lastIndex) {
           var objValue = nested[key];
           newValue = customizer ? customizer(objValue, key, nested) : undefined;
@@ -42968,14 +40058,11 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
      *  into `array`.
      */
     function baseSortedIndexBy(array, value, iteratee, retHighest) {
-      var low = 0,
-          high = array == null ? 0 : array.length;
-      if (high === 0) {
-        return 0;
-      }
-
       value = iteratee(value);
-      var valIsNaN = value !== value,
+
+      var low = 0,
+          high = array == null ? 0 : array.length,
+          valIsNaN = value !== value,
           valIsNull = value === null,
           valIsSymbol = isSymbol(value),
           valIsUndefined = value === undefined;
@@ -43383,6 +40470,20 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
     }
 
     /**
+     * Creates a clone of `map`.
+     *
+     * @private
+     * @param {Object} map The map to clone.
+     * @param {Function} cloneFunc The function to clone values.
+     * @param {boolean} [isDeep] Specify a deep clone.
+     * @returns {Object} Returns the cloned map.
+     */
+    function cloneMap(map, isDeep, cloneFunc) {
+      var array = isDeep ? cloneFunc(mapToArray(map), CLONE_DEEP_FLAG) : mapToArray(map);
+      return arrayReduce(array, addMapEntry, new map.constructor);
+    }
+
+    /**
      * Creates a clone of `regexp`.
      *
      * @private
@@ -43393,6 +40494,20 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
       var result = new regexp.constructor(regexp.source, reFlags.exec(regexp));
       result.lastIndex = regexp.lastIndex;
       return result;
+    }
+
+    /**
+     * Creates a clone of `set`.
+     *
+     * @private
+     * @param {Object} set The set to clone.
+     * @param {Function} cloneFunc The function to clone values.
+     * @param {boolean} [isDeep] Specify a deep clone.
+     * @returns {Object} Returns the cloned set.
+     */
+    function cloneSet(set, isDeep, cloneFunc) {
+      var array = isDeep ? cloneFunc(setToArray(set), CLONE_DEEP_FLAG) : setToArray(set);
+      return arrayReduce(array, addSetEntry, new set.constructor);
     }
 
     /**
@@ -44258,7 +41373,7 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
       return function(number, precision) {
         number = toNumber(number);
         precision = precision == null ? 0 : nativeMin(toInteger(precision), 292);
-        if (precision && nativeIsFinite(number)) {
+        if (precision) {
           // Shift with exponential notation to avoid floating-point issues.
           // See [MDN](https://mdn.io/round#Examples) for more details.
           var pair = (toString(number) + 'e').split('e'),
@@ -44460,11 +41575,10 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
       if (arrLength != othLength && !(isPartial && othLength > arrLength)) {
         return false;
       }
-      // Check that cyclic values are equal.
-      var arrStacked = stack.get(array);
-      var othStacked = stack.get(other);
-      if (arrStacked && othStacked) {
-        return arrStacked == other && othStacked == array;
+      // Assume cyclic values are equal.
+      var stacked = stack.get(array);
+      if (stacked && stack.get(other)) {
+        return stacked == other;
       }
       var index = -1,
           result = true,
@@ -44626,11 +41740,10 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
           return false;
         }
       }
-      // Check that cyclic values are equal.
-      var objStacked = stack.get(object);
-      var othStacked = stack.get(other);
-      if (objStacked && othStacked) {
-        return objStacked == other && othStacked == object;
+      // Assume cyclic values are equal.
+      var stacked = stack.get(object);
+      if (stacked && stack.get(other)) {
+        return stacked == other;
       }
       var result = true;
       stack.set(object, other);
@@ -44991,7 +42104,7 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
      */
     function initCloneArray(array) {
       var length = array.length,
-          result = new array.constructor(length);
+          result = array.constructor(length);
 
       // Add properties assigned by `RegExp#exec`.
       if (length && typeof array[0] == 'string' && hasOwnProperty.call(array, 'index')) {
@@ -45018,15 +42131,16 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
      * Initializes an object clone based on its `toStringTag`.
      *
      * **Note:** This function only supports cloning values with tags of
-     * `Boolean`, `Date`, `Error`, `Map`, `Number`, `RegExp`, `Set`, or `String`.
+     * `Boolean`, `Date`, `Error`, `Number`, `RegExp`, or `String`.
      *
      * @private
      * @param {Object} object The object to clone.
      * @param {string} tag The `toStringTag` of the object to clone.
+     * @param {Function} cloneFunc The function to clone values.
      * @param {boolean} [isDeep] Specify a deep clone.
      * @returns {Object} Returns the initialized clone.
      */
-    function initCloneByTag(object, tag, isDeep) {
+    function initCloneByTag(object, tag, cloneFunc, isDeep) {
       var Ctor = object.constructor;
       switch (tag) {
         case arrayBufferTag:
@@ -45045,7 +42159,7 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
           return cloneTypedArray(object, isDeep);
 
         case mapTag:
-          return new Ctor;
+          return cloneMap(object, isDeep, cloneFunc);
 
         case numberTag:
         case stringTag:
@@ -45055,7 +42169,7 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
           return cloneRegExp(object);
 
         case setTag:
-          return new Ctor;
+          return cloneSet(object, isDeep, cloneFunc);
 
         case symbolTag:
           return cloneSymbol(object);
@@ -45102,13 +42216,10 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
      * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
      */
     function isIndex(value, length) {
-      var type = typeof value;
       length = length == null ? MAX_SAFE_INTEGER : length;
-
       return !!length &&
-        (type == 'number' ||
-          (type != 'symbol' && reIsUint.test(value))) &&
-            (value > -1 && value % 1 == 0 && value < length);
+        (typeof value == 'number' || reIsUint.test(value)) &&
+        (value > -1 && value % 1 == 0 && value < length);
     }
 
     /**
@@ -45443,26 +42554,6 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
     }
 
     /**
-     * Gets the value at `key`, unless `key` is "__proto__" or "constructor".
-     *
-     * @private
-     * @param {Object} object The object to query.
-     * @param {string} key The key of the property to get.
-     * @returns {*} Returns the property value.
-     */
-    function safeGet(object, key) {
-      if (key === 'constructor' && typeof object[key] === 'function') {
-        return;
-      }
-
-      if (key == '__proto__') {
-        return;
-      }
-
-      return object[key];
-    }
-
-    /**
      * Sets metadata for `func`.
      *
      * **Note:** If this function becomes hot, i.e. is invoked a lot in a short
@@ -45578,11 +42669,11 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
      */
     var stringToPath = memoizeCapped(function(string) {
       var result = [];
-      if (string.charCodeAt(0) === 46 /* . */) {
+      if (reLeadingDot.test(string)) {
         result.push('');
       }
-      string.replace(rePropName, function(match, number, quote, subString) {
-        result.push(quote ? subString.replace(reEscapeChar, '$1') : (number || match));
+      string.replace(rePropName, function(match, number, quote, string) {
+        result.push(quote ? string.replace(reEscapeChar, '$1') : (number || match));
       });
       return result;
     });
@@ -48011,10 +45102,6 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
      * // The `_.property` iteratee shorthand.
      * _.filter(users, 'active');
      * // => objects for ['barney']
-     *
-     * // Combining several predicates using `_.overEvery` or `_.overSome`.
-     * _.filter(users, _.overSome([{ 'age': 36 }, ['age', 40]]));
-     * // => objects for ['fred', 'barney']
      */
     function filter(collection, predicate) {
       var func = isArray(collection) ? arrayFilter : baseFilter;
@@ -48764,15 +45851,15 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
      * var users = [
      *   { 'user': 'fred',   'age': 48 },
      *   { 'user': 'barney', 'age': 36 },
-     *   { 'user': 'fred',   'age': 30 },
+     *   { 'user': 'fred',   'age': 40 },
      *   { 'user': 'barney', 'age': 34 }
      * ];
      *
      * _.sortBy(users, [function(o) { return o.user; }]);
-     * // => objects for [['barney', 36], ['barney', 34], ['fred', 48], ['fred', 30]]
+     * // => objects for [['barney', 36], ['barney', 34], ['fred', 48], ['fred', 40]]
      *
      * _.sortBy(users, ['user', 'age']);
-     * // => objects for [['barney', 34], ['barney', 36], ['fred', 30], ['fred', 48]]
+     * // => objects for [['barney', 34], ['barney', 36], ['fred', 40], ['fred', 48]]
      */
     var sortBy = baseRest(function(collection, iteratees) {
       if (collection == null) {
@@ -49194,11 +46281,9 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
       function remainingWait(time) {
         var timeSinceLastCall = time - lastCallTime,
             timeSinceLastInvoke = time - lastInvokeTime,
-            timeWaiting = wait - timeSinceLastCall;
+            result = wait - timeSinceLastCall;
 
-        return maxing
-          ? nativeMin(timeWaiting, maxWait - timeSinceLastInvoke)
-          : timeWaiting;
+        return maxing ? nativeMin(result, maxWait - timeSinceLastInvoke) : result;
       }
 
       function shouldInvoke(time) {
@@ -49259,7 +46344,6 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
           }
           if (maxing) {
             // Handle invocations in a tight loop.
-            clearTimeout(timerId);
             timerId = setTimeout(timerExpired, wait);
             return invokeFunc(lastCallTime);
           }
@@ -51316,7 +48400,7 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
       if (typeof value != 'string') {
         return value === 0 ? value : +value;
       }
-      value = baseTrim(value);
+      value = value.replace(reTrim, '');
       var isBinary = reIsBinary.test(value);
       return (isBinary || reIsOctal.test(value))
         ? freeParseInt(value.slice(2), isBinary ? 2 : 8)
@@ -51631,35 +48715,9 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
      * _.defaults({ 'a': 1 }, { 'b': 2 }, { 'a': 3 });
      * // => { 'a': 1, 'b': 2 }
      */
-    var defaults = baseRest(function(object, sources) {
-      object = Object(object);
-
-      var index = -1;
-      var length = sources.length;
-      var guard = length > 2 ? sources[2] : undefined;
-
-      if (guard && isIterateeCall(sources[0], sources[1], guard)) {
-        length = 1;
-      }
-
-      while (++index < length) {
-        var source = sources[index];
-        var props = keysIn(source);
-        var propsIndex = -1;
-        var propsLength = props.length;
-
-        while (++propsIndex < propsLength) {
-          var key = props[propsIndex];
-          var value = object[key];
-
-          if (value === undefined ||
-              (eq(value, objectProto[key]) && !hasOwnProperty.call(object, key))) {
-            object[key] = source[key];
-          }
-        }
-      }
-
-      return object;
+    var defaults = baseRest(function(args) {
+      args.push(undefined, customDefaultsAssignIn);
+      return apply(assignInWith, undefined, args);
     });
 
     /**
@@ -52056,11 +49114,6 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
      * // => { '1': 'c', '2': 'b' }
      */
     var invert = createInverter(function(result, value, key) {
-      if (value != null &&
-          typeof value.toString != 'function') {
-        value = nativeObjectToString.call(value);
-      }
-
       result[value] = key;
     }, constant(identity));
 
@@ -52091,11 +49144,6 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
      * // => { 'group1': ['a', 'c'], 'group2': ['b'] }
      */
     var invertBy = createInverter(function(result, value, key) {
-      if (value != null &&
-          typeof value.toString != 'function') {
-        value = nativeObjectToString.call(value);
-      }
-
       if (hasOwnProperty.call(result, value)) {
         result[value].push(key);
       } else {
@@ -53646,12 +50694,9 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
       , 'g');
 
       // Use a sourceURL for easier debugging.
-      // The sourceURL gets injected into the source that's eval-ed, so be careful
-      // to normalize all kinds of whitespace, so e.g. newlines (and unicode versions of it) can't sneak in
-      // and escape the comment, thus injecting code that gets evaled.
       var sourceURL = '//# sourceURL=' +
-        (hasOwnProperty.call(options, 'sourceURL')
-          ? (options.sourceURL + '').replace(/\s/g, ' ')
+        ('sourceURL' in options
+          ? options.sourceURL
           : ('lodash.templateSources[' + (++templateCounter) + ']')
         ) + '\n';
 
@@ -53684,16 +50729,10 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
 
       // If `variable` is not specified wrap a with-statement around the generated
       // code to add the data object to the top of the scope chain.
-      var variable = hasOwnProperty.call(options, 'variable') && options.variable;
+      var variable = options.variable;
       if (!variable) {
         source = 'with (obj) {\n' + source + '\n}\n';
       }
-      // Throw an error if a forbidden character was found in `variable`, to prevent
-      // potential command injection attacks.
-      else if (reForbiddenIdentifierChars.test(variable)) {
-        throw new Error(INVALID_TEMPL_VAR_ERROR_TEXT);
-      }
-
       // Cleanup code by stripping empty strings.
       source = (isEvaluating ? source.replace(reEmptyStringLeading, '') : source)
         .replace(reEmptyStringMiddle, '$1')
@@ -53807,7 +50846,7 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
     function trim(string, chars, guard) {
       string = toString(string);
       if (string && (guard || chars === undefined)) {
-        return baseTrim(string);
+        return string.replace(reTrim, '');
       }
       if (!string || !(chars = baseToString(chars))) {
         return string;
@@ -53842,7 +50881,7 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
     function trimEnd(string, chars, guard) {
       string = toString(string);
       if (string && (guard || chars === undefined)) {
-        return string.slice(0, trimmedEndIndex(string) + 1);
+        return string.replace(reTrimEnd, '');
       }
       if (!string || !(chars = baseToString(chars))) {
         return string;
@@ -54396,9 +51435,6 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
      * values against any array or object value, respectively. See `_.isEqual`
      * for a list of supported value comparisons.
      *
-     * **Note:** Multiple values can be checked by combining several matchers
-     * using `_.overSome`
-     *
      * @static
      * @memberOf _
      * @since 3.0.0
@@ -54414,10 +51450,6 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
      *
      * _.filter(objects, _.matches({ 'a': 4, 'c': 6 }));
      * // => [{ 'a': 4, 'b': 5, 'c': 6 }]
-     *
-     * // Checking for several possible values
-     * _.filter(objects, _.overSome([_.matches({ 'a': 1 }), _.matches({ 'a': 4 })]));
-     * // => [{ 'a': 1, 'b': 2, 'c': 3 }, { 'a': 4, 'b': 5, 'c': 6 }]
      */
     function matches(source) {
       return baseMatches(baseClone(source, CLONE_DEEP_FLAG));
@@ -54431,9 +51463,6 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
      * **Note:** Partial comparisons will match empty array and empty object
      * `srcValue` values against any array or object value, respectively. See
      * `_.isEqual` for a list of supported value comparisons.
-     *
-     * **Note:** Multiple values can be checked by combining several matchers
-     * using `_.overSome`
      *
      * @static
      * @memberOf _
@@ -54451,10 +51480,6 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
      *
      * _.find(objects, _.matchesProperty('a', 4));
      * // => { 'a': 4, 'b': 5, 'c': 6 }
-     *
-     * // Checking for several possible values
-     * _.filter(objects, _.overSome([_.matchesProperty('a', 1), _.matchesProperty('a', 4)]));
-     * // => [{ 'a': 1, 'b': 2, 'c': 3 }, { 'a': 4, 'b': 5, 'c': 6 }]
      */
     function matchesProperty(path, srcValue) {
       return baseMatchesProperty(path, baseClone(srcValue, CLONE_DEEP_FLAG));
@@ -54678,10 +51703,6 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
      * Creates a function that checks if **all** of the `predicates` return
      * truthy when invoked with the arguments it receives.
      *
-     * Following shorthands are possible for providing predicates.
-     * Pass an `Object` and it will be used as an parameter for `_.matches` to create the predicate.
-     * Pass an `Array` of parameters for `_.matchesProperty` and the predicate will be created using them.
-     *
      * @static
      * @memberOf _
      * @since 4.0.0
@@ -54708,10 +51729,6 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
      * Creates a function that checks if **any** of the `predicates` return
      * truthy when invoked with the arguments it receives.
      *
-     * Following shorthands are possible for providing predicates.
-     * Pass an `Object` and it will be used as an parameter for `_.matches` to create the predicate.
-     * Pass an `Array` of parameters for `_.matchesProperty` and the predicate will be created using them.
-     *
      * @static
      * @memberOf _
      * @since 4.0.0
@@ -54731,9 +51748,6 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
      *
      * func(NaN);
      * // => false
-     *
-     * var matchesFunc = _.overSome([{ 'a': 1 }, { 'a': 2 }])
-     * var matchesPropertyFunc = _.overSome([['a', 1], ['a', 2]])
      */
     var overSome = createOver(arraySome);
 
@@ -55920,11 +52934,10 @@ ___scope___.file("lodash.js", function(exports, require, module, __filename, __d
     baseForOwn(LazyWrapper.prototype, function(func, methodName) {
       var lodashFunc = lodash[methodName];
       if (lodashFunc) {
-        var key = lodashFunc.name + '';
-        if (!hasOwnProperty.call(realNames, key)) {
-          realNames[key] = [];
-        }
-        realNames[key].push({ 'name': methodName, 'func': lodashFunc });
+        var key = (lodashFunc.name + ''),
+            names = realNames[key] || (realNames[key] = []);
+
+        names.push({ 'name': methodName, 'func': lodashFunc });
       }
     });
 
@@ -55995,7 +53008,7 @@ FuseBox.pkg("moment", {}, function(___scope___){
 ___scope___.file("moment.js", function(exports, require, module, __filename, __dirname){
 
 //! moment.js
-//! version : 2.29.3
+//! version : 2.18.1
 //! authors : Tim Wood, Iskren Chernev, Moment.js contributors
 //! license : MIT
 //! momentjs.com
@@ -56006,5677 +53019,4455 @@ ___scope___.file("moment.js", function(exports, require, module, __filename, __d
     global.moment = factory()
 }(this, (function () { 'use strict';
 
-    var hookCallback;
+var hookCallback;
 
-    function hooks() {
-        return hookCallback.apply(null, arguments);
+function hooks () {
+    return hookCallback.apply(null, arguments);
+}
+
+// This is done to register the method called with moment()
+// without creating circular dependencies.
+function setHookCallback (callback) {
+    hookCallback = callback;
+}
+
+function isArray(input) {
+    return input instanceof Array || Object.prototype.toString.call(input) === '[object Array]';
+}
+
+function isObject(input) {
+    // IE8 will treat undefined and null as object if it wasn't for
+    // input != null
+    return input != null && Object.prototype.toString.call(input) === '[object Object]';
+}
+
+function isObjectEmpty(obj) {
+    var k;
+    for (k in obj) {
+        // even if its not own property I'd still call it non-empty
+        return false;
     }
+    return true;
+}
 
-    // This is done to register the method called with moment()
-    // without creating circular dependencies.
-    function setHookCallback(callback) {
-        hookCallback = callback;
+function isUndefined(input) {
+    return input === void 0;
+}
+
+function isNumber(input) {
+    return typeof input === 'number' || Object.prototype.toString.call(input) === '[object Number]';
+}
+
+function isDate(input) {
+    return input instanceof Date || Object.prototype.toString.call(input) === '[object Date]';
+}
+
+function map(arr, fn) {
+    var res = [], i;
+    for (i = 0; i < arr.length; ++i) {
+        res.push(fn(arr[i], i));
     }
+    return res;
+}
 
-    function isArray(input) {
-        return (
-            input instanceof Array ||
-            Object.prototype.toString.call(input) === '[object Array]'
-        );
-    }
+function hasOwnProp(a, b) {
+    return Object.prototype.hasOwnProperty.call(a, b);
+}
 
-    function isObject(input) {
-        // IE8 will treat undefined and null as object if it wasn't for
-        // input != null
-        return (
-            input != null &&
-            Object.prototype.toString.call(input) === '[object Object]'
-        );
-    }
-
-    function hasOwnProp(a, b) {
-        return Object.prototype.hasOwnProperty.call(a, b);
-    }
-
-    function isObjectEmpty(obj) {
-        if (Object.getOwnPropertyNames) {
-            return Object.getOwnPropertyNames(obj).length === 0;
-        } else {
-            var k;
-            for (k in obj) {
-                if (hasOwnProp(obj, k)) {
-                    return false;
-                }
-            }
-            return true;
+function extend(a, b) {
+    for (var i in b) {
+        if (hasOwnProp(b, i)) {
+            a[i] = b[i];
         }
     }
 
-    function isUndefined(input) {
-        return input === void 0;
+    if (hasOwnProp(b, 'toString')) {
+        a.toString = b.toString;
     }
 
-    function isNumber(input) {
-        return (
-            typeof input === 'number' ||
-            Object.prototype.toString.call(input) === '[object Number]'
-        );
+    if (hasOwnProp(b, 'valueOf')) {
+        a.valueOf = b.valueOf;
     }
 
-    function isDate(input) {
-        return (
-            input instanceof Date ||
-            Object.prototype.toString.call(input) === '[object Date]'
-        );
-    }
+    return a;
+}
 
-    function map(arr, fn) {
-        var res = [],
-            i,
-            arrLen = arr.length;
-        for (i = 0; i < arrLen; ++i) {
-            res.push(fn(arr[i], i));
-        }
-        return res;
-    }
+function createUTC (input, format, locale, strict) {
+    return createLocalOrUTC(input, format, locale, strict, true).utc();
+}
 
-    function extend(a, b) {
-        for (var i in b) {
-            if (hasOwnProp(b, i)) {
-                a[i] = b[i];
-            }
-        }
-
-        if (hasOwnProp(b, 'toString')) {
-            a.toString = b.toString;
-        }
-
-        if (hasOwnProp(b, 'valueOf')) {
-            a.valueOf = b.valueOf;
-        }
-
-        return a;
-    }
-
-    function createUTC(input, format, locale, strict) {
-        return createLocalOrUTC(input, format, locale, strict, true).utc();
-    }
-
-    function defaultParsingFlags() {
-        // We need to deep clone this object.
-        return {
-            empty: false,
-            unusedTokens: [],
-            unusedInput: [],
-            overflow: -2,
-            charsLeftOver: 0,
-            nullInput: false,
-            invalidEra: null,
-            invalidMonth: null,
-            invalidFormat: false,
-            userInvalidated: false,
-            iso: false,
-            parsedDateParts: [],
-            era: null,
-            meridiem: null,
-            rfc2822: false,
-            weekdayMismatch: false,
-        };
-    }
-
-    function getParsingFlags(m) {
-        if (m._pf == null) {
-            m._pf = defaultParsingFlags();
-        }
-        return m._pf;
-    }
-
-    var some;
-    if (Array.prototype.some) {
-        some = Array.prototype.some;
-    } else {
-        some = function (fun) {
-            var t = Object(this),
-                len = t.length >>> 0,
-                i;
-
-            for (i = 0; i < len; i++) {
-                if (i in t && fun.call(this, t[i], i, t)) {
-                    return true;
-                }
-            }
-
-            return false;
-        };
-    }
-
-    function isValid(m) {
-        if (m._isValid == null) {
-            var flags = getParsingFlags(m),
-                parsedParts = some.call(flags.parsedDateParts, function (i) {
-                    return i != null;
-                }),
-                isNowValid =
-                    !isNaN(m._d.getTime()) &&
-                    flags.overflow < 0 &&
-                    !flags.empty &&
-                    !flags.invalidEra &&
-                    !flags.invalidMonth &&
-                    !flags.invalidWeekday &&
-                    !flags.weekdayMismatch &&
-                    !flags.nullInput &&
-                    !flags.invalidFormat &&
-                    !flags.userInvalidated &&
-                    (!flags.meridiem || (flags.meridiem && parsedParts));
-
-            if (m._strict) {
-                isNowValid =
-                    isNowValid &&
-                    flags.charsLeftOver === 0 &&
-                    flags.unusedTokens.length === 0 &&
-                    flags.bigHour === undefined;
-            }
-
-            if (Object.isFrozen == null || !Object.isFrozen(m)) {
-                m._isValid = isNowValid;
-            } else {
-                return isNowValid;
-            }
-        }
-        return m._isValid;
-    }
-
-    function createInvalid(flags) {
-        var m = createUTC(NaN);
-        if (flags != null) {
-            extend(getParsingFlags(m), flags);
-        } else {
-            getParsingFlags(m).userInvalidated = true;
-        }
-
-        return m;
-    }
-
-    // Plugins that add properties should also add the key here (null value),
-    // so we can properly clone ourselves.
-    var momentProperties = (hooks.momentProperties = []),
-        updateInProgress = false;
-
-    function copyConfig(to, from) {
-        var i,
-            prop,
-            val,
-            momentPropertiesLen = momentProperties.length;
-
-        if (!isUndefined(from._isAMomentObject)) {
-            to._isAMomentObject = from._isAMomentObject;
-        }
-        if (!isUndefined(from._i)) {
-            to._i = from._i;
-        }
-        if (!isUndefined(from._f)) {
-            to._f = from._f;
-        }
-        if (!isUndefined(from._l)) {
-            to._l = from._l;
-        }
-        if (!isUndefined(from._strict)) {
-            to._strict = from._strict;
-        }
-        if (!isUndefined(from._tzm)) {
-            to._tzm = from._tzm;
-        }
-        if (!isUndefined(from._isUTC)) {
-            to._isUTC = from._isUTC;
-        }
-        if (!isUndefined(from._offset)) {
-            to._offset = from._offset;
-        }
-        if (!isUndefined(from._pf)) {
-            to._pf = getParsingFlags(from);
-        }
-        if (!isUndefined(from._locale)) {
-            to._locale = from._locale;
-        }
-
-        if (momentPropertiesLen > 0) {
-            for (i = 0; i < momentPropertiesLen; i++) {
-                prop = momentProperties[i];
-                val = from[prop];
-                if (!isUndefined(val)) {
-                    to[prop] = val;
-                }
-            }
-        }
-
-        return to;
-    }
-
-    // Moment prototype object
-    function Moment(config) {
-        copyConfig(this, config);
-        this._d = new Date(config._d != null ? config._d.getTime() : NaN);
-        if (!this.isValid()) {
-            this._d = new Date(NaN);
-        }
-        // Prevent infinite loop in case updateOffset creates new moment
-        // objects.
-        if (updateInProgress === false) {
-            updateInProgress = true;
-            hooks.updateOffset(this);
-            updateInProgress = false;
-        }
-    }
-
-    function isMoment(obj) {
-        return (
-            obj instanceof Moment || (obj != null && obj._isAMomentObject != null)
-        );
-    }
-
-    function warn(msg) {
-        if (
-            hooks.suppressDeprecationWarnings === false &&
-            typeof console !== 'undefined' &&
-            console.warn
-        ) {
-            console.warn('Deprecation warning: ' + msg);
-        }
-    }
-
-    function deprecate(msg, fn) {
-        var firstTime = true;
-
-        return extend(function () {
-            if (hooks.deprecationHandler != null) {
-                hooks.deprecationHandler(null, msg);
-            }
-            if (firstTime) {
-                var args = [],
-                    arg,
-                    i,
-                    key,
-                    argLen = arguments.length;
-                for (i = 0; i < argLen; i++) {
-                    arg = '';
-                    if (typeof arguments[i] === 'object') {
-                        arg += '\n[' + i + '] ';
-                        for (key in arguments[0]) {
-                            if (hasOwnProp(arguments[0], key)) {
-                                arg += key + ': ' + arguments[0][key] + ', ';
-                            }
-                        }
-                        arg = arg.slice(0, -2); // Remove trailing comma and space
-                    } else {
-                        arg = arguments[i];
-                    }
-                    args.push(arg);
-                }
-                warn(
-                    msg +
-                        '\nArguments: ' +
-                        Array.prototype.slice.call(args).join('') +
-                        '\n' +
-                        new Error().stack
-                );
-                firstTime = false;
-            }
-            return fn.apply(this, arguments);
-        }, fn);
-    }
-
-    var deprecations = {};
-
-    function deprecateSimple(name, msg) {
-        if (hooks.deprecationHandler != null) {
-            hooks.deprecationHandler(name, msg);
-        }
-        if (!deprecations[name]) {
-            warn(msg);
-            deprecations[name] = true;
-        }
-    }
-
-    hooks.suppressDeprecationWarnings = false;
-    hooks.deprecationHandler = null;
-
-    function isFunction(input) {
-        return (
-            (typeof Function !== 'undefined' && input instanceof Function) ||
-            Object.prototype.toString.call(input) === '[object Function]'
-        );
-    }
-
-    function set(config) {
-        var prop, i;
-        for (i in config) {
-            if (hasOwnProp(config, i)) {
-                prop = config[i];
-                if (isFunction(prop)) {
-                    this[i] = prop;
-                } else {
-                    this['_' + i] = prop;
-                }
-            }
-        }
-        this._config = config;
-        // Lenient ordinal parsing accepts just a number in addition to
-        // number + (possibly) stuff coming from _dayOfMonthOrdinalParse.
-        // TODO: Remove "ordinalParse" fallback in next major release.
-        this._dayOfMonthOrdinalParseLenient = new RegExp(
-            (this._dayOfMonthOrdinalParse.source || this._ordinalParse.source) +
-                '|' +
-                /\d{1,2}/.source
-        );
-    }
-
-    function mergeConfigs(parentConfig, childConfig) {
-        var res = extend({}, parentConfig),
-            prop;
-        for (prop in childConfig) {
-            if (hasOwnProp(childConfig, prop)) {
-                if (isObject(parentConfig[prop]) && isObject(childConfig[prop])) {
-                    res[prop] = {};
-                    extend(res[prop], parentConfig[prop]);
-                    extend(res[prop], childConfig[prop]);
-                } else if (childConfig[prop] != null) {
-                    res[prop] = childConfig[prop];
-                } else {
-                    delete res[prop];
-                }
-            }
-        }
-        for (prop in parentConfig) {
-            if (
-                hasOwnProp(parentConfig, prop) &&
-                !hasOwnProp(childConfig, prop) &&
-                isObject(parentConfig[prop])
-            ) {
-                // make sure changes to properties don't modify parent config
-                res[prop] = extend({}, res[prop]);
-            }
-        }
-        return res;
-    }
-
-    function Locale(config) {
-        if (config != null) {
-            this.set(config);
-        }
-    }
-
-    var keys;
-
-    if (Object.keys) {
-        keys = Object.keys;
-    } else {
-        keys = function (obj) {
-            var i,
-                res = [];
-            for (i in obj) {
-                if (hasOwnProp(obj, i)) {
-                    res.push(i);
-                }
-            }
-            return res;
-        };
-    }
-
-    var defaultCalendar = {
-        sameDay: '[Today at] LT',
-        nextDay: '[Tomorrow at] LT',
-        nextWeek: 'dddd [at] LT',
-        lastDay: '[Yesterday at] LT',
-        lastWeek: '[Last] dddd [at] LT',
-        sameElse: 'L',
+function defaultParsingFlags() {
+    // We need to deep clone this object.
+    return {
+        empty           : false,
+        unusedTokens    : [],
+        unusedInput     : [],
+        overflow        : -2,
+        charsLeftOver   : 0,
+        nullInput       : false,
+        invalidMonth    : null,
+        invalidFormat   : false,
+        userInvalidated : false,
+        iso             : false,
+        parsedDateParts : [],
+        meridiem        : null,
+        rfc2822         : false,
+        weekdayMismatch : false
     };
+}
 
-    function calendar(key, mom, now) {
-        var output = this._calendar[key] || this._calendar['sameElse'];
-        return isFunction(output) ? output.call(mom, now) : output;
+function getParsingFlags(m) {
+    if (m._pf == null) {
+        m._pf = defaultParsingFlags();
+    }
+    return m._pf;
+}
+
+var some;
+if (Array.prototype.some) {
+    some = Array.prototype.some;
+} else {
+    some = function (fun) {
+        var t = Object(this);
+        var len = t.length >>> 0;
+
+        for (var i = 0; i < len; i++) {
+            if (i in t && fun.call(this, t[i], i, t)) {
+                return true;
+            }
+        }
+
+        return false;
+    };
+}
+
+var some$1 = some;
+
+function isValid(m) {
+    if (m._isValid == null) {
+        var flags = getParsingFlags(m);
+        var parsedParts = some$1.call(flags.parsedDateParts, function (i) {
+            return i != null;
+        });
+        var isNowValid = !isNaN(m._d.getTime()) &&
+            flags.overflow < 0 &&
+            !flags.empty &&
+            !flags.invalidMonth &&
+            !flags.invalidWeekday &&
+            !flags.nullInput &&
+            !flags.invalidFormat &&
+            !flags.userInvalidated &&
+            (!flags.meridiem || (flags.meridiem && parsedParts));
+
+        if (m._strict) {
+            isNowValid = isNowValid &&
+                flags.charsLeftOver === 0 &&
+                flags.unusedTokens.length === 0 &&
+                flags.bigHour === undefined;
+        }
+
+        if (Object.isFrozen == null || !Object.isFrozen(m)) {
+            m._isValid = isNowValid;
+        }
+        else {
+            return isNowValid;
+        }
+    }
+    return m._isValid;
+}
+
+function createInvalid (flags) {
+    var m = createUTC(NaN);
+    if (flags != null) {
+        extend(getParsingFlags(m), flags);
+    }
+    else {
+        getParsingFlags(m).userInvalidated = true;
     }
 
-    function zeroFill(number, targetLength, forceSign) {
-        var absNumber = '' + Math.abs(number),
-            zerosToFill = targetLength - absNumber.length,
-            sign = number >= 0;
-        return (
-            (sign ? (forceSign ? '+' : '') : '-') +
-            Math.pow(10, Math.max(0, zerosToFill)).toString().substr(1) +
-            absNumber
-        );
+    return m;
+}
+
+// Plugins that add properties should also add the key here (null value),
+// so we can properly clone ourselves.
+var momentProperties = hooks.momentProperties = [];
+
+function copyConfig(to, from) {
+    var i, prop, val;
+
+    if (!isUndefined(from._isAMomentObject)) {
+        to._isAMomentObject = from._isAMomentObject;
+    }
+    if (!isUndefined(from._i)) {
+        to._i = from._i;
+    }
+    if (!isUndefined(from._f)) {
+        to._f = from._f;
+    }
+    if (!isUndefined(from._l)) {
+        to._l = from._l;
+    }
+    if (!isUndefined(from._strict)) {
+        to._strict = from._strict;
+    }
+    if (!isUndefined(from._tzm)) {
+        to._tzm = from._tzm;
+    }
+    if (!isUndefined(from._isUTC)) {
+        to._isUTC = from._isUTC;
+    }
+    if (!isUndefined(from._offset)) {
+        to._offset = from._offset;
+    }
+    if (!isUndefined(from._pf)) {
+        to._pf = getParsingFlags(from);
+    }
+    if (!isUndefined(from._locale)) {
+        to._locale = from._locale;
     }
 
-    var formattingTokens =
-            /(\[[^\[]*\])|(\\)?([Hh]mm(ss)?|Mo|MM?M?M?|Do|DDDo|DD?D?D?|ddd?d?|do?|w[o|w]?|W[o|W]?|Qo?|N{1,5}|YYYYYY|YYYYY|YYYY|YY|y{2,4}|yo?|gg(ggg?)?|GG(GGG?)?|e|E|a|A|hh?|HH?|kk?|mm?|ss?|S{1,9}|x|X|zz?|ZZ?|.)/g,
-        localFormattingTokens = /(\[[^\[]*\])|(\\)?(LTS|LT|LL?L?L?|l{1,4})/g,
-        formatFunctions = {},
-        formatTokenFunctions = {};
-
-    // token:    'M'
-    // padded:   ['MM', 2]
-    // ordinal:  'Mo'
-    // callback: function () { this.month() + 1 }
-    function addFormatToken(token, padded, ordinal, callback) {
-        var func = callback;
-        if (typeof callback === 'string') {
-            func = function () {
-                return this[callback]();
-            };
-        }
-        if (token) {
-            formatTokenFunctions[token] = func;
-        }
-        if (padded) {
-            formatTokenFunctions[padded[0]] = function () {
-                return zeroFill(func.apply(this, arguments), padded[1], padded[2]);
-            };
-        }
-        if (ordinal) {
-            formatTokenFunctions[ordinal] = function () {
-                return this.localeData().ordinal(
-                    func.apply(this, arguments),
-                    token
-                );
-            };
+    if (momentProperties.length > 0) {
+        for (i = 0; i < momentProperties.length; i++) {
+            prop = momentProperties[i];
+            val = from[prop];
+            if (!isUndefined(val)) {
+                to[prop] = val;
+            }
         }
     }
 
-    function removeFormattingTokens(input) {
-        if (input.match(/\[[\s\S]/)) {
-            return input.replace(/^\[|\]$/g, '');
-        }
-        return input.replace(/\\/g, '');
+    return to;
+}
+
+var updateInProgress = false;
+
+// Moment prototype object
+function Moment(config) {
+    copyConfig(this, config);
+    this._d = new Date(config._d != null ? config._d.getTime() : NaN);
+    if (!this.isValid()) {
+        this._d = new Date(NaN);
+    }
+    // Prevent infinite loop in case updateOffset creates new moment
+    // objects.
+    if (updateInProgress === false) {
+        updateInProgress = true;
+        hooks.updateOffset(this);
+        updateInProgress = false;
+    }
+}
+
+function isMoment (obj) {
+    return obj instanceof Moment || (obj != null && obj._isAMomentObject != null);
+}
+
+function absFloor (number) {
+    if (number < 0) {
+        // -0 -> 0
+        return Math.ceil(number) || 0;
+    } else {
+        return Math.floor(number);
+    }
+}
+
+function toInt(argumentForCoercion) {
+    var coercedNumber = +argumentForCoercion,
+        value = 0;
+
+    if (coercedNumber !== 0 && isFinite(coercedNumber)) {
+        value = absFloor(coercedNumber);
     }
 
-    function makeFormatFunction(format) {
-        var array = format.match(formattingTokens),
-            i,
-            length;
+    return value;
+}
 
-        for (i = 0, length = array.length; i < length; i++) {
-            if (formatTokenFunctions[array[i]]) {
-                array[i] = formatTokenFunctions[array[i]];
+// compare two arrays, return the number of differences
+function compareArrays(array1, array2, dontConvert) {
+    var len = Math.min(array1.length, array2.length),
+        lengthDiff = Math.abs(array1.length - array2.length),
+        diffs = 0,
+        i;
+    for (i = 0; i < len; i++) {
+        if ((dontConvert && array1[i] !== array2[i]) ||
+            (!dontConvert && toInt(array1[i]) !== toInt(array2[i]))) {
+            diffs++;
+        }
+    }
+    return diffs + lengthDiff;
+}
+
+function warn(msg) {
+    if (hooks.suppressDeprecationWarnings === false &&
+            (typeof console !==  'undefined') && console.warn) {
+        console.warn('Deprecation warning: ' + msg);
+    }
+}
+
+function deprecate(msg, fn) {
+    var firstTime = true;
+
+    return extend(function () {
+        if (hooks.deprecationHandler != null) {
+            hooks.deprecationHandler(null, msg);
+        }
+        if (firstTime) {
+            var args = [];
+            var arg;
+            for (var i = 0; i < arguments.length; i++) {
+                arg = '';
+                if (typeof arguments[i] === 'object') {
+                    arg += '\n[' + i + '] ';
+                    for (var key in arguments[0]) {
+                        arg += key + ': ' + arguments[0][key] + ', ';
+                    }
+                    arg = arg.slice(0, -2); // Remove trailing comma and space
+                } else {
+                    arg = arguments[i];
+                }
+                args.push(arg);
+            }
+            warn(msg + '\nArguments: ' + Array.prototype.slice.call(args).join('') + '\n' + (new Error()).stack);
+            firstTime = false;
+        }
+        return fn.apply(this, arguments);
+    }, fn);
+}
+
+var deprecations = {};
+
+function deprecateSimple(name, msg) {
+    if (hooks.deprecationHandler != null) {
+        hooks.deprecationHandler(name, msg);
+    }
+    if (!deprecations[name]) {
+        warn(msg);
+        deprecations[name] = true;
+    }
+}
+
+hooks.suppressDeprecationWarnings = false;
+hooks.deprecationHandler = null;
+
+function isFunction(input) {
+    return input instanceof Function || Object.prototype.toString.call(input) === '[object Function]';
+}
+
+function set (config) {
+    var prop, i;
+    for (i in config) {
+        prop = config[i];
+        if (isFunction(prop)) {
+            this[i] = prop;
+        } else {
+            this['_' + i] = prop;
+        }
+    }
+    this._config = config;
+    // Lenient ordinal parsing accepts just a number in addition to
+    // number + (possibly) stuff coming from _dayOfMonthOrdinalParse.
+    // TODO: Remove "ordinalParse" fallback in next major release.
+    this._dayOfMonthOrdinalParseLenient = new RegExp(
+        (this._dayOfMonthOrdinalParse.source || this._ordinalParse.source) +
+            '|' + (/\d{1,2}/).source);
+}
+
+function mergeConfigs(parentConfig, childConfig) {
+    var res = extend({}, parentConfig), prop;
+    for (prop in childConfig) {
+        if (hasOwnProp(childConfig, prop)) {
+            if (isObject(parentConfig[prop]) && isObject(childConfig[prop])) {
+                res[prop] = {};
+                extend(res[prop], parentConfig[prop]);
+                extend(res[prop], childConfig[prop]);
+            } else if (childConfig[prop] != null) {
+                res[prop] = childConfig[prop];
             } else {
-                array[i] = removeFormattingTokens(array[i]);
+                delete res[prop];
             }
         }
+    }
+    for (prop in parentConfig) {
+        if (hasOwnProp(parentConfig, prop) &&
+                !hasOwnProp(childConfig, prop) &&
+                isObject(parentConfig[prop])) {
+            // make sure changes to properties don't modify parent config
+            res[prop] = extend({}, res[prop]);
+        }
+    }
+    return res;
+}
 
-        return function (mom) {
-            var output = '',
-                i;
-            for (i = 0; i < length; i++) {
-                output += isFunction(array[i])
-                    ? array[i].call(mom, format)
-                    : array[i];
+function Locale(config) {
+    if (config != null) {
+        this.set(config);
+    }
+}
+
+var keys;
+
+if (Object.keys) {
+    keys = Object.keys;
+} else {
+    keys = function (obj) {
+        var i, res = [];
+        for (i in obj) {
+            if (hasOwnProp(obj, i)) {
+                res.push(i);
             }
-            return output;
-        };
-    }
-
-    // format date using native date object
-    function formatMoment(m, format) {
-        if (!m.isValid()) {
-            return m.localeData().invalidDate();
         }
+        return res;
+    };
+}
 
-        format = expandFormat(format, m.localeData());
-        formatFunctions[format] =
-            formatFunctions[format] || makeFormatFunction(format);
+var keys$1 = keys;
 
-        return formatFunctions[format](m);
-    }
+var defaultCalendar = {
+    sameDay : '[Today at] LT',
+    nextDay : '[Tomorrow at] LT',
+    nextWeek : 'dddd [at] LT',
+    lastDay : '[Yesterday at] LT',
+    lastWeek : '[Last] dddd [at] LT',
+    sameElse : 'L'
+};
 
-    function expandFormat(format, locale) {
-        var i = 5;
+function calendar (key, mom, now) {
+    var output = this._calendar[key] || this._calendar['sameElse'];
+    return isFunction(output) ? output.call(mom, now) : output;
+}
 
-        function replaceLongDateFormatTokens(input) {
-            return locale.longDateFormat(input) || input;
-        }
+var defaultLongDateFormat = {
+    LTS  : 'h:mm:ss A',
+    LT   : 'h:mm A',
+    L    : 'MM/DD/YYYY',
+    LL   : 'MMMM D, YYYY',
+    LLL  : 'MMMM D, YYYY h:mm A',
+    LLLL : 'dddd, MMMM D, YYYY h:mm A'
+};
 
-        localFormattingTokens.lastIndex = 0;
-        while (i >= 0 && localFormattingTokens.test(format)) {
-            format = format.replace(
-                localFormattingTokens,
-                replaceLongDateFormatTokens
-            );
-            localFormattingTokens.lastIndex = 0;
-            i -= 1;
-        }
+function longDateFormat (key) {
+    var format = this._longDateFormat[key],
+        formatUpper = this._longDateFormat[key.toUpperCase()];
 
+    if (format || !formatUpper) {
         return format;
     }
 
-    var defaultLongDateFormat = {
-        LTS: 'h:mm:ss A',
-        LT: 'h:mm A',
-        L: 'MM/DD/YYYY',
-        LL: 'MMMM D, YYYY',
-        LLL: 'MMMM D, YYYY h:mm A',
-        LLLL: 'dddd, MMMM D, YYYY h:mm A',
-    };
+    this._longDateFormat[key] = formatUpper.replace(/MMMM|MM|DD|dddd/g, function (val) {
+        return val.slice(1);
+    });
 
-    function longDateFormat(key) {
-        var format = this._longDateFormat[key],
-            formatUpper = this._longDateFormat[key.toUpperCase()];
+    return this._longDateFormat[key];
+}
 
-        if (format || !formatUpper) {
-            return format;
-        }
+var defaultInvalidDate = 'Invalid date';
 
-        this._longDateFormat[key] = formatUpper
-            .match(formattingTokens)
-            .map(function (tok) {
-                if (
-                    tok === 'MMMM' ||
-                    tok === 'MM' ||
-                    tok === 'DD' ||
-                    tok === 'dddd'
-                ) {
-                    return tok.slice(1);
-                }
-                return tok;
-            })
-            .join('');
+function invalidDate () {
+    return this._invalidDate;
+}
 
-        return this._longDateFormat[key];
-    }
+var defaultOrdinal = '%d';
+var defaultDayOfMonthOrdinalParse = /\d{1,2}/;
 
-    var defaultInvalidDate = 'Invalid date';
+function ordinal (number) {
+    return this._ordinal.replace('%d', number);
+}
 
-    function invalidDate() {
-        return this._invalidDate;
-    }
+var defaultRelativeTime = {
+    future : 'in %s',
+    past   : '%s ago',
+    s  : 'a few seconds',
+    ss : '%d seconds',
+    m  : 'a minute',
+    mm : '%d minutes',
+    h  : 'an hour',
+    hh : '%d hours',
+    d  : 'a day',
+    dd : '%d days',
+    M  : 'a month',
+    MM : '%d months',
+    y  : 'a year',
+    yy : '%d years'
+};
 
-    var defaultOrdinal = '%d',
-        defaultDayOfMonthOrdinalParse = /\d{1,2}/;
+function relativeTime (number, withoutSuffix, string, isFuture) {
+    var output = this._relativeTime[string];
+    return (isFunction(output)) ?
+        output(number, withoutSuffix, string, isFuture) :
+        output.replace(/%d/i, number);
+}
 
-    function ordinal(number) {
-        return this._ordinal.replace('%d', number);
-    }
+function pastFuture (diff, output) {
+    var format = this._relativeTime[diff > 0 ? 'future' : 'past'];
+    return isFunction(format) ? format(output) : format.replace(/%s/i, output);
+}
 
-    var defaultRelativeTime = {
-        future: 'in %s',
-        past: '%s ago',
-        s: 'a few seconds',
-        ss: '%d seconds',
-        m: 'a minute',
-        mm: '%d minutes',
-        h: 'an hour',
-        hh: '%d hours',
-        d: 'a day',
-        dd: '%d days',
-        w: 'a week',
-        ww: '%d weeks',
-        M: 'a month',
-        MM: '%d months',
-        y: 'a year',
-        yy: '%d years',
-    };
+var aliases = {};
 
-    function relativeTime(number, withoutSuffix, string, isFuture) {
-        var output = this._relativeTime[string];
-        return isFunction(output)
-            ? output(number, withoutSuffix, string, isFuture)
-            : output.replace(/%d/i, number);
-    }
+function addUnitAlias (unit, shorthand) {
+    var lowerCase = unit.toLowerCase();
+    aliases[lowerCase] = aliases[lowerCase + 's'] = aliases[shorthand] = unit;
+}
 
-    function pastFuture(diff, output) {
-        var format = this._relativeTime[diff > 0 ? 'future' : 'past'];
-        return isFunction(format) ? format(output) : format.replace(/%s/i, output);
-    }
+function normalizeUnits(units) {
+    return typeof units === 'string' ? aliases[units] || aliases[units.toLowerCase()] : undefined;
+}
 
-    var aliases = {};
+function normalizeObjectUnits(inputObject) {
+    var normalizedInput = {},
+        normalizedProp,
+        prop;
 
-    function addUnitAlias(unit, shorthand) {
-        var lowerCase = unit.toLowerCase();
-        aliases[lowerCase] = aliases[lowerCase + 's'] = aliases[shorthand] = unit;
-    }
-
-    function normalizeUnits(units) {
-        return typeof units === 'string'
-            ? aliases[units] || aliases[units.toLowerCase()]
-            : undefined;
-    }
-
-    function normalizeObjectUnits(inputObject) {
-        var normalizedInput = {},
-            normalizedProp,
-            prop;
-
-        for (prop in inputObject) {
-            if (hasOwnProp(inputObject, prop)) {
-                normalizedProp = normalizeUnits(prop);
-                if (normalizedProp) {
-                    normalizedInput[normalizedProp] = inputObject[prop];
-                }
+    for (prop in inputObject) {
+        if (hasOwnProp(inputObject, prop)) {
+            normalizedProp = normalizeUnits(prop);
+            if (normalizedProp) {
+                normalizedInput[normalizedProp] = inputObject[prop];
             }
         }
-
-        return normalizedInput;
     }
 
-    var priorities = {};
+    return normalizedInput;
+}
 
-    function addUnitPriority(unit, priority) {
-        priorities[unit] = priority;
+var priorities = {};
+
+function addUnitPriority(unit, priority) {
+    priorities[unit] = priority;
+}
+
+function getPrioritizedUnits(unitsObj) {
+    var units = [];
+    for (var u in unitsObj) {
+        units.push({unit: u, priority: priorities[u]});
     }
+    units.sort(function (a, b) {
+        return a.priority - b.priority;
+    });
+    return units;
+}
 
-    function getPrioritizedUnits(unitsObj) {
-        var units = [],
-            u;
-        for (u in unitsObj) {
-            if (hasOwnProp(unitsObj, u)) {
-                units.push({ unit: u, priority: priorities[u] });
-            }
-        }
-        units.sort(function (a, b) {
-            return a.priority - b.priority;
-        });
-        return units;
-    }
-
-    function isLeapYear(year) {
-        return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-    }
-
-    function absFloor(number) {
-        if (number < 0) {
-            // -0 -> 0
-            return Math.ceil(number) || 0;
+function makeGetSet (unit, keepTime) {
+    return function (value) {
+        if (value != null) {
+            set$1(this, unit, value);
+            hooks.updateOffset(this, keepTime);
+            return this;
         } else {
-            return Math.floor(number);
+            return get(this, unit);
         }
+    };
+}
+
+function get (mom, unit) {
+    return mom.isValid() ?
+        mom._d['get' + (mom._isUTC ? 'UTC' : '') + unit]() : NaN;
+}
+
+function set$1 (mom, unit, value) {
+    if (mom.isValid()) {
+        mom._d['set' + (mom._isUTC ? 'UTC' : '') + unit](value);
     }
+}
 
-    function toInt(argumentForCoercion) {
-        var coercedNumber = +argumentForCoercion,
-            value = 0;
+// MOMENTS
 
-        if (coercedNumber !== 0 && isFinite(coercedNumber)) {
-            value = absFloor(coercedNumber);
+function stringGet (units) {
+    units = normalizeUnits(units);
+    if (isFunction(this[units])) {
+        return this[units]();
+    }
+    return this;
+}
+
+
+function stringSet (units, value) {
+    if (typeof units === 'object') {
+        units = normalizeObjectUnits(units);
+        var prioritized = getPrioritizedUnits(units);
+        for (var i = 0; i < prioritized.length; i++) {
+            this[prioritized[i].unit](units[prioritized[i].unit]);
         }
-
-        return value;
-    }
-
-    function makeGetSet(unit, keepTime) {
-        return function (value) {
-            if (value != null) {
-                set$1(this, unit, value);
-                hooks.updateOffset(this, keepTime);
-                return this;
-            } else {
-                return get(this, unit);
-            }
-        };
-    }
-
-    function get(mom, unit) {
-        return mom.isValid()
-            ? mom._d['get' + (mom._isUTC ? 'UTC' : '') + unit]()
-            : NaN;
-    }
-
-    function set$1(mom, unit, value) {
-        if (mom.isValid() && !isNaN(value)) {
-            if (
-                unit === 'FullYear' &&
-                isLeapYear(mom.year()) &&
-                mom.month() === 1 &&
-                mom.date() === 29
-            ) {
-                value = toInt(value);
-                mom._d['set' + (mom._isUTC ? 'UTC' : '') + unit](
-                    value,
-                    mom.month(),
-                    daysInMonth(value, mom.month())
-                );
-            } else {
-                mom._d['set' + (mom._isUTC ? 'UTC' : '') + unit](value);
-            }
-        }
-    }
-
-    // MOMENTS
-
-    function stringGet(units) {
+    } else {
         units = normalizeUnits(units);
         if (isFunction(this[units])) {
-            return this[units]();
-        }
-        return this;
-    }
-
-    function stringSet(units, value) {
-        if (typeof units === 'object') {
-            units = normalizeObjectUnits(units);
-            var prioritized = getPrioritizedUnits(units),
-                i,
-                prioritizedLen = prioritized.length;
-            for (i = 0; i < prioritizedLen; i++) {
-                this[prioritized[i].unit](units[prioritized[i].unit]);
-            }
-        } else {
-            units = normalizeUnits(units);
-            if (isFunction(this[units])) {
-                return this[units](value);
-            }
-        }
-        return this;
-    }
-
-    var match1 = /\d/, //       0 - 9
-        match2 = /\d\d/, //      00 - 99
-        match3 = /\d{3}/, //     000 - 999
-        match4 = /\d{4}/, //    0000 - 9999
-        match6 = /[+-]?\d{6}/, // -999999 - 999999
-        match1to2 = /\d\d?/, //       0 - 99
-        match3to4 = /\d\d\d\d?/, //     999 - 9999
-        match5to6 = /\d\d\d\d\d\d?/, //   99999 - 999999
-        match1to3 = /\d{1,3}/, //       0 - 999
-        match1to4 = /\d{1,4}/, //       0 - 9999
-        match1to6 = /[+-]?\d{1,6}/, // -999999 - 999999
-        matchUnsigned = /\d+/, //       0 - inf
-        matchSigned = /[+-]?\d+/, //    -inf - inf
-        matchOffset = /Z|[+-]\d\d:?\d\d/gi, // +00:00 -00:00 +0000 -0000 or Z
-        matchShortOffset = /Z|[+-]\d\d(?::?\d\d)?/gi, // +00 -00 +00:00 -00:00 +0000 -0000 or Z
-        matchTimestamp = /[+-]?\d+(\.\d{1,3})?/, // 123456789 123456789.123
-        // any word (or two) characters or numbers including two/three word month in arabic.
-        // includes scottish gaelic two word and hyphenated months
-        matchWord =
-            /[0-9]{0,256}['a-z\u00A0-\u05FF\u0700-\uD7FF\uF900-\uFDCF\uFDF0-\uFF07\uFF10-\uFFEF]{1,256}|[\u0600-\u06FF\/]{1,256}(\s*?[\u0600-\u06FF]{1,256}){1,2}/i,
-        regexes;
-
-    regexes = {};
-
-    function addRegexToken(token, regex, strictRegex) {
-        regexes[token] = isFunction(regex)
-            ? regex
-            : function (isStrict, localeData) {
-                  return isStrict && strictRegex ? strictRegex : regex;
-              };
-    }
-
-    function getParseRegexForToken(token, config) {
-        if (!hasOwnProp(regexes, token)) {
-            return new RegExp(unescapeFormat(token));
-        }
-
-        return regexes[token](config._strict, config._locale);
-    }
-
-    // Code from http://stackoverflow.com/questions/3561493/is-there-a-regexp-escape-function-in-javascript
-    function unescapeFormat(s) {
-        return regexEscape(
-            s
-                .replace('\\', '')
-                .replace(
-                    /\\(\[)|\\(\])|\[([^\]\[]*)\]|\\(.)/g,
-                    function (matched, p1, p2, p3, p4) {
-                        return p1 || p2 || p3 || p4;
-                    }
-                )
-        );
-    }
-
-    function regexEscape(s) {
-        return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-    }
-
-    var tokens = {};
-
-    function addParseToken(token, callback) {
-        var i,
-            func = callback,
-            tokenLen;
-        if (typeof token === 'string') {
-            token = [token];
-        }
-        if (isNumber(callback)) {
-            func = function (input, array) {
-                array[callback] = toInt(input);
-            };
-        }
-        tokenLen = token.length;
-        for (i = 0; i < tokenLen; i++) {
-            tokens[token[i]] = func;
+            return this[units](value);
         }
     }
+    return this;
+}
 
-    function addWeekParseToken(token, callback) {
-        addParseToken(token, function (input, array, config, token) {
-            config._w = config._w || {};
-            callback(input, config._w, config, token);
-        });
-    }
+function zeroFill(number, targetLength, forceSign) {
+    var absNumber = '' + Math.abs(number),
+        zerosToFill = targetLength - absNumber.length,
+        sign = number >= 0;
+    return (sign ? (forceSign ? '+' : '') : '-') +
+        Math.pow(10, Math.max(0, zerosToFill)).toString().substr(1) + absNumber;
+}
 
-    function addTimeToArrayFromToken(token, input, config) {
-        if (input != null && hasOwnProp(tokens, token)) {
-            tokens[token](input, config._a, config, token);
-        }
-    }
+var formattingTokens = /(\[[^\[]*\])|(\\)?([Hh]mm(ss)?|Mo|MM?M?M?|Do|DDDo|DD?D?D?|ddd?d?|do?|w[o|w]?|W[o|W]?|Qo?|YYYYYY|YYYYY|YYYY|YY|gg(ggg?)?|GG(GGG?)?|e|E|a|A|hh?|HH?|kk?|mm?|ss?|S{1,9}|x|X|zz?|ZZ?|.)/g;
 
-    var YEAR = 0,
-        MONTH = 1,
-        DATE = 2,
-        HOUR = 3,
-        MINUTE = 4,
-        SECOND = 5,
-        MILLISECOND = 6,
-        WEEK = 7,
-        WEEKDAY = 8;
+var localFormattingTokens = /(\[[^\[]*\])|(\\)?(LTS|LT|LL?L?L?|l{1,4})/g;
 
-    function mod(n, x) {
-        return ((n % x) + x) % x;
-    }
+var formatFunctions = {};
 
-    var indexOf;
+var formatTokenFunctions = {};
 
-    if (Array.prototype.indexOf) {
-        indexOf = Array.prototype.indexOf;
-    } else {
-        indexOf = function (o) {
-            // I know
-            var i;
-            for (i = 0; i < this.length; ++i) {
-                if (this[i] === o) {
-                    return i;
-                }
-            }
-            return -1;
+// token:    'M'
+// padded:   ['MM', 2]
+// ordinal:  'Mo'
+// callback: function () { this.month() + 1 }
+function addFormatToken (token, padded, ordinal, callback) {
+    var func = callback;
+    if (typeof callback === 'string') {
+        func = function () {
+            return this[callback]();
         };
     }
-
-    function daysInMonth(year, month) {
-        if (isNaN(year) || isNaN(month)) {
-            return NaN;
-        }
-        var modMonth = mod(month, 12);
-        year += (month - modMonth) / 12;
-        return modMonth === 1
-            ? isLeapYear(year)
-                ? 29
-                : 28
-            : 31 - ((modMonth % 7) % 2);
+    if (token) {
+        formatTokenFunctions[token] = func;
     }
+    if (padded) {
+        formatTokenFunctions[padded[0]] = function () {
+            return zeroFill(func.apply(this, arguments), padded[1], padded[2]);
+        };
+    }
+    if (ordinal) {
+        formatTokenFunctions[ordinal] = function () {
+            return this.localeData().ordinal(func.apply(this, arguments), token);
+        };
+    }
+}
 
-    // FORMATTING
+function removeFormattingTokens(input) {
+    if (input.match(/\[[\s\S]/)) {
+        return input.replace(/^\[|\]$/g, '');
+    }
+    return input.replace(/\\/g, '');
+}
 
-    addFormatToken('M', ['MM', 2], 'Mo', function () {
-        return this.month() + 1;
-    });
+function makeFormatFunction(format) {
+    var array = format.match(formattingTokens), i, length;
 
-    addFormatToken('MMM', 0, 0, function (format) {
-        return this.localeData().monthsShort(this, format);
-    });
-
-    addFormatToken('MMMM', 0, 0, function (format) {
-        return this.localeData().months(this, format);
-    });
-
-    // ALIASES
-
-    addUnitAlias('month', 'M');
-
-    // PRIORITY
-
-    addUnitPriority('month', 8);
-
-    // PARSING
-
-    addRegexToken('M', match1to2);
-    addRegexToken('MM', match1to2, match2);
-    addRegexToken('MMM', function (isStrict, locale) {
-        return locale.monthsShortRegex(isStrict);
-    });
-    addRegexToken('MMMM', function (isStrict, locale) {
-        return locale.monthsRegex(isStrict);
-    });
-
-    addParseToken(['M', 'MM'], function (input, array) {
-        array[MONTH] = toInt(input) - 1;
-    });
-
-    addParseToken(['MMM', 'MMMM'], function (input, array, config, token) {
-        var month = config._locale.monthsParse(input, token, config._strict);
-        // if we didn't find a month name, mark the date as invalid.
-        if (month != null) {
-            array[MONTH] = month;
+    for (i = 0, length = array.length; i < length; i++) {
+        if (formatTokenFunctions[array[i]]) {
+            array[i] = formatTokenFunctions[array[i]];
         } else {
-            getParsingFlags(config).invalidMonth = input;
+            array[i] = removeFormattingTokens(array[i]);
         }
+    }
+
+    return function (mom) {
+        var output = '', i;
+        for (i = 0; i < length; i++) {
+            output += isFunction(array[i]) ? array[i].call(mom, format) : array[i];
+        }
+        return output;
+    };
+}
+
+// format date using native date object
+function formatMoment(m, format) {
+    if (!m.isValid()) {
+        return m.localeData().invalidDate();
+    }
+
+    format = expandFormat(format, m.localeData());
+    formatFunctions[format] = formatFunctions[format] || makeFormatFunction(format);
+
+    return formatFunctions[format](m);
+}
+
+function expandFormat(format, locale) {
+    var i = 5;
+
+    function replaceLongDateFormatTokens(input) {
+        return locale.longDateFormat(input) || input;
+    }
+
+    localFormattingTokens.lastIndex = 0;
+    while (i >= 0 && localFormattingTokens.test(format)) {
+        format = format.replace(localFormattingTokens, replaceLongDateFormatTokens);
+        localFormattingTokens.lastIndex = 0;
+        i -= 1;
+    }
+
+    return format;
+}
+
+var match1         = /\d/;            //       0 - 9
+var match2         = /\d\d/;          //      00 - 99
+var match3         = /\d{3}/;         //     000 - 999
+var match4         = /\d{4}/;         //    0000 - 9999
+var match6         = /[+-]?\d{6}/;    // -999999 - 999999
+var match1to2      = /\d\d?/;         //       0 - 99
+var match3to4      = /\d\d\d\d?/;     //     999 - 9999
+var match5to6      = /\d\d\d\d\d\d?/; //   99999 - 999999
+var match1to3      = /\d{1,3}/;       //       0 - 999
+var match1to4      = /\d{1,4}/;       //       0 - 9999
+var match1to6      = /[+-]?\d{1,6}/;  // -999999 - 999999
+
+var matchUnsigned  = /\d+/;           //       0 - inf
+var matchSigned    = /[+-]?\d+/;      //    -inf - inf
+
+var matchOffset    = /Z|[+-]\d\d:?\d\d/gi; // +00:00 -00:00 +0000 -0000 or Z
+var matchShortOffset = /Z|[+-]\d\d(?::?\d\d)?/gi; // +00 -00 +00:00 -00:00 +0000 -0000 or Z
+
+var matchTimestamp = /[+-]?\d+(\.\d{1,3})?/; // 123456789 123456789.123
+
+// any word (or two) characters or numbers including two/three word month in arabic.
+// includes scottish gaelic two word and hyphenated months
+var matchWord = /[0-9]*['a-z\u00A0-\u05FF\u0700-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]+|[\u0600-\u06FF\/]+(\s*?[\u0600-\u06FF]+){1,2}/i;
+
+
+var regexes = {};
+
+function addRegexToken (token, regex, strictRegex) {
+    regexes[token] = isFunction(regex) ? regex : function (isStrict, localeData) {
+        return (isStrict && strictRegex) ? strictRegex : regex;
+    };
+}
+
+function getParseRegexForToken (token, config) {
+    if (!hasOwnProp(regexes, token)) {
+        return new RegExp(unescapeFormat(token));
+    }
+
+    return regexes[token](config._strict, config._locale);
+}
+
+// Code from http://stackoverflow.com/questions/3561493/is-there-a-regexp-escape-function-in-javascript
+function unescapeFormat(s) {
+    return regexEscape(s.replace('\\', '').replace(/\\(\[)|\\(\])|\[([^\]\[]*)\]|\\(.)/g, function (matched, p1, p2, p3, p4) {
+        return p1 || p2 || p3 || p4;
+    }));
+}
+
+function regexEscape(s) {
+    return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+
+var tokens = {};
+
+function addParseToken (token, callback) {
+    var i, func = callback;
+    if (typeof token === 'string') {
+        token = [token];
+    }
+    if (isNumber(callback)) {
+        func = function (input, array) {
+            array[callback] = toInt(input);
+        };
+    }
+    for (i = 0; i < token.length; i++) {
+        tokens[token[i]] = func;
+    }
+}
+
+function addWeekParseToken (token, callback) {
+    addParseToken(token, function (input, array, config, token) {
+        config._w = config._w || {};
+        callback(input, config._w, config, token);
     });
+}
 
-    // LOCALES
-
-    var defaultLocaleMonths =
-            'January_February_March_April_May_June_July_August_September_October_November_December'.split(
-                '_'
-            ),
-        defaultLocaleMonthsShort =
-            'Jan_Feb_Mar_Apr_May_Jun_Jul_Aug_Sep_Oct_Nov_Dec'.split('_'),
-        MONTHS_IN_FORMAT = /D[oD]?(\[[^\[\]]*\]|\s)+MMMM?/,
-        defaultMonthsShortRegex = matchWord,
-        defaultMonthsRegex = matchWord;
-
-    function localeMonths(m, format) {
-        if (!m) {
-            return isArray(this._months)
-                ? this._months
-                : this._months['standalone'];
-        }
-        return isArray(this._months)
-            ? this._months[m.month()]
-            : this._months[
-                  (this._months.isFormat || MONTHS_IN_FORMAT).test(format)
-                      ? 'format'
-                      : 'standalone'
-              ][m.month()];
+function addTimeToArrayFromToken(token, input, config) {
+    if (input != null && hasOwnProp(tokens, token)) {
+        tokens[token](input, config._a, config, token);
     }
+}
 
-    function localeMonthsShort(m, format) {
-        if (!m) {
-            return isArray(this._monthsShort)
-                ? this._monthsShort
-                : this._monthsShort['standalone'];
-        }
-        return isArray(this._monthsShort)
-            ? this._monthsShort[m.month()]
-            : this._monthsShort[
-                  MONTHS_IN_FORMAT.test(format) ? 'format' : 'standalone'
-              ][m.month()];
-    }
+var YEAR = 0;
+var MONTH = 1;
+var DATE = 2;
+var HOUR = 3;
+var MINUTE = 4;
+var SECOND = 5;
+var MILLISECOND = 6;
+var WEEK = 7;
+var WEEKDAY = 8;
 
-    function handleStrictParse(monthName, format, strict) {
-        var i,
-            ii,
-            mom,
-            llc = monthName.toLocaleLowerCase();
-        if (!this._monthsParse) {
-            // this is not used
-            this._monthsParse = [];
-            this._longMonthsParse = [];
-            this._shortMonthsParse = [];
-            for (i = 0; i < 12; ++i) {
-                mom = createUTC([2000, i]);
-                this._shortMonthsParse[i] = this.monthsShort(
-                    mom,
-                    ''
-                ).toLocaleLowerCase();
-                this._longMonthsParse[i] = this.months(mom, '').toLocaleLowerCase();
+var indexOf;
+
+if (Array.prototype.indexOf) {
+    indexOf = Array.prototype.indexOf;
+} else {
+    indexOf = function (o) {
+        // I know
+        var i;
+        for (i = 0; i < this.length; ++i) {
+            if (this[i] === o) {
+                return i;
             }
         }
+        return -1;
+    };
+}
 
-        if (strict) {
-            if (format === 'MMM') {
-                ii = indexOf.call(this._shortMonthsParse, llc);
-                return ii !== -1 ? ii : null;
-            } else {
-                ii = indexOf.call(this._longMonthsParse, llc);
-                return ii !== -1 ? ii : null;
-            }
-        } else {
-            if (format === 'MMM') {
-                ii = indexOf.call(this._shortMonthsParse, llc);
-                if (ii !== -1) {
-                    return ii;
-                }
-                ii = indexOf.call(this._longMonthsParse, llc);
-                return ii !== -1 ? ii : null;
-            } else {
-                ii = indexOf.call(this._longMonthsParse, llc);
-                if (ii !== -1) {
-                    return ii;
-                }
-                ii = indexOf.call(this._shortMonthsParse, llc);
-                return ii !== -1 ? ii : null;
-            }
-        }
+var indexOf$1 = indexOf;
+
+function daysInMonth(year, month) {
+    return new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+}
+
+// FORMATTING
+
+addFormatToken('M', ['MM', 2], 'Mo', function () {
+    return this.month() + 1;
+});
+
+addFormatToken('MMM', 0, 0, function (format) {
+    return this.localeData().monthsShort(this, format);
+});
+
+addFormatToken('MMMM', 0, 0, function (format) {
+    return this.localeData().months(this, format);
+});
+
+// ALIASES
+
+addUnitAlias('month', 'M');
+
+// PRIORITY
+
+addUnitPriority('month', 8);
+
+// PARSING
+
+addRegexToken('M',    match1to2);
+addRegexToken('MM',   match1to2, match2);
+addRegexToken('MMM',  function (isStrict, locale) {
+    return locale.monthsShortRegex(isStrict);
+});
+addRegexToken('MMMM', function (isStrict, locale) {
+    return locale.monthsRegex(isStrict);
+});
+
+addParseToken(['M', 'MM'], function (input, array) {
+    array[MONTH] = toInt(input) - 1;
+});
+
+addParseToken(['MMM', 'MMMM'], function (input, array, config, token) {
+    var month = config._locale.monthsParse(input, token, config._strict);
+    // if we didn't find a month name, mark the date as invalid.
+    if (month != null) {
+        array[MONTH] = month;
+    } else {
+        getParsingFlags(config).invalidMonth = input;
     }
+});
 
-    function localeMonthsParse(monthName, format, strict) {
-        var i, mom, regex;
+// LOCALES
 
-        if (this._monthsParseExact) {
-            return handleStrictParse.call(this, monthName, format, strict);
-        }
+var MONTHS_IN_FORMAT = /D[oD]?(\[[^\[\]]*\]|\s)+MMMM?/;
+var defaultLocaleMonths = 'January_February_March_April_May_June_July_August_September_October_November_December'.split('_');
+function localeMonths (m, format) {
+    if (!m) {
+        return isArray(this._months) ? this._months :
+            this._months['standalone'];
+    }
+    return isArray(this._months) ? this._months[m.month()] :
+        this._months[(this._months.isFormat || MONTHS_IN_FORMAT).test(format) ? 'format' : 'standalone'][m.month()];
+}
 
-        if (!this._monthsParse) {
-            this._monthsParse = [];
-            this._longMonthsParse = [];
-            this._shortMonthsParse = [];
-        }
+var defaultLocaleMonthsShort = 'Jan_Feb_Mar_Apr_May_Jun_Jul_Aug_Sep_Oct_Nov_Dec'.split('_');
+function localeMonthsShort (m, format) {
+    if (!m) {
+        return isArray(this._monthsShort) ? this._monthsShort :
+            this._monthsShort['standalone'];
+    }
+    return isArray(this._monthsShort) ? this._monthsShort[m.month()] :
+        this._monthsShort[MONTHS_IN_FORMAT.test(format) ? 'format' : 'standalone'][m.month()];
+}
 
-        // TODO: add sorting
-        // Sorting makes sure if one month (or abbr) is a prefix of another
-        // see sorting in computeMonthsParse
-        for (i = 0; i < 12; i++) {
-            // make the regex if we don't have it already
+function handleStrictParse(monthName, format, strict) {
+    var i, ii, mom, llc = monthName.toLocaleLowerCase();
+    if (!this._monthsParse) {
+        // this is not used
+        this._monthsParse = [];
+        this._longMonthsParse = [];
+        this._shortMonthsParse = [];
+        for (i = 0; i < 12; ++i) {
             mom = createUTC([2000, i]);
-            if (strict && !this._longMonthsParse[i]) {
-                this._longMonthsParse[i] = new RegExp(
-                    '^' + this.months(mom, '').replace('.', '') + '$',
-                    'i'
-                );
-                this._shortMonthsParse[i] = new RegExp(
-                    '^' + this.monthsShort(mom, '').replace('.', '') + '$',
-                    'i'
-                );
-            }
-            if (!strict && !this._monthsParse[i]) {
-                regex =
-                    '^' + this.months(mom, '') + '|^' + this.monthsShort(mom, '');
-                this._monthsParse[i] = new RegExp(regex.replace('.', ''), 'i');
-            }
-            // test the regex
-            if (
-                strict &&
-                format === 'MMMM' &&
-                this._longMonthsParse[i].test(monthName)
-            ) {
-                return i;
-            } else if (
-                strict &&
-                format === 'MMM' &&
-                this._shortMonthsParse[i].test(monthName)
-            ) {
-                return i;
-            } else if (!strict && this._monthsParse[i].test(monthName)) {
-                return i;
-            }
+            this._shortMonthsParse[i] = this.monthsShort(mom, '').toLocaleLowerCase();
+            this._longMonthsParse[i] = this.months(mom, '').toLocaleLowerCase();
         }
     }
 
-    // MOMENTS
-
-    function setMonth(mom, value) {
-        var dayOfMonth;
-
-        if (!mom.isValid()) {
-            // No op
-            return mom;
+    if (strict) {
+        if (format === 'MMM') {
+            ii = indexOf$1.call(this._shortMonthsParse, llc);
+            return ii !== -1 ? ii : null;
+        } else {
+            ii = indexOf$1.call(this._longMonthsParse, llc);
+            return ii !== -1 ? ii : null;
         }
-
-        if (typeof value === 'string') {
-            if (/^\d+$/.test(value)) {
-                value = toInt(value);
-            } else {
-                value = mom.localeData().monthsParse(value);
-                // TODO: Another silent failure?
-                if (!isNumber(value)) {
-                    return mom;
-                }
+    } else {
+        if (format === 'MMM') {
+            ii = indexOf$1.call(this._shortMonthsParse, llc);
+            if (ii !== -1) {
+                return ii;
             }
+            ii = indexOf$1.call(this._longMonthsParse, llc);
+            return ii !== -1 ? ii : null;
+        } else {
+            ii = indexOf$1.call(this._longMonthsParse, llc);
+            if (ii !== -1) {
+                return ii;
+            }
+            ii = indexOf$1.call(this._shortMonthsParse, llc);
+            return ii !== -1 ? ii : null;
         }
+    }
+}
 
-        dayOfMonth = Math.min(mom.date(), daysInMonth(mom.year(), value));
-        mom._d['set' + (mom._isUTC ? 'UTC' : '') + 'Month'](value, dayOfMonth);
+function localeMonthsParse (monthName, format, strict) {
+    var i, mom, regex;
+
+    if (this._monthsParseExact) {
+        return handleStrictParse.call(this, monthName, format, strict);
+    }
+
+    if (!this._monthsParse) {
+        this._monthsParse = [];
+        this._longMonthsParse = [];
+        this._shortMonthsParse = [];
+    }
+
+    // TODO: add sorting
+    // Sorting makes sure if one month (or abbr) is a prefix of another
+    // see sorting in computeMonthsParse
+    for (i = 0; i < 12; i++) {
+        // make the regex if we don't have it already
+        mom = createUTC([2000, i]);
+        if (strict && !this._longMonthsParse[i]) {
+            this._longMonthsParse[i] = new RegExp('^' + this.months(mom, '').replace('.', '') + '$', 'i');
+            this._shortMonthsParse[i] = new RegExp('^' + this.monthsShort(mom, '').replace('.', '') + '$', 'i');
+        }
+        if (!strict && !this._monthsParse[i]) {
+            regex = '^' + this.months(mom, '') + '|^' + this.monthsShort(mom, '');
+            this._monthsParse[i] = new RegExp(regex.replace('.', ''), 'i');
+        }
+        // test the regex
+        if (strict && format === 'MMMM' && this._longMonthsParse[i].test(monthName)) {
+            return i;
+        } else if (strict && format === 'MMM' && this._shortMonthsParse[i].test(monthName)) {
+            return i;
+        } else if (!strict && this._monthsParse[i].test(monthName)) {
+            return i;
+        }
+    }
+}
+
+// MOMENTS
+
+function setMonth (mom, value) {
+    var dayOfMonth;
+
+    if (!mom.isValid()) {
+        // No op
         return mom;
     }
 
-    function getSetMonth(value) {
-        if (value != null) {
-            setMonth(this, value);
-            hooks.updateOffset(this, true);
-            return this;
+    if (typeof value === 'string') {
+        if (/^\d+$/.test(value)) {
+            value = toInt(value);
         } else {
-            return get(this, 'Month');
+            value = mom.localeData().monthsParse(value);
+            // TODO: Another silent failure?
+            if (!isNumber(value)) {
+                return mom;
+            }
         }
     }
 
-    function getDaysInMonth() {
-        return daysInMonth(this.year(), this.month());
-    }
+    dayOfMonth = Math.min(mom.date(), daysInMonth(mom.year(), value));
+    mom._d['set' + (mom._isUTC ? 'UTC' : '') + 'Month'](value, dayOfMonth);
+    return mom;
+}
 
-    function monthsShortRegex(isStrict) {
-        if (this._monthsParseExact) {
-            if (!hasOwnProp(this, '_monthsRegex')) {
-                computeMonthsParse.call(this);
-            }
-            if (isStrict) {
-                return this._monthsShortStrictRegex;
-            } else {
-                return this._monthsShortRegex;
-            }
+function getSetMonth (value) {
+    if (value != null) {
+        setMonth(this, value);
+        hooks.updateOffset(this, true);
+        return this;
+    } else {
+        return get(this, 'Month');
+    }
+}
+
+function getDaysInMonth () {
+    return daysInMonth(this.year(), this.month());
+}
+
+var defaultMonthsShortRegex = matchWord;
+function monthsShortRegex (isStrict) {
+    if (this._monthsParseExact) {
+        if (!hasOwnProp(this, '_monthsRegex')) {
+            computeMonthsParse.call(this);
+        }
+        if (isStrict) {
+            return this._monthsShortStrictRegex;
         } else {
-            if (!hasOwnProp(this, '_monthsShortRegex')) {
-                this._monthsShortRegex = defaultMonthsShortRegex;
-            }
-            return this._monthsShortStrictRegex && isStrict
-                ? this._monthsShortStrictRegex
-                : this._monthsShortRegex;
+            return this._monthsShortRegex;
         }
+    } else {
+        if (!hasOwnProp(this, '_monthsShortRegex')) {
+            this._monthsShortRegex = defaultMonthsShortRegex;
+        }
+        return this._monthsShortStrictRegex && isStrict ?
+            this._monthsShortStrictRegex : this._monthsShortRegex;
     }
+}
 
-    function monthsRegex(isStrict) {
-        if (this._monthsParseExact) {
-            if (!hasOwnProp(this, '_monthsRegex')) {
-                computeMonthsParse.call(this);
-            }
-            if (isStrict) {
-                return this._monthsStrictRegex;
-            } else {
-                return this._monthsRegex;
-            }
+var defaultMonthsRegex = matchWord;
+function monthsRegex (isStrict) {
+    if (this._monthsParseExact) {
+        if (!hasOwnProp(this, '_monthsRegex')) {
+            computeMonthsParse.call(this);
+        }
+        if (isStrict) {
+            return this._monthsStrictRegex;
         } else {
-            if (!hasOwnProp(this, '_monthsRegex')) {
-                this._monthsRegex = defaultMonthsRegex;
-            }
-            return this._monthsStrictRegex && isStrict
-                ? this._monthsStrictRegex
-                : this._monthsRegex;
+            return this._monthsRegex;
         }
+    } else {
+        if (!hasOwnProp(this, '_monthsRegex')) {
+            this._monthsRegex = defaultMonthsRegex;
+        }
+        return this._monthsStrictRegex && isStrict ?
+            this._monthsStrictRegex : this._monthsRegex;
+    }
+}
+
+function computeMonthsParse () {
+    function cmpLenRev(a, b) {
+        return b.length - a.length;
     }
 
-    function computeMonthsParse() {
-        function cmpLenRev(a, b) {
-            return b.length - a.length;
-        }
-
-        var shortPieces = [],
-            longPieces = [],
-            mixedPieces = [],
-            i,
-            mom;
-        for (i = 0; i < 12; i++) {
-            // make the regex if we don't have it already
-            mom = createUTC([2000, i]);
-            shortPieces.push(this.monthsShort(mom, ''));
-            longPieces.push(this.months(mom, ''));
-            mixedPieces.push(this.months(mom, ''));
-            mixedPieces.push(this.monthsShort(mom, ''));
-        }
-        // Sorting makes sure if one month (or abbr) is a prefix of another it
-        // will match the longer piece.
-        shortPieces.sort(cmpLenRev);
-        longPieces.sort(cmpLenRev);
-        mixedPieces.sort(cmpLenRev);
-        for (i = 0; i < 12; i++) {
-            shortPieces[i] = regexEscape(shortPieces[i]);
-            longPieces[i] = regexEscape(longPieces[i]);
-        }
-        for (i = 0; i < 24; i++) {
-            mixedPieces[i] = regexEscape(mixedPieces[i]);
-        }
-
-        this._monthsRegex = new RegExp('^(' + mixedPieces.join('|') + ')', 'i');
-        this._monthsShortRegex = this._monthsRegex;
-        this._monthsStrictRegex = new RegExp(
-            '^(' + longPieces.join('|') + ')',
-            'i'
-        );
-        this._monthsShortStrictRegex = new RegExp(
-            '^(' + shortPieces.join('|') + ')',
-            'i'
-        );
+    var shortPieces = [], longPieces = [], mixedPieces = [],
+        i, mom;
+    for (i = 0; i < 12; i++) {
+        // make the regex if we don't have it already
+        mom = createUTC([2000, i]);
+        shortPieces.push(this.monthsShort(mom, ''));
+        longPieces.push(this.months(mom, ''));
+        mixedPieces.push(this.months(mom, ''));
+        mixedPieces.push(this.monthsShort(mom, ''));
+    }
+    // Sorting makes sure if one month (or abbr) is a prefix of another it
+    // will match the longer piece.
+    shortPieces.sort(cmpLenRev);
+    longPieces.sort(cmpLenRev);
+    mixedPieces.sort(cmpLenRev);
+    for (i = 0; i < 12; i++) {
+        shortPieces[i] = regexEscape(shortPieces[i]);
+        longPieces[i] = regexEscape(longPieces[i]);
+    }
+    for (i = 0; i < 24; i++) {
+        mixedPieces[i] = regexEscape(mixedPieces[i]);
     }
 
-    // FORMATTING
+    this._monthsRegex = new RegExp('^(' + mixedPieces.join('|') + ')', 'i');
+    this._monthsShortRegex = this._monthsRegex;
+    this._monthsStrictRegex = new RegExp('^(' + longPieces.join('|') + ')', 'i');
+    this._monthsShortStrictRegex = new RegExp('^(' + shortPieces.join('|') + ')', 'i');
+}
 
-    addFormatToken('Y', 0, 0, function () {
-        var y = this.year();
-        return y <= 9999 ? zeroFill(y, 4) : '+' + y;
-    });
+// FORMATTING
 
-    addFormatToken(0, ['YY', 2], 0, function () {
-        return this.year() % 100;
-    });
+addFormatToken('Y', 0, 0, function () {
+    var y = this.year();
+    return y <= 9999 ? '' + y : '+' + y;
+});
 
-    addFormatToken(0, ['YYYY', 4], 0, 'year');
-    addFormatToken(0, ['YYYYY', 5], 0, 'year');
-    addFormatToken(0, ['YYYYYY', 6, true], 0, 'year');
+addFormatToken(0, ['YY', 2], 0, function () {
+    return this.year() % 100;
+});
 
-    // ALIASES
+addFormatToken(0, ['YYYY',   4],       0, 'year');
+addFormatToken(0, ['YYYYY',  5],       0, 'year');
+addFormatToken(0, ['YYYYYY', 6, true], 0, 'year');
 
-    addUnitAlias('year', 'y');
+// ALIASES
 
-    // PRIORITIES
+addUnitAlias('year', 'y');
 
-    addUnitPriority('year', 1);
+// PRIORITIES
 
-    // PARSING
+addUnitPriority('year', 1);
 
-    addRegexToken('Y', matchSigned);
-    addRegexToken('YY', match1to2, match2);
-    addRegexToken('YYYY', match1to4, match4);
-    addRegexToken('YYYYY', match1to6, match6);
-    addRegexToken('YYYYYY', match1to6, match6);
+// PARSING
 
-    addParseToken(['YYYYY', 'YYYYYY'], YEAR);
-    addParseToken('YYYY', function (input, array) {
-        array[YEAR] =
-            input.length === 2 ? hooks.parseTwoDigitYear(input) : toInt(input);
-    });
-    addParseToken('YY', function (input, array) {
-        array[YEAR] = hooks.parseTwoDigitYear(input);
-    });
-    addParseToken('Y', function (input, array) {
-        array[YEAR] = parseInt(input, 10);
-    });
+addRegexToken('Y',      matchSigned);
+addRegexToken('YY',     match1to2, match2);
+addRegexToken('YYYY',   match1to4, match4);
+addRegexToken('YYYYY',  match1to6, match6);
+addRegexToken('YYYYYY', match1to6, match6);
 
-    // HELPERS
+addParseToken(['YYYYY', 'YYYYYY'], YEAR);
+addParseToken('YYYY', function (input, array) {
+    array[YEAR] = input.length === 2 ? hooks.parseTwoDigitYear(input) : toInt(input);
+});
+addParseToken('YY', function (input, array) {
+    array[YEAR] = hooks.parseTwoDigitYear(input);
+});
+addParseToken('Y', function (input, array) {
+    array[YEAR] = parseInt(input, 10);
+});
 
-    function daysInYear(year) {
-        return isLeapYear(year) ? 366 : 365;
+// HELPERS
+
+function daysInYear(year) {
+    return isLeapYear(year) ? 366 : 365;
+}
+
+function isLeapYear(year) {
+    return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}
+
+// HOOKS
+
+hooks.parseTwoDigitYear = function (input) {
+    return toInt(input) + (toInt(input) > 68 ? 1900 : 2000);
+};
+
+// MOMENTS
+
+var getSetYear = makeGetSet('FullYear', true);
+
+function getIsLeapYear () {
+    return isLeapYear(this.year());
+}
+
+function createDate (y, m, d, h, M, s, ms) {
+    // can't just apply() to create a date:
+    // https://stackoverflow.com/q/181348
+    var date = new Date(y, m, d, h, M, s, ms);
+
+    // the date constructor remaps years 0-99 to 1900-1999
+    if (y < 100 && y >= 0 && isFinite(date.getFullYear())) {
+        date.setFullYear(y);
+    }
+    return date;
+}
+
+function createUTCDate (y) {
+    var date = new Date(Date.UTC.apply(null, arguments));
+
+    // the Date.UTC function remaps years 0-99 to 1900-1999
+    if (y < 100 && y >= 0 && isFinite(date.getUTCFullYear())) {
+        date.setUTCFullYear(y);
+    }
+    return date;
+}
+
+// start-of-first-week - start-of-year
+function firstWeekOffset(year, dow, doy) {
+    var // first-week day -- which january is always in the first week (4 for iso, 1 for other)
+        fwd = 7 + dow - doy,
+        // first-week day local weekday -- which local weekday is fwd
+        fwdlw = (7 + createUTCDate(year, 0, fwd).getUTCDay() - dow) % 7;
+
+    return -fwdlw + fwd - 1;
+}
+
+// https://en.wikipedia.org/wiki/ISO_week_date#Calculating_a_date_given_the_year.2C_week_number_and_weekday
+function dayOfYearFromWeeks(year, week, weekday, dow, doy) {
+    var localWeekday = (7 + weekday - dow) % 7,
+        weekOffset = firstWeekOffset(year, dow, doy),
+        dayOfYear = 1 + 7 * (week - 1) + localWeekday + weekOffset,
+        resYear, resDayOfYear;
+
+    if (dayOfYear <= 0) {
+        resYear = year - 1;
+        resDayOfYear = daysInYear(resYear) + dayOfYear;
+    } else if (dayOfYear > daysInYear(year)) {
+        resYear = year + 1;
+        resDayOfYear = dayOfYear - daysInYear(year);
+    } else {
+        resYear = year;
+        resDayOfYear = dayOfYear;
     }
 
-    // HOOKS
-
-    hooks.parseTwoDigitYear = function (input) {
-        return toInt(input) + (toInt(input) > 68 ? 1900 : 2000);
+    return {
+        year: resYear,
+        dayOfYear: resDayOfYear
     };
+}
 
-    // MOMENTS
+function weekOfYear(mom, dow, doy) {
+    var weekOffset = firstWeekOffset(mom.year(), dow, doy),
+        week = Math.floor((mom.dayOfYear() - weekOffset - 1) / 7) + 1,
+        resWeek, resYear;
 
-    var getSetYear = makeGetSet('FullYear', true);
-
-    function getIsLeapYear() {
-        return isLeapYear(this.year());
+    if (week < 1) {
+        resYear = mom.year() - 1;
+        resWeek = week + weeksInYear(resYear, dow, doy);
+    } else if (week > weeksInYear(mom.year(), dow, doy)) {
+        resWeek = week - weeksInYear(mom.year(), dow, doy);
+        resYear = mom.year() + 1;
+    } else {
+        resYear = mom.year();
+        resWeek = week;
     }
 
-    function createDate(y, m, d, h, M, s, ms) {
-        // can't just apply() to create a date:
-        // https://stackoverflow.com/q/181348
-        var date;
-        // the date constructor remaps years 0-99 to 1900-1999
-        if (y < 100 && y >= 0) {
-            // preserve leap years using a full 400 year cycle, then reset
-            date = new Date(y + 400, m, d, h, M, s, ms);
-            if (isFinite(date.getFullYear())) {
-                date.setFullYear(y);
-            }
-        } else {
-            date = new Date(y, m, d, h, M, s, ms);
-        }
-
-        return date;
-    }
-
-    function createUTCDate(y) {
-        var date, args;
-        // the Date.UTC function remaps years 0-99 to 1900-1999
-        if (y < 100 && y >= 0) {
-            args = Array.prototype.slice.call(arguments);
-            // preserve leap years using a full 400 year cycle, then reset
-            args[0] = y + 400;
-            date = new Date(Date.UTC.apply(null, args));
-            if (isFinite(date.getUTCFullYear())) {
-                date.setUTCFullYear(y);
-            }
-        } else {
-            date = new Date(Date.UTC.apply(null, arguments));
-        }
-
-        return date;
-    }
-
-    // start-of-first-week - start-of-year
-    function firstWeekOffset(year, dow, doy) {
-        var // first-week day -- which january is always in the first week (4 for iso, 1 for other)
-            fwd = 7 + dow - doy,
-            // first-week day local weekday -- which local weekday is fwd
-            fwdlw = (7 + createUTCDate(year, 0, fwd).getUTCDay() - dow) % 7;
-
-        return -fwdlw + fwd - 1;
-    }
-
-    // https://en.wikipedia.org/wiki/ISO_week_date#Calculating_a_date_given_the_year.2C_week_number_and_weekday
-    function dayOfYearFromWeeks(year, week, weekday, dow, doy) {
-        var localWeekday = (7 + weekday - dow) % 7,
-            weekOffset = firstWeekOffset(year, dow, doy),
-            dayOfYear = 1 + 7 * (week - 1) + localWeekday + weekOffset,
-            resYear,
-            resDayOfYear;
-
-        if (dayOfYear <= 0) {
-            resYear = year - 1;
-            resDayOfYear = daysInYear(resYear) + dayOfYear;
-        } else if (dayOfYear > daysInYear(year)) {
-            resYear = year + 1;
-            resDayOfYear = dayOfYear - daysInYear(year);
-        } else {
-            resYear = year;
-            resDayOfYear = dayOfYear;
-        }
-
-        return {
-            year: resYear,
-            dayOfYear: resDayOfYear,
-        };
-    }
-
-    function weekOfYear(mom, dow, doy) {
-        var weekOffset = firstWeekOffset(mom.year(), dow, doy),
-            week = Math.floor((mom.dayOfYear() - weekOffset - 1) / 7) + 1,
-            resWeek,
-            resYear;
-
-        if (week < 1) {
-            resYear = mom.year() - 1;
-            resWeek = week + weeksInYear(resYear, dow, doy);
-        } else if (week > weeksInYear(mom.year(), dow, doy)) {
-            resWeek = week - weeksInYear(mom.year(), dow, doy);
-            resYear = mom.year() + 1;
-        } else {
-            resYear = mom.year();
-            resWeek = week;
-        }
-
-        return {
-            week: resWeek,
-            year: resYear,
-        };
-    }
-
-    function weeksInYear(year, dow, doy) {
-        var weekOffset = firstWeekOffset(year, dow, doy),
-            weekOffsetNext = firstWeekOffset(year + 1, dow, doy);
-        return (daysInYear(year) - weekOffset + weekOffsetNext) / 7;
-    }
-
-    // FORMATTING
-
-    addFormatToken('w', ['ww', 2], 'wo', 'week');
-    addFormatToken('W', ['WW', 2], 'Wo', 'isoWeek');
-
-    // ALIASES
-
-    addUnitAlias('week', 'w');
-    addUnitAlias('isoWeek', 'W');
-
-    // PRIORITIES
-
-    addUnitPriority('week', 5);
-    addUnitPriority('isoWeek', 5);
-
-    // PARSING
-
-    addRegexToken('w', match1to2);
-    addRegexToken('ww', match1to2, match2);
-    addRegexToken('W', match1to2);
-    addRegexToken('WW', match1to2, match2);
-
-    addWeekParseToken(
-        ['w', 'ww', 'W', 'WW'],
-        function (input, week, config, token) {
-            week[token.substr(0, 1)] = toInt(input);
-        }
-    );
-
-    // HELPERS
-
-    // LOCALES
-
-    function localeWeek(mom) {
-        return weekOfYear(mom, this._week.dow, this._week.doy).week;
-    }
-
-    var defaultLocaleWeek = {
-        dow: 0, // Sunday is the first day of the week.
-        doy: 6, // The week that contains Jan 6th is the first week of the year.
+    return {
+        week: resWeek,
+        year: resYear
     };
+}
 
-    function localeFirstDayOfWeek() {
-        return this._week.dow;
+function weeksInYear(year, dow, doy) {
+    var weekOffset = firstWeekOffset(year, dow, doy),
+        weekOffsetNext = firstWeekOffset(year + 1, dow, doy);
+    return (daysInYear(year) - weekOffset + weekOffsetNext) / 7;
+}
+
+// FORMATTING
+
+addFormatToken('w', ['ww', 2], 'wo', 'week');
+addFormatToken('W', ['WW', 2], 'Wo', 'isoWeek');
+
+// ALIASES
+
+addUnitAlias('week', 'w');
+addUnitAlias('isoWeek', 'W');
+
+// PRIORITIES
+
+addUnitPriority('week', 5);
+addUnitPriority('isoWeek', 5);
+
+// PARSING
+
+addRegexToken('w',  match1to2);
+addRegexToken('ww', match1to2, match2);
+addRegexToken('W',  match1to2);
+addRegexToken('WW', match1to2, match2);
+
+addWeekParseToken(['w', 'ww', 'W', 'WW'], function (input, week, config, token) {
+    week[token.substr(0, 1)] = toInt(input);
+});
+
+// HELPERS
+
+// LOCALES
+
+function localeWeek (mom) {
+    return weekOfYear(mom, this._week.dow, this._week.doy).week;
+}
+
+var defaultLocaleWeek = {
+    dow : 0, // Sunday is the first day of the week.
+    doy : 6  // The week that contains Jan 1st is the first week of the year.
+};
+
+function localeFirstDayOfWeek () {
+    return this._week.dow;
+}
+
+function localeFirstDayOfYear () {
+    return this._week.doy;
+}
+
+// MOMENTS
+
+function getSetWeek (input) {
+    var week = this.localeData().week(this);
+    return input == null ? week : this.add((input - week) * 7, 'd');
+}
+
+function getSetISOWeek (input) {
+    var week = weekOfYear(this, 1, 4).week;
+    return input == null ? week : this.add((input - week) * 7, 'd');
+}
+
+// FORMATTING
+
+addFormatToken('d', 0, 'do', 'day');
+
+addFormatToken('dd', 0, 0, function (format) {
+    return this.localeData().weekdaysMin(this, format);
+});
+
+addFormatToken('ddd', 0, 0, function (format) {
+    return this.localeData().weekdaysShort(this, format);
+});
+
+addFormatToken('dddd', 0, 0, function (format) {
+    return this.localeData().weekdays(this, format);
+});
+
+addFormatToken('e', 0, 0, 'weekday');
+addFormatToken('E', 0, 0, 'isoWeekday');
+
+// ALIASES
+
+addUnitAlias('day', 'd');
+addUnitAlias('weekday', 'e');
+addUnitAlias('isoWeekday', 'E');
+
+// PRIORITY
+addUnitPriority('day', 11);
+addUnitPriority('weekday', 11);
+addUnitPriority('isoWeekday', 11);
+
+// PARSING
+
+addRegexToken('d',    match1to2);
+addRegexToken('e',    match1to2);
+addRegexToken('E',    match1to2);
+addRegexToken('dd',   function (isStrict, locale) {
+    return locale.weekdaysMinRegex(isStrict);
+});
+addRegexToken('ddd',   function (isStrict, locale) {
+    return locale.weekdaysShortRegex(isStrict);
+});
+addRegexToken('dddd',   function (isStrict, locale) {
+    return locale.weekdaysRegex(isStrict);
+});
+
+addWeekParseToken(['dd', 'ddd', 'dddd'], function (input, week, config, token) {
+    var weekday = config._locale.weekdaysParse(input, token, config._strict);
+    // if we didn't get a weekday name, mark the date as invalid
+    if (weekday != null) {
+        week.d = weekday;
+    } else {
+        getParsingFlags(config).invalidWeekday = input;
+    }
+});
+
+addWeekParseToken(['d', 'e', 'E'], function (input, week, config, token) {
+    week[token] = toInt(input);
+});
+
+// HELPERS
+
+function parseWeekday(input, locale) {
+    if (typeof input !== 'string') {
+        return input;
     }
 
-    function localeFirstDayOfYear() {
-        return this._week.doy;
+    if (!isNaN(input)) {
+        return parseInt(input, 10);
     }
 
-    // MOMENTS
-
-    function getSetWeek(input) {
-        var week = this.localeData().week(this);
-        return input == null ? week : this.add((input - week) * 7, 'd');
+    input = locale.weekdaysParse(input);
+    if (typeof input === 'number') {
+        return input;
     }
 
-    function getSetISOWeek(input) {
-        var week = weekOfYear(this, 1, 4).week;
-        return input == null ? week : this.add((input - week) * 7, 'd');
+    return null;
+}
+
+function parseIsoWeekday(input, locale) {
+    if (typeof input === 'string') {
+        return locale.weekdaysParse(input) % 7 || 7;
     }
+    return isNaN(input) ? null : input;
+}
 
-    // FORMATTING
+// LOCALES
 
-    addFormatToken('d', 0, 'do', 'day');
-
-    addFormatToken('dd', 0, 0, function (format) {
-        return this.localeData().weekdaysMin(this, format);
-    });
-
-    addFormatToken('ddd', 0, 0, function (format) {
-        return this.localeData().weekdaysShort(this, format);
-    });
-
-    addFormatToken('dddd', 0, 0, function (format) {
-        return this.localeData().weekdays(this, format);
-    });
-
-    addFormatToken('e', 0, 0, 'weekday');
-    addFormatToken('E', 0, 0, 'isoWeekday');
-
-    // ALIASES
-
-    addUnitAlias('day', 'd');
-    addUnitAlias('weekday', 'e');
-    addUnitAlias('isoWeekday', 'E');
-
-    // PRIORITY
-    addUnitPriority('day', 11);
-    addUnitPriority('weekday', 11);
-    addUnitPriority('isoWeekday', 11);
-
-    // PARSING
-
-    addRegexToken('d', match1to2);
-    addRegexToken('e', match1to2);
-    addRegexToken('E', match1to2);
-    addRegexToken('dd', function (isStrict, locale) {
-        return locale.weekdaysMinRegex(isStrict);
-    });
-    addRegexToken('ddd', function (isStrict, locale) {
-        return locale.weekdaysShortRegex(isStrict);
-    });
-    addRegexToken('dddd', function (isStrict, locale) {
-        return locale.weekdaysRegex(isStrict);
-    });
-
-    addWeekParseToken(['dd', 'ddd', 'dddd'], function (input, week, config, token) {
-        var weekday = config._locale.weekdaysParse(input, token, config._strict);
-        // if we didn't get a weekday name, mark the date as invalid
-        if (weekday != null) {
-            week.d = weekday;
-        } else {
-            getParsingFlags(config).invalidWeekday = input;
-        }
-    });
-
-    addWeekParseToken(['d', 'e', 'E'], function (input, week, config, token) {
-        week[token] = toInt(input);
-    });
-
-    // HELPERS
-
-    function parseWeekday(input, locale) {
-        if (typeof input !== 'string') {
-            return input;
-        }
-
-        if (!isNaN(input)) {
-            return parseInt(input, 10);
-        }
-
-        input = locale.weekdaysParse(input);
-        if (typeof input === 'number') {
-            return input;
-        }
-
-        return null;
+var defaultLocaleWeekdays = 'Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday'.split('_');
+function localeWeekdays (m, format) {
+    if (!m) {
+        return isArray(this._weekdays) ? this._weekdays :
+            this._weekdays['standalone'];
     }
+    return isArray(this._weekdays) ? this._weekdays[m.day()] :
+        this._weekdays[this._weekdays.isFormat.test(format) ? 'format' : 'standalone'][m.day()];
+}
 
-    function parseIsoWeekday(input, locale) {
-        if (typeof input === 'string') {
-            return locale.weekdaysParse(input) % 7 || 7;
-        }
-        return isNaN(input) ? null : input;
-    }
+var defaultLocaleWeekdaysShort = 'Sun_Mon_Tue_Wed_Thu_Fri_Sat'.split('_');
+function localeWeekdaysShort (m) {
+    return (m) ? this._weekdaysShort[m.day()] : this._weekdaysShort;
+}
 
-    // LOCALES
-    function shiftWeekdays(ws, n) {
-        return ws.slice(n, 7).concat(ws.slice(0, n));
-    }
+var defaultLocaleWeekdaysMin = 'Su_Mo_Tu_We_Th_Fr_Sa'.split('_');
+function localeWeekdaysMin (m) {
+    return (m) ? this._weekdaysMin[m.day()] : this._weekdaysMin;
+}
 
-    var defaultLocaleWeekdays =
-            'Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday'.split('_'),
-        defaultLocaleWeekdaysShort = 'Sun_Mon_Tue_Wed_Thu_Fri_Sat'.split('_'),
-        defaultLocaleWeekdaysMin = 'Su_Mo_Tu_We_Th_Fr_Sa'.split('_'),
-        defaultWeekdaysRegex = matchWord,
-        defaultWeekdaysShortRegex = matchWord,
-        defaultWeekdaysMinRegex = matchWord;
+function handleStrictParse$1(weekdayName, format, strict) {
+    var i, ii, mom, llc = weekdayName.toLocaleLowerCase();
+    if (!this._weekdaysParse) {
+        this._weekdaysParse = [];
+        this._shortWeekdaysParse = [];
+        this._minWeekdaysParse = [];
 
-    function localeWeekdays(m, format) {
-        var weekdays = isArray(this._weekdays)
-            ? this._weekdays
-            : this._weekdays[
-                  m && m !== true && this._weekdays.isFormat.test(format)
-                      ? 'format'
-                      : 'standalone'
-              ];
-        return m === true
-            ? shiftWeekdays(weekdays, this._week.dow)
-            : m
-            ? weekdays[m.day()]
-            : weekdays;
-    }
-
-    function localeWeekdaysShort(m) {
-        return m === true
-            ? shiftWeekdays(this._weekdaysShort, this._week.dow)
-            : m
-            ? this._weekdaysShort[m.day()]
-            : this._weekdaysShort;
-    }
-
-    function localeWeekdaysMin(m) {
-        return m === true
-            ? shiftWeekdays(this._weekdaysMin, this._week.dow)
-            : m
-            ? this._weekdaysMin[m.day()]
-            : this._weekdaysMin;
-    }
-
-    function handleStrictParse$1(weekdayName, format, strict) {
-        var i,
-            ii,
-            mom,
-            llc = weekdayName.toLocaleLowerCase();
-        if (!this._weekdaysParse) {
-            this._weekdaysParse = [];
-            this._shortWeekdaysParse = [];
-            this._minWeekdaysParse = [];
-
-            for (i = 0; i < 7; ++i) {
-                mom = createUTC([2000, 1]).day(i);
-                this._minWeekdaysParse[i] = this.weekdaysMin(
-                    mom,
-                    ''
-                ).toLocaleLowerCase();
-                this._shortWeekdaysParse[i] = this.weekdaysShort(
-                    mom,
-                    ''
-                ).toLocaleLowerCase();
-                this._weekdaysParse[i] = this.weekdays(mom, '').toLocaleLowerCase();
-            }
-        }
-
-        if (strict) {
-            if (format === 'dddd') {
-                ii = indexOf.call(this._weekdaysParse, llc);
-                return ii !== -1 ? ii : null;
-            } else if (format === 'ddd') {
-                ii = indexOf.call(this._shortWeekdaysParse, llc);
-                return ii !== -1 ? ii : null;
-            } else {
-                ii = indexOf.call(this._minWeekdaysParse, llc);
-                return ii !== -1 ? ii : null;
-            }
-        } else {
-            if (format === 'dddd') {
-                ii = indexOf.call(this._weekdaysParse, llc);
-                if (ii !== -1) {
-                    return ii;
-                }
-                ii = indexOf.call(this._shortWeekdaysParse, llc);
-                if (ii !== -1) {
-                    return ii;
-                }
-                ii = indexOf.call(this._minWeekdaysParse, llc);
-                return ii !== -1 ? ii : null;
-            } else if (format === 'ddd') {
-                ii = indexOf.call(this._shortWeekdaysParse, llc);
-                if (ii !== -1) {
-                    return ii;
-                }
-                ii = indexOf.call(this._weekdaysParse, llc);
-                if (ii !== -1) {
-                    return ii;
-                }
-                ii = indexOf.call(this._minWeekdaysParse, llc);
-                return ii !== -1 ? ii : null;
-            } else {
-                ii = indexOf.call(this._minWeekdaysParse, llc);
-                if (ii !== -1) {
-                    return ii;
-                }
-                ii = indexOf.call(this._weekdaysParse, llc);
-                if (ii !== -1) {
-                    return ii;
-                }
-                ii = indexOf.call(this._shortWeekdaysParse, llc);
-                return ii !== -1 ? ii : null;
-            }
-        }
-    }
-
-    function localeWeekdaysParse(weekdayName, format, strict) {
-        var i, mom, regex;
-
-        if (this._weekdaysParseExact) {
-            return handleStrictParse$1.call(this, weekdayName, format, strict);
-        }
-
-        if (!this._weekdaysParse) {
-            this._weekdaysParse = [];
-            this._minWeekdaysParse = [];
-            this._shortWeekdaysParse = [];
-            this._fullWeekdaysParse = [];
-        }
-
-        for (i = 0; i < 7; i++) {
-            // make the regex if we don't have it already
-
+        for (i = 0; i < 7; ++i) {
             mom = createUTC([2000, 1]).day(i);
-            if (strict && !this._fullWeekdaysParse[i]) {
-                this._fullWeekdaysParse[i] = new RegExp(
-                    '^' + this.weekdays(mom, '').replace('.', '\\.?') + '$',
-                    'i'
-                );
-                this._shortWeekdaysParse[i] = new RegExp(
-                    '^' + this.weekdaysShort(mom, '').replace('.', '\\.?') + '$',
-                    'i'
-                );
-                this._minWeekdaysParse[i] = new RegExp(
-                    '^' + this.weekdaysMin(mom, '').replace('.', '\\.?') + '$',
-                    'i'
-                );
-            }
-            if (!this._weekdaysParse[i]) {
-                regex =
-                    '^' +
-                    this.weekdays(mom, '') +
-                    '|^' +
-                    this.weekdaysShort(mom, '') +
-                    '|^' +
-                    this.weekdaysMin(mom, '');
-                this._weekdaysParse[i] = new RegExp(regex.replace('.', ''), 'i');
-            }
-            // test the regex
-            if (
-                strict &&
-                format === 'dddd' &&
-                this._fullWeekdaysParse[i].test(weekdayName)
-            ) {
-                return i;
-            } else if (
-                strict &&
-                format === 'ddd' &&
-                this._shortWeekdaysParse[i].test(weekdayName)
-            ) {
-                return i;
-            } else if (
-                strict &&
-                format === 'dd' &&
-                this._minWeekdaysParse[i].test(weekdayName)
-            ) {
-                return i;
-            } else if (!strict && this._weekdaysParse[i].test(weekdayName)) {
-                return i;
-            }
+            this._minWeekdaysParse[i] = this.weekdaysMin(mom, '').toLocaleLowerCase();
+            this._shortWeekdaysParse[i] = this.weekdaysShort(mom, '').toLocaleLowerCase();
+            this._weekdaysParse[i] = this.weekdays(mom, '').toLocaleLowerCase();
         }
     }
 
-    // MOMENTS
-
-    function getSetDayOfWeek(input) {
-        if (!this.isValid()) {
-            return input != null ? this : NaN;
-        }
-        var day = this._isUTC ? this._d.getUTCDay() : this._d.getDay();
-        if (input != null) {
-            input = parseWeekday(input, this.localeData());
-            return this.add(input - day, 'd');
+    if (strict) {
+        if (format === 'dddd') {
+            ii = indexOf$1.call(this._weekdaysParse, llc);
+            return ii !== -1 ? ii : null;
+        } else if (format === 'ddd') {
+            ii = indexOf$1.call(this._shortWeekdaysParse, llc);
+            return ii !== -1 ? ii : null;
         } else {
-            return day;
+            ii = indexOf$1.call(this._minWeekdaysParse, llc);
+            return ii !== -1 ? ii : null;
         }
-    }
-
-    function getSetLocaleDayOfWeek(input) {
-        if (!this.isValid()) {
-            return input != null ? this : NaN;
-        }
-        var weekday = (this.day() + 7 - this.localeData()._week.dow) % 7;
-        return input == null ? weekday : this.add(input - weekday, 'd');
-    }
-
-    function getSetISODayOfWeek(input) {
-        if (!this.isValid()) {
-            return input != null ? this : NaN;
-        }
-
-        // behaves the same as moment#day except
-        // as a getter, returns 7 instead of 0 (1-7 range instead of 0-6)
-        // as a setter, sunday should belong to the previous week.
-
-        if (input != null) {
-            var weekday = parseIsoWeekday(input, this.localeData());
-            return this.day(this.day() % 7 ? weekday : weekday - 7);
+    } else {
+        if (format === 'dddd') {
+            ii = indexOf$1.call(this._weekdaysParse, llc);
+            if (ii !== -1) {
+                return ii;
+            }
+            ii = indexOf$1.call(this._shortWeekdaysParse, llc);
+            if (ii !== -1) {
+                return ii;
+            }
+            ii = indexOf$1.call(this._minWeekdaysParse, llc);
+            return ii !== -1 ? ii : null;
+        } else if (format === 'ddd') {
+            ii = indexOf$1.call(this._shortWeekdaysParse, llc);
+            if (ii !== -1) {
+                return ii;
+            }
+            ii = indexOf$1.call(this._weekdaysParse, llc);
+            if (ii !== -1) {
+                return ii;
+            }
+            ii = indexOf$1.call(this._minWeekdaysParse, llc);
+            return ii !== -1 ? ii : null;
         } else {
-            return this.day() || 7;
+            ii = indexOf$1.call(this._minWeekdaysParse, llc);
+            if (ii !== -1) {
+                return ii;
+            }
+            ii = indexOf$1.call(this._weekdaysParse, llc);
+            if (ii !== -1) {
+                return ii;
+            }
+            ii = indexOf$1.call(this._shortWeekdaysParse, llc);
+            return ii !== -1 ? ii : null;
         }
     }
+}
 
-    function weekdaysRegex(isStrict) {
-        if (this._weekdaysParseExact) {
-            if (!hasOwnProp(this, '_weekdaysRegex')) {
-                computeWeekdaysParse.call(this);
-            }
-            if (isStrict) {
-                return this._weekdaysStrictRegex;
-            } else {
-                return this._weekdaysRegex;
-            }
+function localeWeekdaysParse (weekdayName, format, strict) {
+    var i, mom, regex;
+
+    if (this._weekdaysParseExact) {
+        return handleStrictParse$1.call(this, weekdayName, format, strict);
+    }
+
+    if (!this._weekdaysParse) {
+        this._weekdaysParse = [];
+        this._minWeekdaysParse = [];
+        this._shortWeekdaysParse = [];
+        this._fullWeekdaysParse = [];
+    }
+
+    for (i = 0; i < 7; i++) {
+        // make the regex if we don't have it already
+
+        mom = createUTC([2000, 1]).day(i);
+        if (strict && !this._fullWeekdaysParse[i]) {
+            this._fullWeekdaysParse[i] = new RegExp('^' + this.weekdays(mom, '').replace('.', '\.?') + '$', 'i');
+            this._shortWeekdaysParse[i] = new RegExp('^' + this.weekdaysShort(mom, '').replace('.', '\.?') + '$', 'i');
+            this._minWeekdaysParse[i] = new RegExp('^' + this.weekdaysMin(mom, '').replace('.', '\.?') + '$', 'i');
+        }
+        if (!this._weekdaysParse[i]) {
+            regex = '^' + this.weekdays(mom, '') + '|^' + this.weekdaysShort(mom, '') + '|^' + this.weekdaysMin(mom, '');
+            this._weekdaysParse[i] = new RegExp(regex.replace('.', ''), 'i');
+        }
+        // test the regex
+        if (strict && format === 'dddd' && this._fullWeekdaysParse[i].test(weekdayName)) {
+            return i;
+        } else if (strict && format === 'ddd' && this._shortWeekdaysParse[i].test(weekdayName)) {
+            return i;
+        } else if (strict && format === 'dd' && this._minWeekdaysParse[i].test(weekdayName)) {
+            return i;
+        } else if (!strict && this._weekdaysParse[i].test(weekdayName)) {
+            return i;
+        }
+    }
+}
+
+// MOMENTS
+
+function getSetDayOfWeek (input) {
+    if (!this.isValid()) {
+        return input != null ? this : NaN;
+    }
+    var day = this._isUTC ? this._d.getUTCDay() : this._d.getDay();
+    if (input != null) {
+        input = parseWeekday(input, this.localeData());
+        return this.add(input - day, 'd');
+    } else {
+        return day;
+    }
+}
+
+function getSetLocaleDayOfWeek (input) {
+    if (!this.isValid()) {
+        return input != null ? this : NaN;
+    }
+    var weekday = (this.day() + 7 - this.localeData()._week.dow) % 7;
+    return input == null ? weekday : this.add(input - weekday, 'd');
+}
+
+function getSetISODayOfWeek (input) {
+    if (!this.isValid()) {
+        return input != null ? this : NaN;
+    }
+
+    // behaves the same as moment#day except
+    // as a getter, returns 7 instead of 0 (1-7 range instead of 0-6)
+    // as a setter, sunday should belong to the previous week.
+
+    if (input != null) {
+        var weekday = parseIsoWeekday(input, this.localeData());
+        return this.day(this.day() % 7 ? weekday : weekday - 7);
+    } else {
+        return this.day() || 7;
+    }
+}
+
+var defaultWeekdaysRegex = matchWord;
+function weekdaysRegex (isStrict) {
+    if (this._weekdaysParseExact) {
+        if (!hasOwnProp(this, '_weekdaysRegex')) {
+            computeWeekdaysParse.call(this);
+        }
+        if (isStrict) {
+            return this._weekdaysStrictRegex;
         } else {
-            if (!hasOwnProp(this, '_weekdaysRegex')) {
-                this._weekdaysRegex = defaultWeekdaysRegex;
-            }
-            return this._weekdaysStrictRegex && isStrict
-                ? this._weekdaysStrictRegex
-                : this._weekdaysRegex;
+            return this._weekdaysRegex;
         }
+    } else {
+        if (!hasOwnProp(this, '_weekdaysRegex')) {
+            this._weekdaysRegex = defaultWeekdaysRegex;
+        }
+        return this._weekdaysStrictRegex && isStrict ?
+            this._weekdaysStrictRegex : this._weekdaysRegex;
     }
+}
 
-    function weekdaysShortRegex(isStrict) {
-        if (this._weekdaysParseExact) {
-            if (!hasOwnProp(this, '_weekdaysRegex')) {
-                computeWeekdaysParse.call(this);
-            }
-            if (isStrict) {
-                return this._weekdaysShortStrictRegex;
-            } else {
-                return this._weekdaysShortRegex;
-            }
+var defaultWeekdaysShortRegex = matchWord;
+function weekdaysShortRegex (isStrict) {
+    if (this._weekdaysParseExact) {
+        if (!hasOwnProp(this, '_weekdaysRegex')) {
+            computeWeekdaysParse.call(this);
+        }
+        if (isStrict) {
+            return this._weekdaysShortStrictRegex;
         } else {
-            if (!hasOwnProp(this, '_weekdaysShortRegex')) {
-                this._weekdaysShortRegex = defaultWeekdaysShortRegex;
-            }
-            return this._weekdaysShortStrictRegex && isStrict
-                ? this._weekdaysShortStrictRegex
-                : this._weekdaysShortRegex;
+            return this._weekdaysShortRegex;
         }
+    } else {
+        if (!hasOwnProp(this, '_weekdaysShortRegex')) {
+            this._weekdaysShortRegex = defaultWeekdaysShortRegex;
+        }
+        return this._weekdaysShortStrictRegex && isStrict ?
+            this._weekdaysShortStrictRegex : this._weekdaysShortRegex;
     }
+}
 
-    function weekdaysMinRegex(isStrict) {
-        if (this._weekdaysParseExact) {
-            if (!hasOwnProp(this, '_weekdaysRegex')) {
-                computeWeekdaysParse.call(this);
-            }
-            if (isStrict) {
-                return this._weekdaysMinStrictRegex;
-            } else {
-                return this._weekdaysMinRegex;
-            }
+var defaultWeekdaysMinRegex = matchWord;
+function weekdaysMinRegex (isStrict) {
+    if (this._weekdaysParseExact) {
+        if (!hasOwnProp(this, '_weekdaysRegex')) {
+            computeWeekdaysParse.call(this);
+        }
+        if (isStrict) {
+            return this._weekdaysMinStrictRegex;
         } else {
-            if (!hasOwnProp(this, '_weekdaysMinRegex')) {
-                this._weekdaysMinRegex = defaultWeekdaysMinRegex;
-            }
-            return this._weekdaysMinStrictRegex && isStrict
-                ? this._weekdaysMinStrictRegex
-                : this._weekdaysMinRegex;
+            return this._weekdaysMinRegex;
         }
-    }
-
-    function computeWeekdaysParse() {
-        function cmpLenRev(a, b) {
-            return b.length - a.length;
+    } else {
+        if (!hasOwnProp(this, '_weekdaysMinRegex')) {
+            this._weekdaysMinRegex = defaultWeekdaysMinRegex;
         }
+        return this._weekdaysMinStrictRegex && isStrict ?
+            this._weekdaysMinStrictRegex : this._weekdaysMinRegex;
+    }
+}
 
-        var minPieces = [],
-            shortPieces = [],
-            longPieces = [],
-            mixedPieces = [],
-            i,
-            mom,
-            minp,
-            shortp,
-            longp;
-        for (i = 0; i < 7; i++) {
-            // make the regex if we don't have it already
-            mom = createUTC([2000, 1]).day(i);
-            minp = regexEscape(this.weekdaysMin(mom, ''));
-            shortp = regexEscape(this.weekdaysShort(mom, ''));
-            longp = regexEscape(this.weekdays(mom, ''));
-            minPieces.push(minp);
-            shortPieces.push(shortp);
-            longPieces.push(longp);
-            mixedPieces.push(minp);
-            mixedPieces.push(shortp);
-            mixedPieces.push(longp);
-        }
-        // Sorting makes sure if one weekday (or abbr) is a prefix of another it
-        // will match the longer piece.
-        minPieces.sort(cmpLenRev);
-        shortPieces.sort(cmpLenRev);
-        longPieces.sort(cmpLenRev);
-        mixedPieces.sort(cmpLenRev);
 
-        this._weekdaysRegex = new RegExp('^(' + mixedPieces.join('|') + ')', 'i');
-        this._weekdaysShortRegex = this._weekdaysRegex;
-        this._weekdaysMinRegex = this._weekdaysRegex;
-
-        this._weekdaysStrictRegex = new RegExp(
-            '^(' + longPieces.join('|') + ')',
-            'i'
-        );
-        this._weekdaysShortStrictRegex = new RegExp(
-            '^(' + shortPieces.join('|') + ')',
-            'i'
-        );
-        this._weekdaysMinStrictRegex = new RegExp(
-            '^(' + minPieces.join('|') + ')',
-            'i'
-        );
+function computeWeekdaysParse () {
+    function cmpLenRev(a, b) {
+        return b.length - a.length;
     }
 
-    // FORMATTING
-
-    function hFormat() {
-        return this.hours() % 12 || 12;
+    var minPieces = [], shortPieces = [], longPieces = [], mixedPieces = [],
+        i, mom, minp, shortp, longp;
+    for (i = 0; i < 7; i++) {
+        // make the regex if we don't have it already
+        mom = createUTC([2000, 1]).day(i);
+        minp = this.weekdaysMin(mom, '');
+        shortp = this.weekdaysShort(mom, '');
+        longp = this.weekdays(mom, '');
+        minPieces.push(minp);
+        shortPieces.push(shortp);
+        longPieces.push(longp);
+        mixedPieces.push(minp);
+        mixedPieces.push(shortp);
+        mixedPieces.push(longp);
+    }
+    // Sorting makes sure if one weekday (or abbr) is a prefix of another it
+    // will match the longer piece.
+    minPieces.sort(cmpLenRev);
+    shortPieces.sort(cmpLenRev);
+    longPieces.sort(cmpLenRev);
+    mixedPieces.sort(cmpLenRev);
+    for (i = 0; i < 7; i++) {
+        shortPieces[i] = regexEscape(shortPieces[i]);
+        longPieces[i] = regexEscape(longPieces[i]);
+        mixedPieces[i] = regexEscape(mixedPieces[i]);
     }
 
-    function kFormat() {
-        return this.hours() || 24;
-    }
+    this._weekdaysRegex = new RegExp('^(' + mixedPieces.join('|') + ')', 'i');
+    this._weekdaysShortRegex = this._weekdaysRegex;
+    this._weekdaysMinRegex = this._weekdaysRegex;
 
-    addFormatToken('H', ['HH', 2], 0, 'hour');
-    addFormatToken('h', ['hh', 2], 0, hFormat);
-    addFormatToken('k', ['kk', 2], 0, kFormat);
+    this._weekdaysStrictRegex = new RegExp('^(' + longPieces.join('|') + ')', 'i');
+    this._weekdaysShortStrictRegex = new RegExp('^(' + shortPieces.join('|') + ')', 'i');
+    this._weekdaysMinStrictRegex = new RegExp('^(' + minPieces.join('|') + ')', 'i');
+}
 
-    addFormatToken('hmm', 0, 0, function () {
-        return '' + hFormat.apply(this) + zeroFill(this.minutes(), 2);
+// FORMATTING
+
+function hFormat() {
+    return this.hours() % 12 || 12;
+}
+
+function kFormat() {
+    return this.hours() || 24;
+}
+
+addFormatToken('H', ['HH', 2], 0, 'hour');
+addFormatToken('h', ['hh', 2], 0, hFormat);
+addFormatToken('k', ['kk', 2], 0, kFormat);
+
+addFormatToken('hmm', 0, 0, function () {
+    return '' + hFormat.apply(this) + zeroFill(this.minutes(), 2);
+});
+
+addFormatToken('hmmss', 0, 0, function () {
+    return '' + hFormat.apply(this) + zeroFill(this.minutes(), 2) +
+        zeroFill(this.seconds(), 2);
+});
+
+addFormatToken('Hmm', 0, 0, function () {
+    return '' + this.hours() + zeroFill(this.minutes(), 2);
+});
+
+addFormatToken('Hmmss', 0, 0, function () {
+    return '' + this.hours() + zeroFill(this.minutes(), 2) +
+        zeroFill(this.seconds(), 2);
+});
+
+function meridiem (token, lowercase) {
+    addFormatToken(token, 0, 0, function () {
+        return this.localeData().meridiem(this.hours(), this.minutes(), lowercase);
     });
+}
 
-    addFormatToken('hmmss', 0, 0, function () {
-        return (
-            '' +
-            hFormat.apply(this) +
-            zeroFill(this.minutes(), 2) +
-            zeroFill(this.seconds(), 2)
-        );
-    });
+meridiem('a', true);
+meridiem('A', false);
 
-    addFormatToken('Hmm', 0, 0, function () {
-        return '' + this.hours() + zeroFill(this.minutes(), 2);
-    });
+// ALIASES
 
-    addFormatToken('Hmmss', 0, 0, function () {
-        return (
-            '' +
-            this.hours() +
-            zeroFill(this.minutes(), 2) +
-            zeroFill(this.seconds(), 2)
-        );
-    });
+addUnitAlias('hour', 'h');
 
-    function meridiem(token, lowercase) {
-        addFormatToken(token, 0, 0, function () {
-            return this.localeData().meridiem(
-                this.hours(),
-                this.minutes(),
-                lowercase
-            );
-        });
+// PRIORITY
+addUnitPriority('hour', 13);
+
+// PARSING
+
+function matchMeridiem (isStrict, locale) {
+    return locale._meridiemParse;
+}
+
+addRegexToken('a',  matchMeridiem);
+addRegexToken('A',  matchMeridiem);
+addRegexToken('H',  match1to2);
+addRegexToken('h',  match1to2);
+addRegexToken('k',  match1to2);
+addRegexToken('HH', match1to2, match2);
+addRegexToken('hh', match1to2, match2);
+addRegexToken('kk', match1to2, match2);
+
+addRegexToken('hmm', match3to4);
+addRegexToken('hmmss', match5to6);
+addRegexToken('Hmm', match3to4);
+addRegexToken('Hmmss', match5to6);
+
+addParseToken(['H', 'HH'], HOUR);
+addParseToken(['k', 'kk'], function (input, array, config) {
+    var kInput = toInt(input);
+    array[HOUR] = kInput === 24 ? 0 : kInput;
+});
+addParseToken(['a', 'A'], function (input, array, config) {
+    config._isPm = config._locale.isPM(input);
+    config._meridiem = input;
+});
+addParseToken(['h', 'hh'], function (input, array, config) {
+    array[HOUR] = toInt(input);
+    getParsingFlags(config).bigHour = true;
+});
+addParseToken('hmm', function (input, array, config) {
+    var pos = input.length - 2;
+    array[HOUR] = toInt(input.substr(0, pos));
+    array[MINUTE] = toInt(input.substr(pos));
+    getParsingFlags(config).bigHour = true;
+});
+addParseToken('hmmss', function (input, array, config) {
+    var pos1 = input.length - 4;
+    var pos2 = input.length - 2;
+    array[HOUR] = toInt(input.substr(0, pos1));
+    array[MINUTE] = toInt(input.substr(pos1, 2));
+    array[SECOND] = toInt(input.substr(pos2));
+    getParsingFlags(config).bigHour = true;
+});
+addParseToken('Hmm', function (input, array, config) {
+    var pos = input.length - 2;
+    array[HOUR] = toInt(input.substr(0, pos));
+    array[MINUTE] = toInt(input.substr(pos));
+});
+addParseToken('Hmmss', function (input, array, config) {
+    var pos1 = input.length - 4;
+    var pos2 = input.length - 2;
+    array[HOUR] = toInt(input.substr(0, pos1));
+    array[MINUTE] = toInt(input.substr(pos1, 2));
+    array[SECOND] = toInt(input.substr(pos2));
+});
+
+// LOCALES
+
+function localeIsPM (input) {
+    // IE8 Quirks Mode & IE7 Standards Mode do not allow accessing strings like arrays
+    // Using charAt should be more compatible.
+    return ((input + '').toLowerCase().charAt(0) === 'p');
+}
+
+var defaultLocaleMeridiemParse = /[ap]\.?m?\.?/i;
+function localeMeridiem (hours, minutes, isLower) {
+    if (hours > 11) {
+        return isLower ? 'pm' : 'PM';
+    } else {
+        return isLower ? 'am' : 'AM';
     }
+}
 
-    meridiem('a', true);
-    meridiem('A', false);
 
-    // ALIASES
+// MOMENTS
 
-    addUnitAlias('hour', 'h');
+// Setting the hour should keep the time, because the user explicitly
+// specified which hour he wants. So trying to maintain the same hour (in
+// a new timezone) makes sense. Adding/subtracting hours does not follow
+// this rule.
+var getSetHour = makeGetSet('Hours', true);
 
-    // PRIORITY
-    addUnitPriority('hour', 13);
+// months
+// week
+// weekdays
+// meridiem
+var baseConfig = {
+    calendar: defaultCalendar,
+    longDateFormat: defaultLongDateFormat,
+    invalidDate: defaultInvalidDate,
+    ordinal: defaultOrdinal,
+    dayOfMonthOrdinalParse: defaultDayOfMonthOrdinalParse,
+    relativeTime: defaultRelativeTime,
 
-    // PARSING
+    months: defaultLocaleMonths,
+    monthsShort: defaultLocaleMonthsShort,
 
-    function matchMeridiem(isStrict, locale) {
-        return locale._meridiemParse;
-    }
+    week: defaultLocaleWeek,
 
-    addRegexToken('a', matchMeridiem);
-    addRegexToken('A', matchMeridiem);
-    addRegexToken('H', match1to2);
-    addRegexToken('h', match1to2);
-    addRegexToken('k', match1to2);
-    addRegexToken('HH', match1to2, match2);
-    addRegexToken('hh', match1to2, match2);
-    addRegexToken('kk', match1to2, match2);
+    weekdays: defaultLocaleWeekdays,
+    weekdaysMin: defaultLocaleWeekdaysMin,
+    weekdaysShort: defaultLocaleWeekdaysShort,
 
-    addRegexToken('hmm', match3to4);
-    addRegexToken('hmmss', match5to6);
-    addRegexToken('Hmm', match3to4);
-    addRegexToken('Hmmss', match5to6);
+    meridiemParse: defaultLocaleMeridiemParse
+};
 
-    addParseToken(['H', 'HH'], HOUR);
-    addParseToken(['k', 'kk'], function (input, array, config) {
-        var kInput = toInt(input);
-        array[HOUR] = kInput === 24 ? 0 : kInput;
-    });
-    addParseToken(['a', 'A'], function (input, array, config) {
-        config._isPm = config._locale.isPM(input);
-        config._meridiem = input;
-    });
-    addParseToken(['h', 'hh'], function (input, array, config) {
-        array[HOUR] = toInt(input);
-        getParsingFlags(config).bigHour = true;
-    });
-    addParseToken('hmm', function (input, array, config) {
-        var pos = input.length - 2;
-        array[HOUR] = toInt(input.substr(0, pos));
-        array[MINUTE] = toInt(input.substr(pos));
-        getParsingFlags(config).bigHour = true;
-    });
-    addParseToken('hmmss', function (input, array, config) {
-        var pos1 = input.length - 4,
-            pos2 = input.length - 2;
-        array[HOUR] = toInt(input.substr(0, pos1));
-        array[MINUTE] = toInt(input.substr(pos1, 2));
-        array[SECOND] = toInt(input.substr(pos2));
-        getParsingFlags(config).bigHour = true;
-    });
-    addParseToken('Hmm', function (input, array, config) {
-        var pos = input.length - 2;
-        array[HOUR] = toInt(input.substr(0, pos));
-        array[MINUTE] = toInt(input.substr(pos));
-    });
-    addParseToken('Hmmss', function (input, array, config) {
-        var pos1 = input.length - 4,
-            pos2 = input.length - 2;
-        array[HOUR] = toInt(input.substr(0, pos1));
-        array[MINUTE] = toInt(input.substr(pos1, 2));
-        array[SECOND] = toInt(input.substr(pos2));
-    });
+// internal storage for locale config files
+var locales = {};
+var localeFamilies = {};
+var globalLocale;
 
-    // LOCALES
+function normalizeLocale(key) {
+    return key ? key.toLowerCase().replace('_', '-') : key;
+}
 
-    function localeIsPM(input) {
-        // IE8 Quirks Mode & IE7 Standards Mode do not allow accessing strings like arrays
-        // Using charAt should be more compatible.
-        return (input + '').toLowerCase().charAt(0) === 'p';
-    }
+// pick the locale from the array
+// try ['en-au', 'en-gb'] as 'en-au', 'en-gb', 'en', as in move through the list trying each
+// substring from most specific to least, but move to the next array item if it's a more specific variant than the current root
+function chooseLocale(names) {
+    var i = 0, j, next, locale, split;
 
-    var defaultLocaleMeridiemParse = /[ap]\.?m?\.?/i,
-        // Setting the hour should keep the time, because the user explicitly
-        // specified which hour they want. So trying to maintain the same hour (in
-        // a new timezone) makes sense. Adding/subtracting hours does not follow
-        // this rule.
-        getSetHour = makeGetSet('Hours', true);
-
-    function localeMeridiem(hours, minutes, isLower) {
-        if (hours > 11) {
-            return isLower ? 'pm' : 'PM';
-        } else {
-            return isLower ? 'am' : 'AM';
-        }
-    }
-
-    var baseConfig = {
-        calendar: defaultCalendar,
-        longDateFormat: defaultLongDateFormat,
-        invalidDate: defaultInvalidDate,
-        ordinal: defaultOrdinal,
-        dayOfMonthOrdinalParse: defaultDayOfMonthOrdinalParse,
-        relativeTime: defaultRelativeTime,
-
-        months: defaultLocaleMonths,
-        monthsShort: defaultLocaleMonthsShort,
-
-        week: defaultLocaleWeek,
-
-        weekdays: defaultLocaleWeekdays,
-        weekdaysMin: defaultLocaleWeekdaysMin,
-        weekdaysShort: defaultLocaleWeekdaysShort,
-
-        meridiemParse: defaultLocaleMeridiemParse,
-    };
-
-    // internal storage for locale config files
-    var locales = {},
-        localeFamilies = {},
-        globalLocale;
-
-    function commonPrefix(arr1, arr2) {
-        var i,
-            minl = Math.min(arr1.length, arr2.length);
-        for (i = 0; i < minl; i += 1) {
-            if (arr1[i] !== arr2[i]) {
-                return i;
-            }
-        }
-        return minl;
-    }
-
-    function normalizeLocale(key) {
-        return key ? key.toLowerCase().replace('_', '-') : key;
-    }
-
-    // pick the locale from the array
-    // try ['en-au', 'en-gb'] as 'en-au', 'en-gb', 'en', as in move through the list trying each
-    // substring from most specific to least, but move to the next array item if it's a more specific variant than the current root
-    function chooseLocale(names) {
-        var i = 0,
-            j,
-            next,
-            locale,
-            split;
-
-        while (i < names.length) {
-            split = normalizeLocale(names[i]).split('-');
-            j = split.length;
-            next = normalizeLocale(names[i + 1]);
-            next = next ? next.split('-') : null;
-            while (j > 0) {
-                locale = loadLocale(split.slice(0, j).join('-'));
-                if (locale) {
-                    return locale;
-                }
-                if (
-                    next &&
-                    next.length >= j &&
-                    commonPrefix(split, next) >= j - 1
-                ) {
-                    //the next array item is better than a shallower substring of this one
-                    break;
-                }
-                j--;
-            }
-            i++;
-        }
-        return globalLocale;
-    }
-
-    function isLocaleNameSane(name) {
-        // Prevent names that look like filesystem paths, i.e contain '/' or '\'
-        return name.match('^[^/\\\\]*$') != null;
-    }
-
-    function loadLocale(name) {
-        var oldLocale = null,
-            aliasedRequire;
-        // TODO: Find a better way to register and load all the locales in Node
-        if (
-            locales[name] === undefined &&
-            typeof module !== 'undefined' &&
-            module &&
-            module.exports &&
-            isLocaleNameSane(name)
-        ) {
-            try {
-                oldLocale = globalLocale._abbr;
-                aliasedRequire = require;
-                aliasedRequire('./locale/' + name);
-                getSetGlobalLocale(oldLocale);
-            } catch (e) {
-                // mark as not found to avoid repeating expensive file require call causing high CPU
-                // when trying to find en-US, en_US, en-us for every format call
-                locales[name] = null; // null means not found
-            }
-        }
-        return locales[name];
-    }
-
-    // This function will load locale and then set the global locale.  If
-    // no arguments are passed in, it will simply return the current global
-    // locale key.
-    function getSetGlobalLocale(key, values) {
-        var data;
-        if (key) {
-            if (isUndefined(values)) {
-                data = getLocale(key);
-            } else {
-                data = defineLocale(key, values);
-            }
-
-            if (data) {
-                // moment.duration._locale = moment._locale = data;
-                globalLocale = data;
-            } else {
-                if (typeof console !== 'undefined' && console.warn) {
-                    //warn user if arguments are passed but the locale could not be set
-                    console.warn(
-                        'Locale ' + key + ' not found. Did you forget to load it?'
-                    );
-                }
-            }
-        }
-
-        return globalLocale._abbr;
-    }
-
-    function defineLocale(name, config) {
-        if (config !== null) {
-            var locale,
-                parentConfig = baseConfig;
-            config.abbr = name;
-            if (locales[name] != null) {
-                deprecateSimple(
-                    'defineLocaleOverride',
-                    'use moment.updateLocale(localeName, config) to change ' +
-                        'an existing locale. moment.defineLocale(localeName, ' +
-                        'config) should only be used for creating a new locale ' +
-                        'See http://momentjs.com/guides/#/warnings/define-locale/ for more info.'
-                );
-                parentConfig = locales[name]._config;
-            } else if (config.parentLocale != null) {
-                if (locales[config.parentLocale] != null) {
-                    parentConfig = locales[config.parentLocale]._config;
-                } else {
-                    locale = loadLocale(config.parentLocale);
-                    if (locale != null) {
-                        parentConfig = locale._config;
-                    } else {
-                        if (!localeFamilies[config.parentLocale]) {
-                            localeFamilies[config.parentLocale] = [];
-                        }
-                        localeFamilies[config.parentLocale].push({
-                            name: name,
-                            config: config,
-                        });
-                        return null;
-                    }
-                }
-            }
-            locales[name] = new Locale(mergeConfigs(parentConfig, config));
-
-            if (localeFamilies[name]) {
-                localeFamilies[name].forEach(function (x) {
-                    defineLocale(x.name, x.config);
-                });
-            }
-
-            // backwards compat for now: also set the locale
-            // make sure we set the locale AFTER all child locales have been
-            // created, so we won't end up with the child locale set.
-            getSetGlobalLocale(name);
-
-            return locales[name];
-        } else {
-            // useful for testing
-            delete locales[name];
-            return null;
-        }
-    }
-
-    function updateLocale(name, config) {
-        if (config != null) {
-            var locale,
-                tmpLocale,
-                parentConfig = baseConfig;
-
-            if (locales[name] != null && locales[name].parentLocale != null) {
-                // Update existing child locale in-place to avoid memory-leaks
-                locales[name].set(mergeConfigs(locales[name]._config, config));
-            } else {
-                // MERGE
-                tmpLocale = loadLocale(name);
-                if (tmpLocale != null) {
-                    parentConfig = tmpLocale._config;
-                }
-                config = mergeConfigs(parentConfig, config);
-                if (tmpLocale == null) {
-                    // updateLocale is called for creating a new locale
-                    // Set abbr so it will have a name (getters return
-                    // undefined otherwise).
-                    config.abbr = name;
-                }
-                locale = new Locale(config);
-                locale.parentLocale = locales[name];
-                locales[name] = locale;
-            }
-
-            // backwards compat for now: also set the locale
-            getSetGlobalLocale(name);
-        } else {
-            // pass null for config to unupdate, useful for tests
-            if (locales[name] != null) {
-                if (locales[name].parentLocale != null) {
-                    locales[name] = locales[name].parentLocale;
-                    if (name === getSetGlobalLocale()) {
-                        getSetGlobalLocale(name);
-                    }
-                } else if (locales[name] != null) {
-                    delete locales[name];
-                }
-            }
-        }
-        return locales[name];
-    }
-
-    // returns locale data
-    function getLocale(key) {
-        var locale;
-
-        if (key && key._locale && key._locale._abbr) {
-            key = key._locale._abbr;
-        }
-
-        if (!key) {
-            return globalLocale;
-        }
-
-        if (!isArray(key)) {
-            //short-circuit everything else
-            locale = loadLocale(key);
+    while (i < names.length) {
+        split = normalizeLocale(names[i]).split('-');
+        j = split.length;
+        next = normalizeLocale(names[i + 1]);
+        next = next ? next.split('-') : null;
+        while (j > 0) {
+            locale = loadLocale(split.slice(0, j).join('-'));
             if (locale) {
                 return locale;
             }
-            key = [key];
+            if (next && next.length >= j && compareArrays(split, next, true) >= j - 1) {
+                //the next array item is better than a shallower substring of this one
+                break;
+            }
+            j--;
+        }
+        i++;
+    }
+    return null;
+}
+
+function loadLocale(name) {
+    var oldLocale = null;
+    // TODO: Find a better way to register and load all the locales in Node
+    if (!locales[name] && (typeof module !== 'undefined') &&
+            module && module.exports) {
+        try {
+            oldLocale = globalLocale._abbr;
+            require('./locale/' + name);
+            // because defineLocale currently also sets the global locale, we
+            // want to undo that for lazy loaded locales
+            getSetGlobalLocale(oldLocale);
+        } catch (e) { }
+    }
+    return locales[name];
+}
+
+// This function will load locale and then set the global locale.  If
+// no arguments are passed in, it will simply return the current global
+// locale key.
+function getSetGlobalLocale (key, values) {
+    var data;
+    if (key) {
+        if (isUndefined(values)) {
+            data = getLocale(key);
+        }
+        else {
+            data = defineLocale(key, values);
         }
 
-        return chooseLocale(key);
+        if (data) {
+            // moment.duration._locale = moment._locale = data;
+            globalLocale = data;
+        }
     }
 
-    function listLocales() {
-        return keys(locales);
-    }
+    return globalLocale._abbr;
+}
 
-    function checkOverflow(m) {
-        var overflow,
-            a = m._a;
-
-        if (a && getParsingFlags(m).overflow === -2) {
-            overflow =
-                a[MONTH] < 0 || a[MONTH] > 11
-                    ? MONTH
-                    : a[DATE] < 1 || a[DATE] > daysInMonth(a[YEAR], a[MONTH])
-                    ? DATE
-                    : a[HOUR] < 0 ||
-                      a[HOUR] > 24 ||
-                      (a[HOUR] === 24 &&
-                          (a[MINUTE] !== 0 ||
-                              a[SECOND] !== 0 ||
-                              a[MILLISECOND] !== 0))
-                    ? HOUR
-                    : a[MINUTE] < 0 || a[MINUTE] > 59
-                    ? MINUTE
-                    : a[SECOND] < 0 || a[SECOND] > 59
-                    ? SECOND
-                    : a[MILLISECOND] < 0 || a[MILLISECOND] > 999
-                    ? MILLISECOND
-                    : -1;
-
-            if (
-                getParsingFlags(m)._overflowDayOfYear &&
-                (overflow < YEAR || overflow > DATE)
-            ) {
-                overflow = DATE;
+function defineLocale (name, config) {
+    if (config !== null) {
+        var parentConfig = baseConfig;
+        config.abbr = name;
+        if (locales[name] != null) {
+            deprecateSimple('defineLocaleOverride',
+                    'use moment.updateLocale(localeName, config) to change ' +
+                    'an existing locale. moment.defineLocale(localeName, ' +
+                    'config) should only be used for creating a new locale ' +
+                    'See http://momentjs.com/guides/#/warnings/define-locale/ for more info.');
+            parentConfig = locales[name]._config;
+        } else if (config.parentLocale != null) {
+            if (locales[config.parentLocale] != null) {
+                parentConfig = locales[config.parentLocale]._config;
+            } else {
+                if (!localeFamilies[config.parentLocale]) {
+                    localeFamilies[config.parentLocale] = [];
+                }
+                localeFamilies[config.parentLocale].push({
+                    name: name,
+                    config: config
+                });
+                return null;
             }
-            if (getParsingFlags(m)._overflowWeeks && overflow === -1) {
-                overflow = WEEK;
-            }
-            if (getParsingFlags(m)._overflowWeekday && overflow === -1) {
-                overflow = WEEKDAY;
-            }
+        }
+        locales[name] = new Locale(mergeConfigs(parentConfig, config));
 
-            getParsingFlags(m).overflow = overflow;
+        if (localeFamilies[name]) {
+            localeFamilies[name].forEach(function (x) {
+                defineLocale(x.name, x.config);
+            });
         }
 
-        return m;
+        // backwards compat for now: also set the locale
+        // make sure we set the locale AFTER all child locales have been
+        // created, so we won't end up with the child locale set.
+        getSetGlobalLocale(name);
+
+
+        return locales[name];
+    } else {
+        // useful for testing
+        delete locales[name];
+        return null;
+    }
+}
+
+function updateLocale(name, config) {
+    if (config != null) {
+        var locale, parentConfig = baseConfig;
+        // MERGE
+        if (locales[name] != null) {
+            parentConfig = locales[name]._config;
+        }
+        config = mergeConfigs(parentConfig, config);
+        locale = new Locale(config);
+        locale.parentLocale = locales[name];
+        locales[name] = locale;
+
+        // backwards compat for now: also set the locale
+        getSetGlobalLocale(name);
+    } else {
+        // pass null for config to unupdate, useful for tests
+        if (locales[name] != null) {
+            if (locales[name].parentLocale != null) {
+                locales[name] = locales[name].parentLocale;
+            } else if (locales[name] != null) {
+                delete locales[name];
+            }
+        }
+    }
+    return locales[name];
+}
+
+// returns locale data
+function getLocale (key) {
+    var locale;
+
+    if (key && key._locale && key._locale._abbr) {
+        key = key._locale._abbr;
     }
 
-    // iso 8601 regex
-    // 0000-00-00 0000-W00 or 0000-W00-0 + T + 00 or 00:00 or 00:00:00 or 00:00:00.000 + +00:00 or +0000 or +00)
-    var extendedIsoRegex =
-            /^\s*((?:[+-]\d{6}|\d{4})-(?:\d\d-\d\d|W\d\d-\d|W\d\d|\d\d\d|\d\d))(?:(T| )(\d\d(?::\d\d(?::\d\d(?:[.,]\d+)?)?)?)([+-]\d\d(?::?\d\d)?|\s*Z)?)?$/,
-        basicIsoRegex =
-            /^\s*((?:[+-]\d{6}|\d{4})(?:\d\d\d\d|W\d\d\d|W\d\d|\d\d\d|\d\d|))(?:(T| )(\d\d(?:\d\d(?:\d\d(?:[.,]\d+)?)?)?)([+-]\d\d(?::?\d\d)?|\s*Z)?)?$/,
-        tzRegex = /Z|[+-]\d\d(?::?\d\d)?/,
-        isoDates = [
-            ['YYYYYY-MM-DD', /[+-]\d{6}-\d\d-\d\d/],
-            ['YYYY-MM-DD', /\d{4}-\d\d-\d\d/],
-            ['GGGG-[W]WW-E', /\d{4}-W\d\d-\d/],
-            ['GGGG-[W]WW', /\d{4}-W\d\d/, false],
-            ['YYYY-DDD', /\d{4}-\d{3}/],
-            ['YYYY-MM', /\d{4}-\d\d/, false],
-            ['YYYYYYMMDD', /[+-]\d{10}/],
-            ['YYYYMMDD', /\d{8}/],
-            ['GGGG[W]WWE', /\d{4}W\d{3}/],
-            ['GGGG[W]WW', /\d{4}W\d{2}/, false],
-            ['YYYYDDD', /\d{7}/],
-            ['YYYYMM', /\d{6}/, false],
-            ['YYYY', /\d{4}/, false],
-        ],
-        // iso time formats and regexes
-        isoTimes = [
-            ['HH:mm:ss.SSSS', /\d\d:\d\d:\d\d\.\d+/],
-            ['HH:mm:ss,SSSS', /\d\d:\d\d:\d\d,\d+/],
-            ['HH:mm:ss', /\d\d:\d\d:\d\d/],
-            ['HH:mm', /\d\d:\d\d/],
-            ['HHmmss.SSSS', /\d\d\d\d\d\d\.\d+/],
-            ['HHmmss,SSSS', /\d\d\d\d\d\d,\d+/],
-            ['HHmmss', /\d\d\d\d\d\d/],
-            ['HHmm', /\d\d\d\d/],
-            ['HH', /\d\d/],
-        ],
-        aspNetJsonRegex = /^\/?Date\((-?\d+)/i,
-        // RFC 2822 regex: For details see https://tools.ietf.org/html/rfc2822#section-3.3
-        rfc2822 =
-            /^(?:(Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s)?(\d{1,2})\s(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s(\d{2,4})\s(\d\d):(\d\d)(?::(\d\d))?\s(?:(UT|GMT|[ECMP][SD]T)|([Zz])|([+-]\d{4}))$/,
-        obsOffsets = {
-            UT: 0,
-            GMT: 0,
-            EDT: -4 * 60,
-            EST: -5 * 60,
-            CDT: -5 * 60,
-            CST: -6 * 60,
-            MDT: -6 * 60,
-            MST: -7 * 60,
-            PDT: -7 * 60,
-            PST: -8 * 60,
-        };
+    if (!key) {
+        return globalLocale;
+    }
 
-    // date from iso format
-    function configFromISO(config) {
-        var i,
-            l,
-            string = config._i,
-            match = extendedIsoRegex.exec(string) || basicIsoRegex.exec(string),
-            allowTime,
-            dateFormat,
-            timeFormat,
-            tzFormat,
-            isoDatesLen = isoDates.length,
-            isoTimesLen = isoTimes.length;
+    if (!isArray(key)) {
+        //short-circuit everything else
+        locale = loadLocale(key);
+        if (locale) {
+            return locale;
+        }
+        key = [key];
+    }
 
-        if (match) {
-            getParsingFlags(config).iso = true;
-            for (i = 0, l = isoDatesLen; i < l; i++) {
-                if (isoDates[i][1].exec(match[1])) {
-                    dateFormat = isoDates[i][0];
-                    allowTime = isoDates[i][2] !== false;
+    return chooseLocale(key);
+}
+
+function listLocales() {
+    return keys$1(locales);
+}
+
+function checkOverflow (m) {
+    var overflow;
+    var a = m._a;
+
+    if (a && getParsingFlags(m).overflow === -2) {
+        overflow =
+            a[MONTH]       < 0 || a[MONTH]       > 11  ? MONTH :
+            a[DATE]        < 1 || a[DATE]        > daysInMonth(a[YEAR], a[MONTH]) ? DATE :
+            a[HOUR]        < 0 || a[HOUR]        > 24 || (a[HOUR] === 24 && (a[MINUTE] !== 0 || a[SECOND] !== 0 || a[MILLISECOND] !== 0)) ? HOUR :
+            a[MINUTE]      < 0 || a[MINUTE]      > 59  ? MINUTE :
+            a[SECOND]      < 0 || a[SECOND]      > 59  ? SECOND :
+            a[MILLISECOND] < 0 || a[MILLISECOND] > 999 ? MILLISECOND :
+            -1;
+
+        if (getParsingFlags(m)._overflowDayOfYear && (overflow < YEAR || overflow > DATE)) {
+            overflow = DATE;
+        }
+        if (getParsingFlags(m)._overflowWeeks && overflow === -1) {
+            overflow = WEEK;
+        }
+        if (getParsingFlags(m)._overflowWeekday && overflow === -1) {
+            overflow = WEEKDAY;
+        }
+
+        getParsingFlags(m).overflow = overflow;
+    }
+
+    return m;
+}
+
+// iso 8601 regex
+// 0000-00-00 0000-W00 or 0000-W00-0 + T + 00 or 00:00 or 00:00:00 or 00:00:00.000 + +00:00 or +0000 or +00)
+var extendedIsoRegex = /^\s*((?:[+-]\d{6}|\d{4})-(?:\d\d-\d\d|W\d\d-\d|W\d\d|\d\d\d|\d\d))(?:(T| )(\d\d(?::\d\d(?::\d\d(?:[.,]\d+)?)?)?)([\+\-]\d\d(?::?\d\d)?|\s*Z)?)?$/;
+var basicIsoRegex = /^\s*((?:[+-]\d{6}|\d{4})(?:\d\d\d\d|W\d\d\d|W\d\d|\d\d\d|\d\d))(?:(T| )(\d\d(?:\d\d(?:\d\d(?:[.,]\d+)?)?)?)([\+\-]\d\d(?::?\d\d)?|\s*Z)?)?$/;
+
+var tzRegex = /Z|[+-]\d\d(?::?\d\d)?/;
+
+var isoDates = [
+    ['YYYYYY-MM-DD', /[+-]\d{6}-\d\d-\d\d/],
+    ['YYYY-MM-DD', /\d{4}-\d\d-\d\d/],
+    ['GGGG-[W]WW-E', /\d{4}-W\d\d-\d/],
+    ['GGGG-[W]WW', /\d{4}-W\d\d/, false],
+    ['YYYY-DDD', /\d{4}-\d{3}/],
+    ['YYYY-MM', /\d{4}-\d\d/, false],
+    ['YYYYYYMMDD', /[+-]\d{10}/],
+    ['YYYYMMDD', /\d{8}/],
+    // YYYYMM is NOT allowed by the standard
+    ['GGGG[W]WWE', /\d{4}W\d{3}/],
+    ['GGGG[W]WW', /\d{4}W\d{2}/, false],
+    ['YYYYDDD', /\d{7}/]
+];
+
+// iso time formats and regexes
+var isoTimes = [
+    ['HH:mm:ss.SSSS', /\d\d:\d\d:\d\d\.\d+/],
+    ['HH:mm:ss,SSSS', /\d\d:\d\d:\d\d,\d+/],
+    ['HH:mm:ss', /\d\d:\d\d:\d\d/],
+    ['HH:mm', /\d\d:\d\d/],
+    ['HHmmss.SSSS', /\d\d\d\d\d\d\.\d+/],
+    ['HHmmss,SSSS', /\d\d\d\d\d\d,\d+/],
+    ['HHmmss', /\d\d\d\d\d\d/],
+    ['HHmm', /\d\d\d\d/],
+    ['HH', /\d\d/]
+];
+
+var aspNetJsonRegex = /^\/?Date\((\-?\d+)/i;
+
+// date from iso format
+function configFromISO(config) {
+    var i, l,
+        string = config._i,
+        match = extendedIsoRegex.exec(string) || basicIsoRegex.exec(string),
+        allowTime, dateFormat, timeFormat, tzFormat;
+
+    if (match) {
+        getParsingFlags(config).iso = true;
+
+        for (i = 0, l = isoDates.length; i < l; i++) {
+            if (isoDates[i][1].exec(match[1])) {
+                dateFormat = isoDates[i][0];
+                allowTime = isoDates[i][2] !== false;
+                break;
+            }
+        }
+        if (dateFormat == null) {
+            config._isValid = false;
+            return;
+        }
+        if (match[3]) {
+            for (i = 0, l = isoTimes.length; i < l; i++) {
+                if (isoTimes[i][1].exec(match[3])) {
+                    // match[2] should be 'T' or space
+                    timeFormat = (match[2] || ' ') + isoTimes[i][0];
                     break;
                 }
             }
-            if (dateFormat == null) {
+            if (timeFormat == null) {
                 config._isValid = false;
                 return;
             }
-            if (match[3]) {
-                for (i = 0, l = isoTimesLen; i < l; i++) {
-                    if (isoTimes[i][1].exec(match[3])) {
-                        // match[2] should be 'T' or space
-                        timeFormat = (match[2] || ' ') + isoTimes[i][0];
-                        break;
-                    }
-                }
-                if (timeFormat == null) {
-                    config._isValid = false;
-                    return;
-                }
-            }
-            if (!allowTime && timeFormat != null) {
-                config._isValid = false;
-                return;
-            }
-            if (match[4]) {
-                if (tzRegex.exec(match[4])) {
-                    tzFormat = 'Z';
-                } else {
-                    config._isValid = false;
-                    return;
-                }
-            }
-            config._f = dateFormat + (timeFormat || '') + (tzFormat || '');
-            configFromStringAndFormat(config);
-        } else {
+        }
+        if (!allowTime && timeFormat != null) {
             config._isValid = false;
+            return;
         }
-    }
-
-    function extractFromRFC2822Strings(
-        yearStr,
-        monthStr,
-        dayStr,
-        hourStr,
-        minuteStr,
-        secondStr
-    ) {
-        var result = [
-            untruncateYear(yearStr),
-            defaultLocaleMonthsShort.indexOf(monthStr),
-            parseInt(dayStr, 10),
-            parseInt(hourStr, 10),
-            parseInt(minuteStr, 10),
-        ];
-
-        if (secondStr) {
-            result.push(parseInt(secondStr, 10));
+        if (match[4]) {
+            if (tzRegex.exec(match[4])) {
+                tzFormat = 'Z';
+            } else {
+                config._isValid = false;
+                return;
+            }
         }
-
-        return result;
+        config._f = dateFormat + (timeFormat || '') + (tzFormat || '');
+        configFromStringAndFormat(config);
+    } else {
+        config._isValid = false;
     }
+}
 
-    function untruncateYear(yearStr) {
-        var year = parseInt(yearStr, 10);
-        if (year <= 49) {
-            return 2000 + year;
-        } else if (year <= 999) {
-            return 1900 + year;
-        }
-        return year;
-    }
+// RFC 2822 regex: For details see https://tools.ietf.org/html/rfc2822#section-3.3
+var basicRfcRegex = /^((?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s)?(\d?\d\s(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s(?:\d\d)?\d\d\s)(\d\d:\d\d)(\:\d\d)?(\s(?:UT|GMT|[ECMP][SD]T|[A-IK-Za-ik-z]|[+-]\d{4}))$/;
 
-    function preprocessRFC2822(s) {
-        // Remove comments and folding whitespace and replace multiple-spaces with a single space
-        return s
-            .replace(/\([^)]*\)|[\n\t]/g, ' ')
-            .replace(/(\s\s+)/g, ' ')
-            .replace(/^\s\s*/, '')
-            .replace(/\s\s*$/, '');
-    }
+// date and time from ref 2822 format
+function configFromRFC2822(config) {
+    var string, match, dayFormat,
+        dateFormat, timeFormat, tzFormat;
+    var timezones = {
+        ' GMT': ' +0000',
+        ' EDT': ' -0400',
+        ' EST': ' -0500',
+        ' CDT': ' -0500',
+        ' CST': ' -0600',
+        ' MDT': ' -0600',
+        ' MST': ' -0700',
+        ' PDT': ' -0700',
+        ' PST': ' -0800'
+    };
+    var military = 'YXWVUTSRQPONZABCDEFGHIKLM';
+    var timezone, timezoneIndex;
 
-    function checkWeekday(weekdayStr, parsedInput, config) {
-        if (weekdayStr) {
-            // TODO: Replace the vanilla JS Date object with an independent day-of-week check.
-            var weekdayProvided = defaultLocaleWeekdaysShort.indexOf(weekdayStr),
-                weekdayActual = new Date(
-                    parsedInput[0],
-                    parsedInput[1],
-                    parsedInput[2]
-                ).getDay();
-            if (weekdayProvided !== weekdayActual) {
+    string = config._i
+        .replace(/\([^\)]*\)|[\n\t]/g, ' ') // Remove comments and folding whitespace
+        .replace(/(\s\s+)/g, ' ') // Replace multiple-spaces with a single space
+        .replace(/^\s|\s$/g, ''); // Remove leading and trailing spaces
+    match = basicRfcRegex.exec(string);
+
+    if (match) {
+        dayFormat = match[1] ? 'ddd' + ((match[1].length === 5) ? ', ' : ' ') : '';
+        dateFormat = 'D MMM ' + ((match[2].length > 10) ? 'YYYY ' : 'YY ');
+        timeFormat = 'HH:mm' + (match[4] ? ':ss' : '');
+
+        // TODO: Replace the vanilla JS Date object with an indepentent day-of-week check.
+        if (match[1]) { // day of week given
+            var momentDate = new Date(match[2]);
+            var momentDay = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][momentDate.getDay()];
+
+            if (match[1].substr(0,3) !== momentDay) {
                 getParsingFlags(config).weekdayMismatch = true;
                 config._isValid = false;
-                return false;
-            }
-        }
-        return true;
-    }
-
-    function calculateOffset(obsOffset, militaryOffset, numOffset) {
-        if (obsOffset) {
-            return obsOffsets[obsOffset];
-        } else if (militaryOffset) {
-            // the only allowed military tz is Z
-            return 0;
-        } else {
-            var hm = parseInt(numOffset, 10),
-                m = hm % 100,
-                h = (hm - m) / 100;
-            return h * 60 + m;
-        }
-    }
-
-    // date and time from ref 2822 format
-    function configFromRFC2822(config) {
-        var match = rfc2822.exec(preprocessRFC2822(config._i)),
-            parsedArray;
-        if (match) {
-            parsedArray = extractFromRFC2822Strings(
-                match[4],
-                match[3],
-                match[2],
-                match[5],
-                match[6],
-                match[7]
-            );
-            if (!checkWeekday(match[1], parsedArray, config)) {
                 return;
             }
-
-            config._a = parsedArray;
-            config._tzm = calculateOffset(match[8], match[9], match[10]);
-
-            config._d = createUTCDate.apply(null, config._a);
-            config._d.setUTCMinutes(config._d.getUTCMinutes() - config._tzm);
-
-            getParsingFlags(config).rfc2822 = true;
-        } else {
-            config._isValid = false;
         }
+
+        switch (match[5].length) {
+            case 2: // military
+                if (timezoneIndex === 0) {
+                    timezone = ' +0000';
+                } else {
+                    timezoneIndex = military.indexOf(match[5][1].toUpperCase()) - 12;
+                    timezone = ((timezoneIndex < 0) ? ' -' : ' +') +
+                        (('' + timezoneIndex).replace(/^-?/, '0')).match(/..$/)[0] + '00';
+                }
+                break;
+            case 4: // Zone
+                timezone = timezones[match[5]];
+                break;
+            default: // UT or +/-9999
+                timezone = timezones[' GMT'];
+        }
+        match[5] = timezone;
+        config._i = match.splice(1).join('');
+        tzFormat = ' ZZ';
+        config._f = dayFormat + dateFormat + timeFormat + tzFormat;
+        configFromStringAndFormat(config);
+        getParsingFlags(config).rfc2822 = true;
+    } else {
+        config._isValid = false;
+    }
+}
+
+// date from iso format or fallback
+function configFromString(config) {
+    var matched = aspNetJsonRegex.exec(config._i);
+
+    if (matched !== null) {
+        config._d = new Date(+matched[1]);
+        return;
     }
 
-    // date from 1) ASP.NET, 2) ISO, 3) RFC 2822 formats, or 4) optional fallback if parsing isn't strict
-    function configFromString(config) {
-        var matched = aspNetJsonRegex.exec(config._i);
-        if (matched !== null) {
-            config._d = new Date(+matched[1]);
-            return;
-        }
-
-        configFromISO(config);
-        if (config._isValid === false) {
-            delete config._isValid;
-        } else {
-            return;
-        }
-
-        configFromRFC2822(config);
-        if (config._isValid === false) {
-            delete config._isValid;
-        } else {
-            return;
-        }
-
-        if (config._strict) {
-            config._isValid = false;
-        } else {
-            // Final attempt, use Input Fallback
-            hooks.createFromInputFallback(config);
-        }
+    configFromISO(config);
+    if (config._isValid === false) {
+        delete config._isValid;
+    } else {
+        return;
     }
 
-    hooks.createFromInputFallback = deprecate(
-        'value provided is not in a recognized RFC2822 or ISO format. moment construction falls back to js Date(), ' +
-            'which is not reliable across all browsers and versions. Non RFC2822/ISO date formats are ' +
-            'discouraged. Please refer to http://momentjs.com/guides/#/warnings/js-date/ for more info.',
-        function (config) {
-            config._d = new Date(config._i + (config._useUTC ? ' UTC' : ''));
-        }
-    );
-
-    // Pick the first defined of two or three arguments.
-    function defaults(a, b, c) {
-        if (a != null) {
-            return a;
-        }
-        if (b != null) {
-            return b;
-        }
-        return c;
+    configFromRFC2822(config);
+    if (config._isValid === false) {
+        delete config._isValid;
+    } else {
+        return;
     }
 
-    function currentDateArray(config) {
-        // hooks is actually the exported moment object
-        var nowValue = new Date(hooks.now());
-        if (config._useUTC) {
-            return [
-                nowValue.getUTCFullYear(),
-                nowValue.getUTCMonth(),
-                nowValue.getUTCDate(),
-            ];
-        }
-        return [nowValue.getFullYear(), nowValue.getMonth(), nowValue.getDate()];
+    // Final attempt, use Input Fallback
+    hooks.createFromInputFallback(config);
+}
+
+hooks.createFromInputFallback = deprecate(
+    'value provided is not in a recognized RFC2822 or ISO format. moment construction falls back to js Date(), ' +
+    'which is not reliable across all browsers and versions. Non RFC2822/ISO date formats are ' +
+    'discouraged and will be removed in an upcoming major release. Please refer to ' +
+    'http://momentjs.com/guides/#/warnings/js-date/ for more info.',
+    function (config) {
+        config._d = new Date(config._i + (config._useUTC ? ' UTC' : ''));
+    }
+);
+
+// Pick the first defined of two or three arguments.
+function defaults(a, b, c) {
+    if (a != null) {
+        return a;
+    }
+    if (b != null) {
+        return b;
+    }
+    return c;
+}
+
+function currentDateArray(config) {
+    // hooks is actually the exported moment object
+    var nowValue = new Date(hooks.now());
+    if (config._useUTC) {
+        return [nowValue.getUTCFullYear(), nowValue.getUTCMonth(), nowValue.getUTCDate()];
+    }
+    return [nowValue.getFullYear(), nowValue.getMonth(), nowValue.getDate()];
+}
+
+// convert an array to a date.
+// the array should mirror the parameters below
+// note: all values past the year are optional and will default to the lowest possible value.
+// [year, month, day , hour, minute, second, millisecond]
+function configFromArray (config) {
+    var i, date, input = [], currentDate, yearToUse;
+
+    if (config._d) {
+        return;
     }
 
-    // convert an array to a date.
-    // the array should mirror the parameters below
-    // note: all values past the year are optional and will default to the lowest possible value.
-    // [year, month, day , hour, minute, second, millisecond]
-    function configFromArray(config) {
-        var i,
-            date,
-            input = [],
-            currentDate,
-            expectedWeekday,
-            yearToUse;
+    currentDate = currentDateArray(config);
 
-        if (config._d) {
-            return;
+    //compute day of the year from weeks and weekdays
+    if (config._w && config._a[DATE] == null && config._a[MONTH] == null) {
+        dayOfYearFromWeekInfo(config);
+    }
+
+    //if the day of the year is set, figure out what it is
+    if (config._dayOfYear != null) {
+        yearToUse = defaults(config._a[YEAR], currentDate[YEAR]);
+
+        if (config._dayOfYear > daysInYear(yearToUse) || config._dayOfYear === 0) {
+            getParsingFlags(config)._overflowDayOfYear = true;
         }
 
-        currentDate = currentDateArray(config);
+        date = createUTCDate(yearToUse, 0, config._dayOfYear);
+        config._a[MONTH] = date.getUTCMonth();
+        config._a[DATE] = date.getUTCDate();
+    }
 
-        //compute day of the year from weeks and weekdays
-        if (config._w && config._a[DATE] == null && config._a[MONTH] == null) {
-            dayOfYearFromWeekInfo(config);
-        }
+    // Default to current date.
+    // * if no year, month, day of month are given, default to today
+    // * if day of month is given, default month and year
+    // * if month is given, default only year
+    // * if year is given, don't default anything
+    for (i = 0; i < 3 && config._a[i] == null; ++i) {
+        config._a[i] = input[i] = currentDate[i];
+    }
 
-        //if the day of the year is set, figure out what it is
-        if (config._dayOfYear != null) {
-            yearToUse = defaults(config._a[YEAR], currentDate[YEAR]);
+    // Zero out whatever was not defaulted, including time
+    for (; i < 7; i++) {
+        config._a[i] = input[i] = (config._a[i] == null) ? (i === 2 ? 1 : 0) : config._a[i];
+    }
 
-            if (
-                config._dayOfYear > daysInYear(yearToUse) ||
-                config._dayOfYear === 0
-            ) {
-                getParsingFlags(config)._overflowDayOfYear = true;
-            }
-
-            date = createUTCDate(yearToUse, 0, config._dayOfYear);
-            config._a[MONTH] = date.getUTCMonth();
-            config._a[DATE] = date.getUTCDate();
-        }
-
-        // Default to current date.
-        // * if no year, month, day of month are given, default to today
-        // * if day of month is given, default month and year
-        // * if month is given, default only year
-        // * if year is given, don't default anything
-        for (i = 0; i < 3 && config._a[i] == null; ++i) {
-            config._a[i] = input[i] = currentDate[i];
-        }
-
-        // Zero out whatever was not defaulted, including time
-        for (; i < 7; i++) {
-            config._a[i] = input[i] =
-                config._a[i] == null ? (i === 2 ? 1 : 0) : config._a[i];
-        }
-
-        // Check for 24:00:00.000
-        if (
-            config._a[HOUR] === 24 &&
+    // Check for 24:00:00.000
+    if (config._a[HOUR] === 24 &&
             config._a[MINUTE] === 0 &&
             config._a[SECOND] === 0 &&
-            config._a[MILLISECOND] === 0
-        ) {
-            config._nextDay = true;
-            config._a[HOUR] = 0;
-        }
-
-        config._d = (config._useUTC ? createUTCDate : createDate).apply(
-            null,
-            input
-        );
-        expectedWeekday = config._useUTC
-            ? config._d.getUTCDay()
-            : config._d.getDay();
-
-        // Apply timezone offset from input. The actual utcOffset can be changed
-        // with parseZone.
-        if (config._tzm != null) {
-            config._d.setUTCMinutes(config._d.getUTCMinutes() - config._tzm);
-        }
-
-        if (config._nextDay) {
-            config._a[HOUR] = 24;
-        }
-
-        // check for mismatching day of week
-        if (
-            config._w &&
-            typeof config._w.d !== 'undefined' &&
-            config._w.d !== expectedWeekday
-        ) {
-            getParsingFlags(config).weekdayMismatch = true;
-        }
+            config._a[MILLISECOND] === 0) {
+        config._nextDay = true;
+        config._a[HOUR] = 0;
     }
 
-    function dayOfYearFromWeekInfo(config) {
-        var w, weekYear, week, weekday, dow, doy, temp, weekdayOverflow, curWeek;
+    config._d = (config._useUTC ? createUTCDate : createDate).apply(null, input);
+    // Apply timezone offset from input. The actual utcOffset can be changed
+    // with parseZone.
+    if (config._tzm != null) {
+        config._d.setUTCMinutes(config._d.getUTCMinutes() - config._tzm);
+    }
 
-        w = config._w;
-        if (w.GG != null || w.W != null || w.E != null) {
-            dow = 1;
-            doy = 4;
+    if (config._nextDay) {
+        config._a[HOUR] = 24;
+    }
+}
 
-            // TODO: We need to take the current isoWeekYear, but that depends on
-            // how we interpret now (local, utc, fixed offset). So create
-            // a now version of current config (take local/utc/offset flags, and
-            // create now).
-            weekYear = defaults(
-                w.GG,
-                config._a[YEAR],
-                weekOfYear(createLocal(), 1, 4).year
-            );
-            week = defaults(w.W, 1);
-            weekday = defaults(w.E, 1);
-            if (weekday < 1 || weekday > 7) {
+function dayOfYearFromWeekInfo(config) {
+    var w, weekYear, week, weekday, dow, doy, temp, weekdayOverflow;
+
+    w = config._w;
+    if (w.GG != null || w.W != null || w.E != null) {
+        dow = 1;
+        doy = 4;
+
+        // TODO: We need to take the current isoWeekYear, but that depends on
+        // how we interpret now (local, utc, fixed offset). So create
+        // a now version of current config (take local/utc/offset flags, and
+        // create now).
+        weekYear = defaults(w.GG, config._a[YEAR], weekOfYear(createLocal(), 1, 4).year);
+        week = defaults(w.W, 1);
+        weekday = defaults(w.E, 1);
+        if (weekday < 1 || weekday > 7) {
+            weekdayOverflow = true;
+        }
+    } else {
+        dow = config._locale._week.dow;
+        doy = config._locale._week.doy;
+
+        var curWeek = weekOfYear(createLocal(), dow, doy);
+
+        weekYear = defaults(w.gg, config._a[YEAR], curWeek.year);
+
+        // Default to current week.
+        week = defaults(w.w, curWeek.week);
+
+        if (w.d != null) {
+            // weekday -- low day numbers are considered next week
+            weekday = w.d;
+            if (weekday < 0 || weekday > 6) {
+                weekdayOverflow = true;
+            }
+        } else if (w.e != null) {
+            // local weekday -- counting starts from begining of week
+            weekday = w.e + dow;
+            if (w.e < 0 || w.e > 6) {
                 weekdayOverflow = true;
             }
         } else {
-            dow = config._locale._week.dow;
-            doy = config._locale._week.doy;
-
-            curWeek = weekOfYear(createLocal(), dow, doy);
-
-            weekYear = defaults(w.gg, config._a[YEAR], curWeek.year);
-
-            // Default to current week.
-            week = defaults(w.w, curWeek.week);
-
-            if (w.d != null) {
-                // weekday -- low day numbers are considered next week
-                weekday = w.d;
-                if (weekday < 0 || weekday > 6) {
-                    weekdayOverflow = true;
-                }
-            } else if (w.e != null) {
-                // local weekday -- counting starts from beginning of week
-                weekday = w.e + dow;
-                if (w.e < 0 || w.e > 6) {
-                    weekdayOverflow = true;
-                }
-            } else {
-                // default to beginning of week
-                weekday = dow;
-            }
-        }
-        if (week < 1 || week > weeksInYear(weekYear, dow, doy)) {
-            getParsingFlags(config)._overflowWeeks = true;
-        } else if (weekdayOverflow != null) {
-            getParsingFlags(config)._overflowWeekday = true;
-        } else {
-            temp = dayOfYearFromWeeks(weekYear, week, weekday, dow, doy);
-            config._a[YEAR] = temp.year;
-            config._dayOfYear = temp.dayOfYear;
+            // default to begining of week
+            weekday = dow;
         }
     }
+    if (week < 1 || week > weeksInYear(weekYear, dow, doy)) {
+        getParsingFlags(config)._overflowWeeks = true;
+    } else if (weekdayOverflow != null) {
+        getParsingFlags(config)._overflowWeekday = true;
+    } else {
+        temp = dayOfYearFromWeeks(weekYear, week, weekday, dow, doy);
+        config._a[YEAR] = temp.year;
+        config._dayOfYear = temp.dayOfYear;
+    }
+}
 
-    // constant that refers to the ISO standard
-    hooks.ISO_8601 = function () {};
+// constant that refers to the ISO standard
+hooks.ISO_8601 = function () {};
 
-    // constant that refers to the RFC 2822 form
-    hooks.RFC_2822 = function () {};
+// constant that refers to the RFC 2822 form
+hooks.RFC_2822 = function () {};
 
-    // date from string and format string
-    function configFromStringAndFormat(config) {
-        // TODO: Move this to another part of the creation flow to prevent circular deps
-        if (config._f === hooks.ISO_8601) {
-            configFromISO(config);
-            return;
-        }
-        if (config._f === hooks.RFC_2822) {
-            configFromRFC2822(config);
-            return;
-        }
-        config._a = [];
-        getParsingFlags(config).empty = true;
+// date from string and format string
+function configFromStringAndFormat(config) {
+    // TODO: Move this to another part of the creation flow to prevent circular deps
+    if (config._f === hooks.ISO_8601) {
+        configFromISO(config);
+        return;
+    }
+    if (config._f === hooks.RFC_2822) {
+        configFromRFC2822(config);
+        return;
+    }
+    config._a = [];
+    getParsingFlags(config).empty = true;
 
-        // This array is used to make a Date, either with `new Date` or `Date.UTC`
-        var string = '' + config._i,
-            i,
-            parsedInput,
-            tokens,
-            token,
-            skipped,
-            stringLength = string.length,
-            totalParsedInputLength = 0,
-            era,
-            tokenLen;
+    // This array is used to make a Date, either with `new Date` or `Date.UTC`
+    var string = '' + config._i,
+        i, parsedInput, tokens, token, skipped,
+        stringLength = string.length,
+        totalParsedInputLength = 0;
 
-        tokens =
-            expandFormat(config._f, config._locale).match(formattingTokens) || [];
-        tokenLen = tokens.length;
-        for (i = 0; i < tokenLen; i++) {
-            token = tokens[i];
-            parsedInput = (string.match(getParseRegexForToken(token, config)) ||
-                [])[0];
-            if (parsedInput) {
-                skipped = string.substr(0, string.indexOf(parsedInput));
-                if (skipped.length > 0) {
-                    getParsingFlags(config).unusedInput.push(skipped);
-                }
-                string = string.slice(
-                    string.indexOf(parsedInput) + parsedInput.length
-                );
-                totalParsedInputLength += parsedInput.length;
+    tokens = expandFormat(config._f, config._locale).match(formattingTokens) || [];
+
+    for (i = 0; i < tokens.length; i++) {
+        token = tokens[i];
+        parsedInput = (string.match(getParseRegexForToken(token, config)) || [])[0];
+        // console.log('token', token, 'parsedInput', parsedInput,
+        //         'regex', getParseRegexForToken(token, config));
+        if (parsedInput) {
+            skipped = string.substr(0, string.indexOf(parsedInput));
+            if (skipped.length > 0) {
+                getParsingFlags(config).unusedInput.push(skipped);
             }
-            // don't parse if it's not a known token
-            if (formatTokenFunctions[token]) {
-                if (parsedInput) {
-                    getParsingFlags(config).empty = false;
-                } else {
-                    getParsingFlags(config).unusedTokens.push(token);
-                }
-                addTimeToArrayFromToken(token, parsedInput, config);
-            } else if (config._strict && !parsedInput) {
+            string = string.slice(string.indexOf(parsedInput) + parsedInput.length);
+            totalParsedInputLength += parsedInput.length;
+        }
+        // don't parse if it's not a known token
+        if (formatTokenFunctions[token]) {
+            if (parsedInput) {
+                getParsingFlags(config).empty = false;
+            }
+            else {
                 getParsingFlags(config).unusedTokens.push(token);
             }
+            addTimeToArrayFromToken(token, parsedInput, config);
         }
-
-        // add remaining unparsed input length to the string
-        getParsingFlags(config).charsLeftOver =
-            stringLength - totalParsedInputLength;
-        if (string.length > 0) {
-            getParsingFlags(config).unusedInput.push(string);
-        }
-
-        // clear _12h flag if hour is <= 12
-        if (
-            config._a[HOUR] <= 12 &&
-            getParsingFlags(config).bigHour === true &&
-            config._a[HOUR] > 0
-        ) {
-            getParsingFlags(config).bigHour = undefined;
-        }
-
-        getParsingFlags(config).parsedDateParts = config._a.slice(0);
-        getParsingFlags(config).meridiem = config._meridiem;
-        // handle meridiem
-        config._a[HOUR] = meridiemFixWrap(
-            config._locale,
-            config._a[HOUR],
-            config._meridiem
-        );
-
-        // handle era
-        era = getParsingFlags(config).era;
-        if (era !== null) {
-            config._a[YEAR] = config._locale.erasConvertYear(era, config._a[YEAR]);
-        }
-
-        configFromArray(config);
-        checkOverflow(config);
-    }
-
-    function meridiemFixWrap(locale, hour, meridiem) {
-        var isPm;
-
-        if (meridiem == null) {
-            // nothing to do
-            return hour;
-        }
-        if (locale.meridiemHour != null) {
-            return locale.meridiemHour(hour, meridiem);
-        } else if (locale.isPM != null) {
-            // Fallback
-            isPm = locale.isPM(meridiem);
-            if (isPm && hour < 12) {
-                hour += 12;
-            }
-            if (!isPm && hour === 12) {
-                hour = 0;
-            }
-            return hour;
-        } else {
-            // this is not supposed to happen
-            return hour;
+        else if (config._strict && !parsedInput) {
+            getParsingFlags(config).unusedTokens.push(token);
         }
     }
 
-    // date from string and array of format strings
-    function configFromStringAndArray(config) {
-        var tempConfig,
-            bestMoment,
-            scoreToBeat,
-            i,
-            currentScore,
-            validFormatFound,
-            bestFormatIsValid = false,
-            configfLen = config._f.length;
-
-        if (configfLen === 0) {
-            getParsingFlags(config).invalidFormat = true;
-            config._d = new Date(NaN);
-            return;
-        }
-
-        for (i = 0; i < configfLen; i++) {
-            currentScore = 0;
-            validFormatFound = false;
-            tempConfig = copyConfig({}, config);
-            if (config._useUTC != null) {
-                tempConfig._useUTC = config._useUTC;
-            }
-            tempConfig._f = config._f[i];
-            configFromStringAndFormat(tempConfig);
-
-            if (isValid(tempConfig)) {
-                validFormatFound = true;
-            }
-
-            // if there is any input that was not parsed add a penalty for that format
-            currentScore += getParsingFlags(tempConfig).charsLeftOver;
-
-            //or tokens
-            currentScore += getParsingFlags(tempConfig).unusedTokens.length * 10;
-
-            getParsingFlags(tempConfig).score = currentScore;
-
-            if (!bestFormatIsValid) {
-                if (
-                    scoreToBeat == null ||
-                    currentScore < scoreToBeat ||
-                    validFormatFound
-                ) {
-                    scoreToBeat = currentScore;
-                    bestMoment = tempConfig;
-                    if (validFormatFound) {
-                        bestFormatIsValid = true;
-                    }
-                }
-            } else {
-                if (currentScore < scoreToBeat) {
-                    scoreToBeat = currentScore;
-                    bestMoment = tempConfig;
-                }
-            }
-        }
-
-        extend(config, bestMoment || tempConfig);
+    // add remaining unparsed input length to the string
+    getParsingFlags(config).charsLeftOver = stringLength - totalParsedInputLength;
+    if (string.length > 0) {
+        getParsingFlags(config).unusedInput.push(string);
     }
 
-    function configFromObject(config) {
-        if (config._d) {
-            return;
-        }
-
-        var i = normalizeObjectUnits(config._i),
-            dayOrDate = i.day === undefined ? i.date : i.day;
-        config._a = map(
-            [i.year, i.month, dayOrDate, i.hour, i.minute, i.second, i.millisecond],
-            function (obj) {
-                return obj && parseInt(obj, 10);
-            }
-        );
-
-        configFromArray(config);
+    // clear _12h flag if hour is <= 12
+    if (config._a[HOUR] <= 12 &&
+        getParsingFlags(config).bigHour === true &&
+        config._a[HOUR] > 0) {
+        getParsingFlags(config).bigHour = undefined;
     }
 
-    function createFromConfig(config) {
-        var res = new Moment(checkOverflow(prepareConfig(config)));
-        if (res._nextDay) {
-            // Adding is smart enough around DST
-            res.add(1, 'd');
-            res._nextDay = undefined;
-        }
+    getParsingFlags(config).parsedDateParts = config._a.slice(0);
+    getParsingFlags(config).meridiem = config._meridiem;
+    // handle meridiem
+    config._a[HOUR] = meridiemFixWrap(config._locale, config._a[HOUR], config._meridiem);
 
-        return res;
+    configFromArray(config);
+    checkOverflow(config);
+}
+
+
+function meridiemFixWrap (locale, hour, meridiem) {
+    var isPm;
+
+    if (meridiem == null) {
+        // nothing to do
+        return hour;
+    }
+    if (locale.meridiemHour != null) {
+        return locale.meridiemHour(hour, meridiem);
+    } else if (locale.isPM != null) {
+        // Fallback
+        isPm = locale.isPM(meridiem);
+        if (isPm && hour < 12) {
+            hour += 12;
+        }
+        if (!isPm && hour === 12) {
+            hour = 0;
+        }
+        return hour;
+    } else {
+        // this is not supposed to happen
+        return hour;
+    }
+}
+
+// date from string and array of format strings
+function configFromStringAndArray(config) {
+    var tempConfig,
+        bestMoment,
+
+        scoreToBeat,
+        i,
+        currentScore;
+
+    if (config._f.length === 0) {
+        getParsingFlags(config).invalidFormat = true;
+        config._d = new Date(NaN);
+        return;
     }
 
-    function prepareConfig(config) {
-        var input = config._i,
-            format = config._f;
+    for (i = 0; i < config._f.length; i++) {
+        currentScore = 0;
+        tempConfig = copyConfig({}, config);
+        if (config._useUTC != null) {
+            tempConfig._useUTC = config._useUTC;
+        }
+        tempConfig._f = config._f[i];
+        configFromStringAndFormat(tempConfig);
 
-        config._locale = config._locale || getLocale(config._l);
-
-        if (input === null || (format === undefined && input === '')) {
-            return createInvalid({ nullInput: true });
+        if (!isValid(tempConfig)) {
+            continue;
         }
 
-        if (typeof input === 'string') {
-            config._i = input = config._locale.preparse(input);
-        }
+        // if there is any input that was not parsed add a penalty for that format
+        currentScore += getParsingFlags(tempConfig).charsLeftOver;
 
-        if (isMoment(input)) {
-            return new Moment(checkOverflow(input));
-        } else if (isDate(input)) {
-            config._d = input;
-        } else if (isArray(format)) {
-            configFromStringAndArray(config);
-        } else if (format) {
-            configFromStringAndFormat(config);
-        } else {
-            configFromInput(config);
-        }
+        //or tokens
+        currentScore += getParsingFlags(tempConfig).unusedTokens.length * 10;
 
-        if (!isValid(config)) {
-            config._d = null;
-        }
+        getParsingFlags(tempConfig).score = currentScore;
 
-        return config;
-    }
-
-    function configFromInput(config) {
-        var input = config._i;
-        if (isUndefined(input)) {
-            config._d = new Date(hooks.now());
-        } else if (isDate(input)) {
-            config._d = new Date(input.valueOf());
-        } else if (typeof input === 'string') {
-            configFromString(config);
-        } else if (isArray(input)) {
-            config._a = map(input.slice(0), function (obj) {
-                return parseInt(obj, 10);
-            });
-            configFromArray(config);
-        } else if (isObject(input)) {
-            configFromObject(config);
-        } else if (isNumber(input)) {
-            // from milliseconds
-            config._d = new Date(input);
-        } else {
-            hooks.createFromInputFallback(config);
+        if (scoreToBeat == null || currentScore < scoreToBeat) {
+            scoreToBeat = currentScore;
+            bestMoment = tempConfig;
         }
     }
 
-    function createLocalOrUTC(input, format, locale, strict, isUTC) {
-        var c = {};
+    extend(config, bestMoment || tempConfig);
+}
 
-        if (format === true || format === false) {
-            strict = format;
-            format = undefined;
-        }
-
-        if (locale === true || locale === false) {
-            strict = locale;
-            locale = undefined;
-        }
-
-        if (
-            (isObject(input) && isObjectEmpty(input)) ||
-            (isArray(input) && input.length === 0)
-        ) {
-            input = undefined;
-        }
-        // object construction must be done this way.
-        // https://github.com/moment/moment/issues/1423
-        c._isAMomentObject = true;
-        c._useUTC = c._isUTC = isUTC;
-        c._l = locale;
-        c._i = input;
-        c._f = format;
-        c._strict = strict;
-
-        return createFromConfig(c);
+function configFromObject(config) {
+    if (config._d) {
+        return;
     }
 
-    function createLocal(input, format, locale, strict) {
-        return createLocalOrUTC(input, format, locale, strict, false);
-    }
-
-    var prototypeMin = deprecate(
-            'moment().min is deprecated, use moment.max instead. http://momentjs.com/guides/#/warnings/min-max/',
-            function () {
-                var other = createLocal.apply(null, arguments);
-                if (this.isValid() && other.isValid()) {
-                    return other < this ? this : other;
-                } else {
-                    return createInvalid();
-                }
-            }
-        ),
-        prototypeMax = deprecate(
-            'moment().max is deprecated, use moment.min instead. http://momentjs.com/guides/#/warnings/min-max/',
-            function () {
-                var other = createLocal.apply(null, arguments);
-                if (this.isValid() && other.isValid()) {
-                    return other > this ? this : other;
-                } else {
-                    return createInvalid();
-                }
-            }
-        );
-
-    // Pick a moment m from moments so that m[fn](other) is true for all
-    // other. This relies on the function fn to be transitive.
-    //
-    // moments should either be an array of moment objects or an array, whose
-    // first element is an array of moment objects.
-    function pickBy(fn, moments) {
-        var res, i;
-        if (moments.length === 1 && isArray(moments[0])) {
-            moments = moments[0];
-        }
-        if (!moments.length) {
-            return createLocal();
-        }
-        res = moments[0];
-        for (i = 1; i < moments.length; ++i) {
-            if (!moments[i].isValid() || moments[i][fn](res)) {
-                res = moments[i];
-            }
-        }
-        return res;
-    }
-
-    // TODO: Use [].sort instead?
-    function min() {
-        var args = [].slice.call(arguments, 0);
-
-        return pickBy('isBefore', args);
-    }
-
-    function max() {
-        var args = [].slice.call(arguments, 0);
-
-        return pickBy('isAfter', args);
-    }
-
-    var now = function () {
-        return Date.now ? Date.now() : +new Date();
-    };
-
-    var ordering = [
-        'year',
-        'quarter',
-        'month',
-        'week',
-        'day',
-        'hour',
-        'minute',
-        'second',
-        'millisecond',
-    ];
-
-    function isDurationValid(m) {
-        var key,
-            unitHasDecimal = false,
-            i,
-            orderLen = ordering.length;
-        for (key in m) {
-            if (
-                hasOwnProp(m, key) &&
-                !(
-                    indexOf.call(ordering, key) !== -1 &&
-                    (m[key] == null || !isNaN(m[key]))
-                )
-            ) {
-                return false;
-            }
-        }
-
-        for (i = 0; i < orderLen; ++i) {
-            if (m[ordering[i]]) {
-                if (unitHasDecimal) {
-                    return false; // only allow non-integers for smallest unit
-                }
-                if (parseFloat(m[ordering[i]]) !== toInt(m[ordering[i]])) {
-                    unitHasDecimal = true;
-                }
-            }
-        }
-
-        return true;
-    }
-
-    function isValid$1() {
-        return this._isValid;
-    }
-
-    function createInvalid$1() {
-        return createDuration(NaN);
-    }
-
-    function Duration(duration) {
-        var normalizedInput = normalizeObjectUnits(duration),
-            years = normalizedInput.year || 0,
-            quarters = normalizedInput.quarter || 0,
-            months = normalizedInput.month || 0,
-            weeks = normalizedInput.week || normalizedInput.isoWeek || 0,
-            days = normalizedInput.day || 0,
-            hours = normalizedInput.hour || 0,
-            minutes = normalizedInput.minute || 0,
-            seconds = normalizedInput.second || 0,
-            milliseconds = normalizedInput.millisecond || 0;
-
-        this._isValid = isDurationValid(normalizedInput);
-
-        // representation for dateAddRemove
-        this._milliseconds =
-            +milliseconds +
-            seconds * 1e3 + // 1000
-            minutes * 6e4 + // 1000 * 60
-            hours * 1000 * 60 * 60; //using 1000 * 60 * 60 instead of 36e5 to avoid floating point rounding errors https://github.com/moment/moment/issues/2978
-        // Because of dateAddRemove treats 24 hours as different from a
-        // day when working around DST, we need to store them separately
-        this._days = +days + weeks * 7;
-        // It is impossible to translate months into days without knowing
-        // which months you are are talking about, so we have to store
-        // it separately.
-        this._months = +months + quarters * 3 + years * 12;
-
-        this._data = {};
-
-        this._locale = getLocale();
-
-        this._bubble();
-    }
-
-    function isDuration(obj) {
-        return obj instanceof Duration;
-    }
-
-    function absRound(number) {
-        if (number < 0) {
-            return Math.round(-1 * number) * -1;
-        } else {
-            return Math.round(number);
-        }
-    }
-
-    // compare two arrays, return the number of differences
-    function compareArrays(array1, array2, dontConvert) {
-        var len = Math.min(array1.length, array2.length),
-            lengthDiff = Math.abs(array1.length - array2.length),
-            diffs = 0,
-            i;
-        for (i = 0; i < len; i++) {
-            if (
-                (dontConvert && array1[i] !== array2[i]) ||
-                (!dontConvert && toInt(array1[i]) !== toInt(array2[i]))
-            ) {
-                diffs++;
-            }
-        }
-        return diffs + lengthDiff;
-    }
-
-    // FORMATTING
-
-    function offset(token, separator) {
-        addFormatToken(token, 0, 0, function () {
-            var offset = this.utcOffset(),
-                sign = '+';
-            if (offset < 0) {
-                offset = -offset;
-                sign = '-';
-            }
-            return (
-                sign +
-                zeroFill(~~(offset / 60), 2) +
-                separator +
-                zeroFill(~~offset % 60, 2)
-            );
-        });
-    }
-
-    offset('Z', ':');
-    offset('ZZ', '');
-
-    // PARSING
-
-    addRegexToken('Z', matchShortOffset);
-    addRegexToken('ZZ', matchShortOffset);
-    addParseToken(['Z', 'ZZ'], function (input, array, config) {
-        config._useUTC = true;
-        config._tzm = offsetFromString(matchShortOffset, input);
+    var i = normalizeObjectUnits(config._i);
+    config._a = map([i.year, i.month, i.day || i.date, i.hour, i.minute, i.second, i.millisecond], function (obj) {
+        return obj && parseInt(obj, 10);
     });
 
-    // HELPERS
+    configFromArray(config);
+}
 
-    // timezone chunker
-    // '+10:00' > ['10',  '00']
-    // '-1530'  > ['-15', '30']
-    var chunkOffset = /([\+\-]|\d\d)/gi;
-
-    function offsetFromString(matcher, string) {
-        var matches = (string || '').match(matcher),
-            chunk,
-            parts,
-            minutes;
-
-        if (matches === null) {
-            return null;
-        }
-
-        chunk = matches[matches.length - 1] || [];
-        parts = (chunk + '').match(chunkOffset) || ['-', 0, 0];
-        minutes = +(parts[1] * 60) + toInt(parts[2]);
-
-        return minutes === 0 ? 0 : parts[0] === '+' ? minutes : -minutes;
+function createFromConfig (config) {
+    var res = new Moment(checkOverflow(prepareConfig(config)));
+    if (res._nextDay) {
+        // Adding is smart enough around DST
+        res.add(1, 'd');
+        res._nextDay = undefined;
     }
 
-    // Return a moment from input, that is local/utc/zone equivalent to model.
-    function cloneWithOffset(input, model) {
-        var res, diff;
-        if (model._isUTC) {
-            res = model.clone();
-            diff =
-                (isMoment(input) || isDate(input)
-                    ? input.valueOf()
-                    : createLocal(input).valueOf()) - res.valueOf();
-            // Use low-level api, because this fn is low-level api.
-            res._d.setTime(res._d.valueOf() + diff);
-            hooks.updateOffset(res, false);
-            return res;
+    return res;
+}
+
+function prepareConfig (config) {
+    var input = config._i,
+        format = config._f;
+
+    config._locale = config._locale || getLocale(config._l);
+
+    if (input === null || (format === undefined && input === '')) {
+        return createInvalid({nullInput: true});
+    }
+
+    if (typeof input === 'string') {
+        config._i = input = config._locale.preparse(input);
+    }
+
+    if (isMoment(input)) {
+        return new Moment(checkOverflow(input));
+    } else if (isDate(input)) {
+        config._d = input;
+    } else if (isArray(format)) {
+        configFromStringAndArray(config);
+    } else if (format) {
+        configFromStringAndFormat(config);
+    }  else {
+        configFromInput(config);
+    }
+
+    if (!isValid(config)) {
+        config._d = null;
+    }
+
+    return config;
+}
+
+function configFromInput(config) {
+    var input = config._i;
+    if (isUndefined(input)) {
+        config._d = new Date(hooks.now());
+    } else if (isDate(input)) {
+        config._d = new Date(input.valueOf());
+    } else if (typeof input === 'string') {
+        configFromString(config);
+    } else if (isArray(input)) {
+        config._a = map(input.slice(0), function (obj) {
+            return parseInt(obj, 10);
+        });
+        configFromArray(config);
+    } else if (isObject(input)) {
+        configFromObject(config);
+    } else if (isNumber(input)) {
+        // from milliseconds
+        config._d = new Date(input);
+    } else {
+        hooks.createFromInputFallback(config);
+    }
+}
+
+function createLocalOrUTC (input, format, locale, strict, isUTC) {
+    var c = {};
+
+    if (locale === true || locale === false) {
+        strict = locale;
+        locale = undefined;
+    }
+
+    if ((isObject(input) && isObjectEmpty(input)) ||
+            (isArray(input) && input.length === 0)) {
+        input = undefined;
+    }
+    // object construction must be done this way.
+    // https://github.com/moment/moment/issues/1423
+    c._isAMomentObject = true;
+    c._useUTC = c._isUTC = isUTC;
+    c._l = locale;
+    c._i = input;
+    c._f = format;
+    c._strict = strict;
+
+    return createFromConfig(c);
+}
+
+function createLocal (input, format, locale, strict) {
+    return createLocalOrUTC(input, format, locale, strict, false);
+}
+
+var prototypeMin = deprecate(
+    'moment().min is deprecated, use moment.max instead. http://momentjs.com/guides/#/warnings/min-max/',
+    function () {
+        var other = createLocal.apply(null, arguments);
+        if (this.isValid() && other.isValid()) {
+            return other < this ? this : other;
         } else {
-            return createLocal(input).local();
+            return createInvalid();
         }
     }
+);
 
-    function getDateOffset(m) {
-        // On Firefox.24 Date#getTimezoneOffset returns a floating point.
-        // https://github.com/moment/moment/pull/1871
-        return -Math.round(m._d.getTimezoneOffset());
-    }
-
-    // HOOKS
-
-    // This function will be called whenever a moment is mutated.
-    // It is intended to keep the offset in sync with the timezone.
-    hooks.updateOffset = function () {};
-
-    // MOMENTS
-
-    // keepLocalTime = true means only change the timezone, without
-    // affecting the local hour. So 5:31:26 +0300 --[utcOffset(2, true)]-->
-    // 5:31:26 +0200 It is possible that 5:31:26 doesn't exist with offset
-    // +0200, so we adjust the time as needed, to be valid.
-    //
-    // Keeping the time actually adds/subtracts (one hour)
-    // from the actual represented time. That is why we call updateOffset
-    // a second time. In case it wants us to change the offset again
-    // _changeInProgress == true case, then we have to adjust, because
-    // there is no such time in the given timezone.
-    function getSetOffset(input, keepLocalTime, keepMinutes) {
-        var offset = this._offset || 0,
-            localAdjust;
-        if (!this.isValid()) {
-            return input != null ? this : NaN;
-        }
-        if (input != null) {
-            if (typeof input === 'string') {
-                input = offsetFromString(matchShortOffset, input);
-                if (input === null) {
-                    return this;
-                }
-            } else if (Math.abs(input) < 16 && !keepMinutes) {
-                input = input * 60;
-            }
-            if (!this._isUTC && keepLocalTime) {
-                localAdjust = getDateOffset(this);
-            }
-            this._offset = input;
-            this._isUTC = true;
-            if (localAdjust != null) {
-                this.add(localAdjust, 'm');
-            }
-            if (offset !== input) {
-                if (!keepLocalTime || this._changeInProgress) {
-                    addSubtract(
-                        this,
-                        createDuration(input - offset, 'm'),
-                        1,
-                        false
-                    );
-                } else if (!this._changeInProgress) {
-                    this._changeInProgress = true;
-                    hooks.updateOffset(this, true);
-                    this._changeInProgress = null;
-                }
-            }
-            return this;
+var prototypeMax = deprecate(
+    'moment().max is deprecated, use moment.min instead. http://momentjs.com/guides/#/warnings/min-max/',
+    function () {
+        var other = createLocal.apply(null, arguments);
+        if (this.isValid() && other.isValid()) {
+            return other > this ? this : other;
         } else {
-            return this._isUTC ? offset : getDateOffset(this);
+            return createInvalid();
         }
     }
+);
 
-    function getSetZone(input, keepLocalTime) {
-        if (input != null) {
-            if (typeof input !== 'string') {
-                input = -input;
-            }
-
-            this.utcOffset(input, keepLocalTime);
-
-            return this;
-        } else {
-            return -this.utcOffset();
+// Pick a moment m from moments so that m[fn](other) is true for all
+// other. This relies on the function fn to be transitive.
+//
+// moments should either be an array of moment objects or an array, whose
+// first element is an array of moment objects.
+function pickBy(fn, moments) {
+    var res, i;
+    if (moments.length === 1 && isArray(moments[0])) {
+        moments = moments[0];
+    }
+    if (!moments.length) {
+        return createLocal();
+    }
+    res = moments[0];
+    for (i = 1; i < moments.length; ++i) {
+        if (!moments[i].isValid() || moments[i][fn](res)) {
+            res = moments[i];
         }
     }
+    return res;
+}
 
-    function setOffsetToUTC(keepLocalTime) {
-        return this.utcOffset(0, keepLocalTime);
-    }
+// TODO: Use [].sort instead?
+function min () {
+    var args = [].slice.call(arguments, 0);
 
-    function setOffsetToLocal(keepLocalTime) {
-        if (this._isUTC) {
-            this.utcOffset(0, keepLocalTime);
-            this._isUTC = false;
+    return pickBy('isBefore', args);
+}
 
-            if (keepLocalTime) {
-                this.subtract(getDateOffset(this), 'm');
-            }
-        }
-        return this;
-    }
+function max () {
+    var args = [].slice.call(arguments, 0);
 
-    function setOffsetToParsedOffset() {
-        if (this._tzm != null) {
-            this.utcOffset(this._tzm, false, true);
-        } else if (typeof this._i === 'string') {
-            var tZone = offsetFromString(matchOffset, this._i);
-            if (tZone != null) {
-                this.utcOffset(tZone);
-            } else {
-                this.utcOffset(0, true);
-            }
-        }
-        return this;
-    }
+    return pickBy('isAfter', args);
+}
 
-    function hasAlignedHourOffset(input) {
-        if (!this.isValid()) {
+var now = function () {
+    return Date.now ? Date.now() : +(new Date());
+};
+
+var ordering = ['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute', 'second', 'millisecond'];
+
+function isDurationValid(m) {
+    for (var key in m) {
+        if (!(ordering.indexOf(key) !== -1 && (m[key] == null || !isNaN(m[key])))) {
             return false;
         }
-        input = input ? createLocal(input).utcOffset() : 0;
-
-        return (this.utcOffset() - input) % 60 === 0;
     }
 
-    function isDaylightSavingTime() {
-        return (
-            this.utcOffset() > this.clone().month(0).utcOffset() ||
-            this.utcOffset() > this.clone().month(5).utcOffset()
-        );
+    var unitHasDecimal = false;
+    for (var i = 0; i < ordering.length; ++i) {
+        if (m[ordering[i]]) {
+            if (unitHasDecimal) {
+                return false; // only allow non-integers for smallest unit
+            }
+            if (parseFloat(m[ordering[i]]) !== toInt(m[ordering[i]])) {
+                unitHasDecimal = true;
+            }
+        }
     }
 
-    function isDaylightSavingTimeShifted() {
-        if (!isUndefined(this._isDSTShifted)) {
-            return this._isDSTShifted;
+    return true;
+}
+
+function isValid$1() {
+    return this._isValid;
+}
+
+function createInvalid$1() {
+    return createDuration(NaN);
+}
+
+function Duration (duration) {
+    var normalizedInput = normalizeObjectUnits(duration),
+        years = normalizedInput.year || 0,
+        quarters = normalizedInput.quarter || 0,
+        months = normalizedInput.month || 0,
+        weeks = normalizedInput.week || 0,
+        days = normalizedInput.day || 0,
+        hours = normalizedInput.hour || 0,
+        minutes = normalizedInput.minute || 0,
+        seconds = normalizedInput.second || 0,
+        milliseconds = normalizedInput.millisecond || 0;
+
+    this._isValid = isDurationValid(normalizedInput);
+
+    // representation for dateAddRemove
+    this._milliseconds = +milliseconds +
+        seconds * 1e3 + // 1000
+        minutes * 6e4 + // 1000 * 60
+        hours * 1000 * 60 * 60; //using 1000 * 60 * 60 instead of 36e5 to avoid floating point rounding errors https://github.com/moment/moment/issues/2978
+    // Because of dateAddRemove treats 24 hours as different from a
+    // day when working around DST, we need to store them separately
+    this._days = +days +
+        weeks * 7;
+    // It is impossible translate months into days without knowing
+    // which months you are are talking about, so we have to store
+    // it separately.
+    this._months = +months +
+        quarters * 3 +
+        years * 12;
+
+    this._data = {};
+
+    this._locale = getLocale();
+
+    this._bubble();
+}
+
+function isDuration (obj) {
+    return obj instanceof Duration;
+}
+
+function absRound (number) {
+    if (number < 0) {
+        return Math.round(-1 * number) * -1;
+    } else {
+        return Math.round(number);
+    }
+}
+
+// FORMATTING
+
+function offset (token, separator) {
+    addFormatToken(token, 0, 0, function () {
+        var offset = this.utcOffset();
+        var sign = '+';
+        if (offset < 0) {
+            offset = -offset;
+            sign = '-';
+        }
+        return sign + zeroFill(~~(offset / 60), 2) + separator + zeroFill(~~(offset) % 60, 2);
+    });
+}
+
+offset('Z', ':');
+offset('ZZ', '');
+
+// PARSING
+
+addRegexToken('Z',  matchShortOffset);
+addRegexToken('ZZ', matchShortOffset);
+addParseToken(['Z', 'ZZ'], function (input, array, config) {
+    config._useUTC = true;
+    config._tzm = offsetFromString(matchShortOffset, input);
+});
+
+// HELPERS
+
+// timezone chunker
+// '+10:00' > ['10',  '00']
+// '-1530'  > ['-15', '30']
+var chunkOffset = /([\+\-]|\d\d)/gi;
+
+function offsetFromString(matcher, string) {
+    var matches = (string || '').match(matcher);
+
+    if (matches === null) {
+        return null;
+    }
+
+    var chunk   = matches[matches.length - 1] || [];
+    var parts   = (chunk + '').match(chunkOffset) || ['-', 0, 0];
+    var minutes = +(parts[1] * 60) + toInt(parts[2]);
+
+    return minutes === 0 ?
+      0 :
+      parts[0] === '+' ? minutes : -minutes;
+}
+
+// Return a moment from input, that is local/utc/zone equivalent to model.
+function cloneWithOffset(input, model) {
+    var res, diff;
+    if (model._isUTC) {
+        res = model.clone();
+        diff = (isMoment(input) || isDate(input) ? input.valueOf() : createLocal(input).valueOf()) - res.valueOf();
+        // Use low-level api, because this fn is low-level api.
+        res._d.setTime(res._d.valueOf() + diff);
+        hooks.updateOffset(res, false);
+        return res;
+    } else {
+        return createLocal(input).local();
+    }
+}
+
+function getDateOffset (m) {
+    // On Firefox.24 Date#getTimezoneOffset returns a floating point.
+    // https://github.com/moment/moment/pull/1871
+    return -Math.round(m._d.getTimezoneOffset() / 15) * 15;
+}
+
+// HOOKS
+
+// This function will be called whenever a moment is mutated.
+// It is intended to keep the offset in sync with the timezone.
+hooks.updateOffset = function () {};
+
+// MOMENTS
+
+// keepLocalTime = true means only change the timezone, without
+// affecting the local hour. So 5:31:26 +0300 --[utcOffset(2, true)]-->
+// 5:31:26 +0200 It is possible that 5:31:26 doesn't exist with offset
+// +0200, so we adjust the time as needed, to be valid.
+//
+// Keeping the time actually adds/subtracts (one hour)
+// from the actual represented time. That is why we call updateOffset
+// a second time. In case it wants us to change the offset again
+// _changeInProgress == true case, then we have to adjust, because
+// there is no such time in the given timezone.
+function getSetOffset (input, keepLocalTime, keepMinutes) {
+    var offset = this._offset || 0,
+        localAdjust;
+    if (!this.isValid()) {
+        return input != null ? this : NaN;
+    }
+    if (input != null) {
+        if (typeof input === 'string') {
+            input = offsetFromString(matchShortOffset, input);
+            if (input === null) {
+                return this;
+            }
+        } else if (Math.abs(input) < 16 && !keepMinutes) {
+            input = input * 60;
+        }
+        if (!this._isUTC && keepLocalTime) {
+            localAdjust = getDateOffset(this);
+        }
+        this._offset = input;
+        this._isUTC = true;
+        if (localAdjust != null) {
+            this.add(localAdjust, 'm');
+        }
+        if (offset !== input) {
+            if (!keepLocalTime || this._changeInProgress) {
+                addSubtract(this, createDuration(input - offset, 'm'), 1, false);
+            } else if (!this._changeInProgress) {
+                this._changeInProgress = true;
+                hooks.updateOffset(this, true);
+                this._changeInProgress = null;
+            }
+        }
+        return this;
+    } else {
+        return this._isUTC ? offset : getDateOffset(this);
+    }
+}
+
+function getSetZone (input, keepLocalTime) {
+    if (input != null) {
+        if (typeof input !== 'string') {
+            input = -input;
         }
 
-        var c = {},
-            other;
+        this.utcOffset(input, keepLocalTime);
 
-        copyConfig(c, this);
-        c = prepareConfig(c);
+        return this;
+    } else {
+        return -this.utcOffset();
+    }
+}
 
-        if (c._a) {
-            other = c._isUTC ? createUTC(c._a) : createLocal(c._a);
-            this._isDSTShifted =
-                this.isValid() && compareArrays(c._a, other.toArray()) > 0;
-        } else {
-            this._isDSTShifted = false;
+function setOffsetToUTC (keepLocalTime) {
+    return this.utcOffset(0, keepLocalTime);
+}
+
+function setOffsetToLocal (keepLocalTime) {
+    if (this._isUTC) {
+        this.utcOffset(0, keepLocalTime);
+        this._isUTC = false;
+
+        if (keepLocalTime) {
+            this.subtract(getDateOffset(this), 'm');
         }
+    }
+    return this;
+}
 
+function setOffsetToParsedOffset () {
+    if (this._tzm != null) {
+        this.utcOffset(this._tzm, false, true);
+    } else if (typeof this._i === 'string') {
+        var tZone = offsetFromString(matchOffset, this._i);
+        if (tZone != null) {
+            this.utcOffset(tZone);
+        }
+        else {
+            this.utcOffset(0, true);
+        }
+    }
+    return this;
+}
+
+function hasAlignedHourOffset (input) {
+    if (!this.isValid()) {
+        return false;
+    }
+    input = input ? createLocal(input).utcOffset() : 0;
+
+    return (this.utcOffset() - input) % 60 === 0;
+}
+
+function isDaylightSavingTime () {
+    return (
+        this.utcOffset() > this.clone().month(0).utcOffset() ||
+        this.utcOffset() > this.clone().month(5).utcOffset()
+    );
+}
+
+function isDaylightSavingTimeShifted () {
+    if (!isUndefined(this._isDSTShifted)) {
         return this._isDSTShifted;
     }
 
-    function isLocal() {
-        return this.isValid() ? !this._isUTC : false;
+    var c = {};
+
+    copyConfig(c, this);
+    c = prepareConfig(c);
+
+    if (c._a) {
+        var other = c._isUTC ? createUTC(c._a) : createLocal(c._a);
+        this._isDSTShifted = this.isValid() &&
+            compareArrays(c._a, other.toArray()) > 0;
+    } else {
+        this._isDSTShifted = false;
     }
 
-    function isUtcOffset() {
-        return this.isValid() ? this._isUTC : false;
-    }
+    return this._isDSTShifted;
+}
 
-    function isUtc() {
-        return this.isValid() ? this._isUTC && this._offset === 0 : false;
-    }
+function isLocal () {
+    return this.isValid() ? !this._isUTC : false;
+}
 
-    // ASP.NET json date format regex
-    var aspNetRegex = /^(-|\+)?(?:(\d*)[. ])?(\d+):(\d+)(?::(\d+)(\.\d*)?)?$/,
-        // from http://docs.closure-library.googlecode.com/git/closure_goog_date_date.js.source.html
-        // somewhat more in line with 4.4.3.2 2004 spec, but allows decimal anywhere
-        // and further modified to allow for strings containing both week and day
-        isoRegex =
-            /^(-|\+)?P(?:([-+]?[0-9,.]*)Y)?(?:([-+]?[0-9,.]*)M)?(?:([-+]?[0-9,.]*)W)?(?:([-+]?[0-9,.]*)D)?(?:T(?:([-+]?[0-9,.]*)H)?(?:([-+]?[0-9,.]*)M)?(?:([-+]?[0-9,.]*)S)?)?$/;
+function isUtcOffset () {
+    return this.isValid() ? this._isUTC : false;
+}
 
-    function createDuration(input, key) {
-        var duration = input,
-            // matching against regexp is expensive, do it on demand
-            match = null,
-            sign,
-            ret,
-            diffRes;
+function isUtc () {
+    return this.isValid() ? this._isUTC && this._offset === 0 : false;
+}
 
-        if (isDuration(input)) {
-            duration = {
-                ms: input._milliseconds,
-                d: input._days,
-                M: input._months,
-            };
-        } else if (isNumber(input) || !isNaN(+input)) {
-            duration = {};
-            if (key) {
-                duration[key] = +input;
-            } else {
-                duration.milliseconds = +input;
-            }
-        } else if ((match = aspNetRegex.exec(input))) {
-            sign = match[1] === '-' ? -1 : 1;
-            duration = {
-                y: 0,
-                d: toInt(match[DATE]) * sign,
-                h: toInt(match[HOUR]) * sign,
-                m: toInt(match[MINUTE]) * sign,
-                s: toInt(match[SECOND]) * sign,
-                ms: toInt(absRound(match[MILLISECOND] * 1000)) * sign, // the millisecond decimal point is included in the match
-            };
-        } else if ((match = isoRegex.exec(input))) {
-            sign = match[1] === '-' ? -1 : 1;
-            duration = {
-                y: parseIso(match[2], sign),
-                M: parseIso(match[3], sign),
-                w: parseIso(match[4], sign),
-                d: parseIso(match[5], sign),
-                h: parseIso(match[6], sign),
-                m: parseIso(match[7], sign),
-                s: parseIso(match[8], sign),
-            };
-        } else if (duration == null) {
-            // checks for null or undefined
-            duration = {};
-        } else if (
-            typeof duration === 'object' &&
-            ('from' in duration || 'to' in duration)
-        ) {
-            diffRes = momentsDifference(
-                createLocal(duration.from),
-                createLocal(duration.to)
-            );
+// ASP.NET json date format regex
+var aspNetRegex = /^(\-)?(?:(\d*)[. ])?(\d+)\:(\d+)(?:\:(\d+)(\.\d*)?)?$/;
 
-            duration = {};
-            duration.ms = diffRes.milliseconds;
-            duration.M = diffRes.months;
-        }
+// from http://docs.closure-library.googlecode.com/git/closure_goog_date_date.js.source.html
+// somewhat more in line with 4.4.3.2 2004 spec, but allows decimal anywhere
+// and further modified to allow for strings containing both week and day
+var isoRegex = /^(-)?P(?:(-?[0-9,.]*)Y)?(?:(-?[0-9,.]*)M)?(?:(-?[0-9,.]*)W)?(?:(-?[0-9,.]*)D)?(?:T(?:(-?[0-9,.]*)H)?(?:(-?[0-9,.]*)M)?(?:(-?[0-9,.]*)S)?)?$/;
 
-        ret = new Duration(duration);
+function createDuration (input, key) {
+    var duration = input,
+        // matching against regexp is expensive, do it on demand
+        match = null,
+        sign,
+        ret,
+        diffRes;
 
-        if (isDuration(input) && hasOwnProp(input, '_locale')) {
-            ret._locale = input._locale;
-        }
-
-        if (isDuration(input) && hasOwnProp(input, '_isValid')) {
-            ret._isValid = input._isValid;
-        }
-
-        return ret;
-    }
-
-    createDuration.fn = Duration.prototype;
-    createDuration.invalid = createInvalid$1;
-
-    function parseIso(inp, sign) {
-        // We'd normally use ~~inp for this, but unfortunately it also
-        // converts floats to ints.
-        // inp may be undefined, so careful calling replace on it.
-        var res = inp && parseFloat(inp.replace(',', '.'));
-        // apply sign while we're at it
-        return (isNaN(res) ? 0 : res) * sign;
-    }
-
-    function positiveMomentsDifference(base, other) {
-        var res = {};
-
-        res.months =
-            other.month() - base.month() + (other.year() - base.year()) * 12;
-        if (base.clone().add(res.months, 'M').isAfter(other)) {
-            --res.months;
-        }
-
-        res.milliseconds = +other - +base.clone().add(res.months, 'M');
-
-        return res;
-    }
-
-    function momentsDifference(base, other) {
-        var res;
-        if (!(base.isValid() && other.isValid())) {
-            return { milliseconds: 0, months: 0 };
-        }
-
-        other = cloneWithOffset(other, base);
-        if (base.isBefore(other)) {
-            res = positiveMomentsDifference(base, other);
-        } else {
-            res = positiveMomentsDifference(other, base);
-            res.milliseconds = -res.milliseconds;
-            res.months = -res.months;
-        }
-
-        return res;
-    }
-
-    // TODO: remove 'name' arg after deprecation is removed
-    function createAdder(direction, name) {
-        return function (val, period) {
-            var dur, tmp;
-            //invert the arguments, but complain about it
-            if (period !== null && !isNaN(+period)) {
-                deprecateSimple(
-                    name,
-                    'moment().' +
-                        name +
-                        '(period, number) is deprecated. Please use moment().' +
-                        name +
-                        '(number, period). ' +
-                        'See http://momentjs.com/guides/#/warnings/add-inverted-param/ for more info.'
-                );
-                tmp = val;
-                val = period;
-                period = tmp;
-            }
-
-            dur = createDuration(val, period);
-            addSubtract(this, dur, direction);
-            return this;
+    if (isDuration(input)) {
+        duration = {
+            ms : input._milliseconds,
+            d  : input._days,
+            M  : input._months
         };
-    }
-
-    function addSubtract(mom, duration, isAdding, updateOffset) {
-        var milliseconds = duration._milliseconds,
-            days = absRound(duration._days),
-            months = absRound(duration._months);
-
-        if (!mom.isValid()) {
-            // No op
-            return;
-        }
-
-        updateOffset = updateOffset == null ? true : updateOffset;
-
-        if (months) {
-            setMonth(mom, get(mom, 'Month') + months * isAdding);
-        }
-        if (days) {
-            set$1(mom, 'Date', get(mom, 'Date') + days * isAdding);
-        }
-        if (milliseconds) {
-            mom._d.setTime(mom._d.valueOf() + milliseconds * isAdding);
-        }
-        if (updateOffset) {
-            hooks.updateOffset(mom, days || months);
-        }
-    }
-
-    var add = createAdder(1, 'add'),
-        subtract = createAdder(-1, 'subtract');
-
-    function isString(input) {
-        return typeof input === 'string' || input instanceof String;
-    }
-
-    // type MomentInput = Moment | Date | string | number | (number | string)[] | MomentInputObject | void; // null | undefined
-    function isMomentInput(input) {
-        return (
-            isMoment(input) ||
-            isDate(input) ||
-            isString(input) ||
-            isNumber(input) ||
-            isNumberOrStringArray(input) ||
-            isMomentInputObject(input) ||
-            input === null ||
-            input === undefined
-        );
-    }
-
-    function isMomentInputObject(input) {
-        var objectTest = isObject(input) && !isObjectEmpty(input),
-            propertyTest = false,
-            properties = [
-                'years',
-                'year',
-                'y',
-                'months',
-                'month',
-                'M',
-                'days',
-                'day',
-                'd',
-                'dates',
-                'date',
-                'D',
-                'hours',
-                'hour',
-                'h',
-                'minutes',
-                'minute',
-                'm',
-                'seconds',
-                'second',
-                's',
-                'milliseconds',
-                'millisecond',
-                'ms',
-            ],
-            i,
-            property,
-            propertyLen = properties.length;
-
-        for (i = 0; i < propertyLen; i += 1) {
-            property = properties[i];
-            propertyTest = propertyTest || hasOwnProp(input, property);
-        }
-
-        return objectTest && propertyTest;
-    }
-
-    function isNumberOrStringArray(input) {
-        var arrayTest = isArray(input),
-            dataTypeTest = false;
-        if (arrayTest) {
-            dataTypeTest =
-                input.filter(function (item) {
-                    return !isNumber(item) && isString(input);
-                }).length === 0;
-        }
-        return arrayTest && dataTypeTest;
-    }
-
-    function isCalendarSpec(input) {
-        var objectTest = isObject(input) && !isObjectEmpty(input),
-            propertyTest = false,
-            properties = [
-                'sameDay',
-                'nextDay',
-                'lastDay',
-                'nextWeek',
-                'lastWeek',
-                'sameElse',
-            ],
-            i,
-            property;
-
-        for (i = 0; i < properties.length; i += 1) {
-            property = properties[i];
-            propertyTest = propertyTest || hasOwnProp(input, property);
-        }
-
-        return objectTest && propertyTest;
-    }
-
-    function getCalendarFormat(myMoment, now) {
-        var diff = myMoment.diff(now, 'days', true);
-        return diff < -6
-            ? 'sameElse'
-            : diff < -1
-            ? 'lastWeek'
-            : diff < 0
-            ? 'lastDay'
-            : diff < 1
-            ? 'sameDay'
-            : diff < 2
-            ? 'nextDay'
-            : diff < 7
-            ? 'nextWeek'
-            : 'sameElse';
-    }
-
-    function calendar$1(time, formats) {
-        // Support for single parameter, formats only overload to the calendar function
-        if (arguments.length === 1) {
-            if (!arguments[0]) {
-                time = undefined;
-                formats = undefined;
-            } else if (isMomentInput(arguments[0])) {
-                time = arguments[0];
-                formats = undefined;
-            } else if (isCalendarSpec(arguments[0])) {
-                formats = arguments[0];
-                time = undefined;
-            }
-        }
-        // We want to compare the start of today, vs this.
-        // Getting start-of-today depends on whether we're local/utc/offset or not.
-        var now = time || createLocal(),
-            sod = cloneWithOffset(now, this).startOf('day'),
-            format = hooks.calendarFormat(this, sod) || 'sameElse',
-            output =
-                formats &&
-                (isFunction(formats[format])
-                    ? formats[format].call(this, now)
-                    : formats[format]);
-
-        return this.format(
-            output || this.localeData().calendar(format, this, createLocal(now))
-        );
-    }
-
-    function clone() {
-        return new Moment(this);
-    }
-
-    function isAfter(input, units) {
-        var localInput = isMoment(input) ? input : createLocal(input);
-        if (!(this.isValid() && localInput.isValid())) {
-            return false;
-        }
-        units = normalizeUnits(units) || 'millisecond';
-        if (units === 'millisecond') {
-            return this.valueOf() > localInput.valueOf();
+    } else if (isNumber(input)) {
+        duration = {};
+        if (key) {
+            duration[key] = input;
         } else {
-            return localInput.valueOf() < this.clone().startOf(units).valueOf();
+            duration.milliseconds = input;
         }
+    } else if (!!(match = aspNetRegex.exec(input))) {
+        sign = (match[1] === '-') ? -1 : 1;
+        duration = {
+            y  : 0,
+            d  : toInt(match[DATE])                         * sign,
+            h  : toInt(match[HOUR])                         * sign,
+            m  : toInt(match[MINUTE])                       * sign,
+            s  : toInt(match[SECOND])                       * sign,
+            ms : toInt(absRound(match[MILLISECOND] * 1000)) * sign // the millisecond decimal point is included in the match
+        };
+    } else if (!!(match = isoRegex.exec(input))) {
+        sign = (match[1] === '-') ? -1 : 1;
+        duration = {
+            y : parseIso(match[2], sign),
+            M : parseIso(match[3], sign),
+            w : parseIso(match[4], sign),
+            d : parseIso(match[5], sign),
+            h : parseIso(match[6], sign),
+            m : parseIso(match[7], sign),
+            s : parseIso(match[8], sign)
+        };
+    } else if (duration == null) {// checks for null or undefined
+        duration = {};
+    } else if (typeof duration === 'object' && ('from' in duration || 'to' in duration)) {
+        diffRes = momentsDifference(createLocal(duration.from), createLocal(duration.to));
+
+        duration = {};
+        duration.ms = diffRes.milliseconds;
+        duration.M = diffRes.months;
     }
 
-    function isBefore(input, units) {
-        var localInput = isMoment(input) ? input : createLocal(input);
-        if (!(this.isValid() && localInput.isValid())) {
-            return false;
-        }
-        units = normalizeUnits(units) || 'millisecond';
-        if (units === 'millisecond') {
-            return this.valueOf() < localInput.valueOf();
-        } else {
-            return this.clone().endOf(units).valueOf() < localInput.valueOf();
-        }
+    ret = new Duration(duration);
+
+    if (isDuration(input) && hasOwnProp(input, '_locale')) {
+        ret._locale = input._locale;
     }
 
-    function isBetween(from, to, units, inclusivity) {
-        var localFrom = isMoment(from) ? from : createLocal(from),
-            localTo = isMoment(to) ? to : createLocal(to);
-        if (!(this.isValid() && localFrom.isValid() && localTo.isValid())) {
-            return false;
-        }
-        inclusivity = inclusivity || '()';
-        return (
-            (inclusivity[0] === '('
-                ? this.isAfter(localFrom, units)
-                : !this.isBefore(localFrom, units)) &&
-            (inclusivity[1] === ')'
-                ? this.isBefore(localTo, units)
-                : !this.isAfter(localTo, units))
-        );
+    return ret;
+}
+
+createDuration.fn = Duration.prototype;
+createDuration.invalid = createInvalid$1;
+
+function parseIso (inp, sign) {
+    // We'd normally use ~~inp for this, but unfortunately it also
+    // converts floats to ints.
+    // inp may be undefined, so careful calling replace on it.
+    var res = inp && parseFloat(inp.replace(',', '.'));
+    // apply sign while we're at it
+    return (isNaN(res) ? 0 : res) * sign;
+}
+
+function positiveMomentsDifference(base, other) {
+    var res = {milliseconds: 0, months: 0};
+
+    res.months = other.month() - base.month() +
+        (other.year() - base.year()) * 12;
+    if (base.clone().add(res.months, 'M').isAfter(other)) {
+        --res.months;
     }
 
-    function isSame(input, units) {
-        var localInput = isMoment(input) ? input : createLocal(input),
-            inputMs;
-        if (!(this.isValid() && localInput.isValid())) {
-            return false;
-        }
-        units = normalizeUnits(units) || 'millisecond';
-        if (units === 'millisecond') {
-            return this.valueOf() === localInput.valueOf();
-        } else {
-            inputMs = localInput.valueOf();
-            return (
-                this.clone().startOf(units).valueOf() <= inputMs &&
-                inputMs <= this.clone().endOf(units).valueOf()
-            );
-        }
+    res.milliseconds = +other - +(base.clone().add(res.months, 'M'));
+
+    return res;
+}
+
+function momentsDifference(base, other) {
+    var res;
+    if (!(base.isValid() && other.isValid())) {
+        return {milliseconds: 0, months: 0};
     }
 
-    function isSameOrAfter(input, units) {
-        return this.isSame(input, units) || this.isAfter(input, units);
+    other = cloneWithOffset(other, base);
+    if (base.isBefore(other)) {
+        res = positiveMomentsDifference(base, other);
+    } else {
+        res = positiveMomentsDifference(other, base);
+        res.milliseconds = -res.milliseconds;
+        res.months = -res.months;
     }
 
-    function isSameOrBefore(input, units) {
-        return this.isSame(input, units) || this.isBefore(input, units);
+    return res;
+}
+
+// TODO: remove 'name' arg after deprecation is removed
+function createAdder(direction, name) {
+    return function (val, period) {
+        var dur, tmp;
+        //invert the arguments, but complain about it
+        if (period !== null && !isNaN(+period)) {
+            deprecateSimple(name, 'moment().' + name  + '(period, number) is deprecated. Please use moment().' + name + '(number, period). ' +
+            'See http://momentjs.com/guides/#/warnings/add-inverted-param/ for more info.');
+            tmp = val; val = period; period = tmp;
+        }
+
+        val = typeof val === 'string' ? +val : val;
+        dur = createDuration(val, period);
+        addSubtract(this, dur, direction);
+        return this;
+    };
+}
+
+function addSubtract (mom, duration, isAdding, updateOffset) {
+    var milliseconds = duration._milliseconds,
+        days = absRound(duration._days),
+        months = absRound(duration._months);
+
+    if (!mom.isValid()) {
+        // No op
+        return;
     }
 
-    function diff(input, units, asFloat) {
-        var that, zoneDelta, output;
+    updateOffset = updateOffset == null ? true : updateOffset;
 
-        if (!this.isValid()) {
-            return NaN;
-        }
+    if (milliseconds) {
+        mom._d.setTime(mom._d.valueOf() + milliseconds * isAdding);
+    }
+    if (days) {
+        set$1(mom, 'Date', get(mom, 'Date') + days * isAdding);
+    }
+    if (months) {
+        setMonth(mom, get(mom, 'Month') + months * isAdding);
+    }
+    if (updateOffset) {
+        hooks.updateOffset(mom, days || months);
+    }
+}
 
-        that = cloneWithOffset(input, this);
+var add      = createAdder(1, 'add');
+var subtract = createAdder(-1, 'subtract');
 
-        if (!that.isValid()) {
-            return NaN;
-        }
+function getCalendarFormat(myMoment, now) {
+    var diff = myMoment.diff(now, 'days', true);
+    return diff < -6 ? 'sameElse' :
+            diff < -1 ? 'lastWeek' :
+            diff < 0 ? 'lastDay' :
+            diff < 1 ? 'sameDay' :
+            diff < 2 ? 'nextDay' :
+            diff < 7 ? 'nextWeek' : 'sameElse';
+}
 
-        zoneDelta = (that.utcOffset() - this.utcOffset()) * 6e4;
+function calendar$1 (time, formats) {
+    // We want to compare the start of today, vs this.
+    // Getting start-of-today depends on whether we're local/utc/offset or not.
+    var now = time || createLocal(),
+        sod = cloneWithOffset(now, this).startOf('day'),
+        format = hooks.calendarFormat(this, sod) || 'sameElse';
 
-        units = normalizeUnits(units);
+    var output = formats && (isFunction(formats[format]) ? formats[format].call(this, now) : formats[format]);
 
-        switch (units) {
-            case 'year':
-                output = monthDiff(this, that) / 12;
-                break;
-            case 'month':
-                output = monthDiff(this, that);
-                break;
-            case 'quarter':
-                output = monthDiff(this, that) / 3;
-                break;
-            case 'second':
-                output = (this - that) / 1e3;
-                break; // 1000
-            case 'minute':
-                output = (this - that) / 6e4;
-                break; // 1000 * 60
-            case 'hour':
-                output = (this - that) / 36e5;
-                break; // 1000 * 60 * 60
-            case 'day':
-                output = (this - that - zoneDelta) / 864e5;
-                break; // 1000 * 60 * 60 * 24, negate dst
-            case 'week':
-                output = (this - that - zoneDelta) / 6048e5;
-                break; // 1000 * 60 * 60 * 24 * 7, negate dst
-            default:
-                output = this - that;
-        }
+    return this.format(output || this.localeData().calendar(format, this, createLocal(now)));
+}
 
-        return asFloat ? output : absFloor(output);
+function clone () {
+    return new Moment(this);
+}
+
+function isAfter (input, units) {
+    var localInput = isMoment(input) ? input : createLocal(input);
+    if (!(this.isValid() && localInput.isValid())) {
+        return false;
+    }
+    units = normalizeUnits(!isUndefined(units) ? units : 'millisecond');
+    if (units === 'millisecond') {
+        return this.valueOf() > localInput.valueOf();
+    } else {
+        return localInput.valueOf() < this.clone().startOf(units).valueOf();
+    }
+}
+
+function isBefore (input, units) {
+    var localInput = isMoment(input) ? input : createLocal(input);
+    if (!(this.isValid() && localInput.isValid())) {
+        return false;
+    }
+    units = normalizeUnits(!isUndefined(units) ? units : 'millisecond');
+    if (units === 'millisecond') {
+        return this.valueOf() < localInput.valueOf();
+    } else {
+        return this.clone().endOf(units).valueOf() < localInput.valueOf();
+    }
+}
+
+function isBetween (from, to, units, inclusivity) {
+    inclusivity = inclusivity || '()';
+    return (inclusivity[0] === '(' ? this.isAfter(from, units) : !this.isBefore(from, units)) &&
+        (inclusivity[1] === ')' ? this.isBefore(to, units) : !this.isAfter(to, units));
+}
+
+function isSame (input, units) {
+    var localInput = isMoment(input) ? input : createLocal(input),
+        inputMs;
+    if (!(this.isValid() && localInput.isValid())) {
+        return false;
+    }
+    units = normalizeUnits(units || 'millisecond');
+    if (units === 'millisecond') {
+        return this.valueOf() === localInput.valueOf();
+    } else {
+        inputMs = localInput.valueOf();
+        return this.clone().startOf(units).valueOf() <= inputMs && inputMs <= this.clone().endOf(units).valueOf();
+    }
+}
+
+function isSameOrAfter (input, units) {
+    return this.isSame(input, units) || this.isAfter(input,units);
+}
+
+function isSameOrBefore (input, units) {
+    return this.isSame(input, units) || this.isBefore(input,units);
+}
+
+function diff (input, units, asFloat) {
+    var that,
+        zoneDelta,
+        delta, output;
+
+    if (!this.isValid()) {
+        return NaN;
     }
 
-    function monthDiff(a, b) {
-        if (a.date() < b.date()) {
-            // end-of-month calculations work correct when the start month has more
-            // days than the end month.
-            return -monthDiff(b, a);
-        }
-        // difference in months
-        var wholeMonthDiff = (b.year() - a.year()) * 12 + (b.month() - a.month()),
-            // b is in (anchor - 1 month, anchor + 1 month)
-            anchor = a.clone().add(wholeMonthDiff, 'months'),
-            anchor2,
-            adjust;
+    that = cloneWithOffset(input, this);
 
-        if (b - anchor < 0) {
-            anchor2 = a.clone().add(wholeMonthDiff - 1, 'months');
-            // linear across the month
-            adjust = (b - anchor) / (anchor - anchor2);
-        } else {
-            anchor2 = a.clone().add(wholeMonthDiff + 1, 'months');
-            // linear across the month
-            adjust = (b - anchor) / (anchor2 - anchor);
-        }
-
-        //check for negative zero, return zero if negative zero
-        return -(wholeMonthDiff + adjust) || 0;
+    if (!that.isValid()) {
+        return NaN;
     }
 
-    hooks.defaultFormat = 'YYYY-MM-DDTHH:mm:ssZ';
-    hooks.defaultFormatUtc = 'YYYY-MM-DDTHH:mm:ss[Z]';
+    zoneDelta = (that.utcOffset() - this.utcOffset()) * 6e4;
 
-    function toString() {
-        return this.clone().locale('en').format('ddd MMM DD YYYY HH:mm:ss [GMT]ZZ');
+    units = normalizeUnits(units);
+
+    if (units === 'year' || units === 'month' || units === 'quarter') {
+        output = monthDiff(this, that);
+        if (units === 'quarter') {
+            output = output / 3;
+        } else if (units === 'year') {
+            output = output / 12;
+        }
+    } else {
+        delta = this - that;
+        output = units === 'second' ? delta / 1e3 : // 1000
+            units === 'minute' ? delta / 6e4 : // 1000 * 60
+            units === 'hour' ? delta / 36e5 : // 1000 * 60 * 60
+            units === 'day' ? (delta - zoneDelta) / 864e5 : // 1000 * 60 * 60 * 24, negate dst
+            units === 'week' ? (delta - zoneDelta) / 6048e5 : // 1000 * 60 * 60 * 24 * 7, negate dst
+            delta;
+    }
+    return asFloat ? output : absFloor(output);
+}
+
+function monthDiff (a, b) {
+    // difference in months
+    var wholeMonthDiff = ((b.year() - a.year()) * 12) + (b.month() - a.month()),
+        // b is in (anchor - 1 month, anchor + 1 month)
+        anchor = a.clone().add(wholeMonthDiff, 'months'),
+        anchor2, adjust;
+
+    if (b - anchor < 0) {
+        anchor2 = a.clone().add(wholeMonthDiff - 1, 'months');
+        // linear across the month
+        adjust = (b - anchor) / (anchor - anchor2);
+    } else {
+        anchor2 = a.clone().add(wholeMonthDiff + 1, 'months');
+        // linear across the month
+        adjust = (b - anchor) / (anchor2 - anchor);
     }
 
-    function toISOString(keepOffset) {
-        if (!this.isValid()) {
-            return null;
-        }
-        var utc = keepOffset !== true,
-            m = utc ? this.clone().utc() : this;
-        if (m.year() < 0 || m.year() > 9999) {
-            return formatMoment(
-                m,
-                utc
-                    ? 'YYYYYY-MM-DD[T]HH:mm:ss.SSS[Z]'
-                    : 'YYYYYY-MM-DD[T]HH:mm:ss.SSSZ'
-            );
-        }
-        if (isFunction(Date.prototype.toISOString)) {
-            // native implementation is ~50x faster, use it when we can
-            if (utc) {
-                return this.toDate().toISOString();
-            } else {
-                return new Date(this.valueOf() + this.utcOffset() * 60 * 1000)
-                    .toISOString()
-                    .replace('Z', formatMoment(m, 'Z'));
-            }
-        }
-        return formatMoment(
-            m,
-            utc ? 'YYYY-MM-DD[T]HH:mm:ss.SSS[Z]' : 'YYYY-MM-DD[T]HH:mm:ss.SSSZ'
-        );
+    //check for negative zero, return zero if negative zero
+    return -(wholeMonthDiff + adjust) || 0;
+}
+
+hooks.defaultFormat = 'YYYY-MM-DDTHH:mm:ssZ';
+hooks.defaultFormatUtc = 'YYYY-MM-DDTHH:mm:ss[Z]';
+
+function toString () {
+    return this.clone().locale('en').format('ddd MMM DD YYYY HH:mm:ss [GMT]ZZ');
+}
+
+function toISOString() {
+    if (!this.isValid()) {
+        return null;
     }
+    var m = this.clone().utc();
+    if (m.year() < 0 || m.year() > 9999) {
+        return formatMoment(m, 'YYYYYY-MM-DD[T]HH:mm:ss.SSS[Z]');
+    }
+    if (isFunction(Date.prototype.toISOString)) {
+        // native implementation is ~50x faster, use it when we can
+        return this.toDate().toISOString();
+    }
+    return formatMoment(m, 'YYYY-MM-DD[T]HH:mm:ss.SSS[Z]');
+}
 
-    /**
-     * Return a human readable representation of a moment that can
-     * also be evaluated to get a new moment which is the same
-     *
-     * @link https://nodejs.org/dist/latest/docs/api/util.html#util_custom_inspect_function_on_objects
-     */
-    function inspect() {
-        if (!this.isValid()) {
-            return 'moment.invalid(/* ' + this._i + ' */)';
+/**
+ * Return a human readable representation of a moment that can
+ * also be evaluated to get a new moment which is the same
+ *
+ * @link https://nodejs.org/dist/latest/docs/api/util.html#util_custom_inspect_function_on_objects
+ */
+function inspect () {
+    if (!this.isValid()) {
+        return 'moment.invalid(/* ' + this._i + ' */)';
+    }
+    var func = 'moment';
+    var zone = '';
+    if (!this.isLocal()) {
+        func = this.utcOffset() === 0 ? 'moment.utc' : 'moment.parseZone';
+        zone = 'Z';
+    }
+    var prefix = '[' + func + '("]';
+    var year = (0 <= this.year() && this.year() <= 9999) ? 'YYYY' : 'YYYYYY';
+    var datetime = '-MM-DD[T]HH:mm:ss.SSS';
+    var suffix = zone + '[")]';
+
+    return this.format(prefix + year + datetime + suffix);
+}
+
+function format (inputString) {
+    if (!inputString) {
+        inputString = this.isUtc() ? hooks.defaultFormatUtc : hooks.defaultFormat;
+    }
+    var output = formatMoment(this, inputString);
+    return this.localeData().postformat(output);
+}
+
+function from (time, withoutSuffix) {
+    if (this.isValid() &&
+            ((isMoment(time) && time.isValid()) ||
+             createLocal(time).isValid())) {
+        return createDuration({to: this, from: time}).locale(this.locale()).humanize(!withoutSuffix);
+    } else {
+        return this.localeData().invalidDate();
+    }
+}
+
+function fromNow (withoutSuffix) {
+    return this.from(createLocal(), withoutSuffix);
+}
+
+function to (time, withoutSuffix) {
+    if (this.isValid() &&
+            ((isMoment(time) && time.isValid()) ||
+             createLocal(time).isValid())) {
+        return createDuration({from: this, to: time}).locale(this.locale()).humanize(!withoutSuffix);
+    } else {
+        return this.localeData().invalidDate();
+    }
+}
+
+function toNow (withoutSuffix) {
+    return this.to(createLocal(), withoutSuffix);
+}
+
+// If passed a locale key, it will set the locale for this
+// instance.  Otherwise, it will return the locale configuration
+// variables for this instance.
+function locale (key) {
+    var newLocaleData;
+
+    if (key === undefined) {
+        return this._locale._abbr;
+    } else {
+        newLocaleData = getLocale(key);
+        if (newLocaleData != null) {
+            this._locale = newLocaleData;
         }
-        var func = 'moment',
-            zone = '',
-            prefix,
-            year,
-            datetime,
-            suffix;
-        if (!this.isLocal()) {
-            func = this.utcOffset() === 0 ? 'moment.utc' : 'moment.parseZone';
-            zone = 'Z';
-        }
-        prefix = '[' + func + '("]';
-        year = 0 <= this.year() && this.year() <= 9999 ? 'YYYY' : 'YYYYYY';
-        datetime = '-MM-DD[T]HH:mm:ss.SSS';
-        suffix = zone + '[")]';
-
-        return this.format(prefix + year + datetime + suffix);
+        return this;
     }
+}
 
-    function format(inputString) {
-        if (!inputString) {
-            inputString = this.isUtc()
-                ? hooks.defaultFormatUtc
-                : hooks.defaultFormat;
-        }
-        var output = formatMoment(this, inputString);
-        return this.localeData().postformat(output);
-    }
-
-    function from(time, withoutSuffix) {
-        if (
-            this.isValid() &&
-            ((isMoment(time) && time.isValid()) || createLocal(time).isValid())
-        ) {
-            return createDuration({ to: this, from: time })
-                .locale(this.locale())
-                .humanize(!withoutSuffix);
-        } else {
-            return this.localeData().invalidDate();
-        }
-    }
-
-    function fromNow(withoutSuffix) {
-        return this.from(createLocal(), withoutSuffix);
-    }
-
-    function to(time, withoutSuffix) {
-        if (
-            this.isValid() &&
-            ((isMoment(time) && time.isValid()) || createLocal(time).isValid())
-        ) {
-            return createDuration({ from: this, to: time })
-                .locale(this.locale())
-                .humanize(!withoutSuffix);
-        } else {
-            return this.localeData().invalidDate();
-        }
-    }
-
-    function toNow(withoutSuffix) {
-        return this.to(createLocal(), withoutSuffix);
-    }
-
-    // If passed a locale key, it will set the locale for this
-    // instance.  Otherwise, it will return the locale configuration
-    // variables for this instance.
-    function locale(key) {
-        var newLocaleData;
-
+var lang = deprecate(
+    'moment().lang() is deprecated. Instead, use moment().localeData() to get the language configuration. Use moment().locale() to change languages.',
+    function (key) {
         if (key === undefined) {
-            return this._locale._abbr;
+            return this.localeData();
         } else {
-            newLocaleData = getLocale(key);
-            if (newLocaleData != null) {
-                this._locale = newLocaleData;
-            }
-            return this;
+            return this.locale(key);
         }
     }
+);
 
-    var lang = deprecate(
-        'moment().lang() is deprecated. Instead, use moment().localeData() to get the language configuration. Use moment().locale() to change languages.',
-        function (key) {
-            if (key === undefined) {
-                return this.localeData();
-            } else {
-                return this.locale(key);
-            }
-        }
-    );
+function localeData () {
+    return this._locale;
+}
 
-    function localeData() {
-        return this._locale;
+function startOf (units) {
+    units = normalizeUnits(units);
+    // the following switch intentionally omits break keywords
+    // to utilize falling through the cases.
+    switch (units) {
+        case 'year':
+            this.month(0);
+            /* falls through */
+        case 'quarter':
+        case 'month':
+            this.date(1);
+            /* falls through */
+        case 'week':
+        case 'isoWeek':
+        case 'day':
+        case 'date':
+            this.hours(0);
+            /* falls through */
+        case 'hour':
+            this.minutes(0);
+            /* falls through */
+        case 'minute':
+            this.seconds(0);
+            /* falls through */
+        case 'second':
+            this.milliseconds(0);
     }
 
-    var MS_PER_SECOND = 1000,
-        MS_PER_MINUTE = 60 * MS_PER_SECOND,
-        MS_PER_HOUR = 60 * MS_PER_MINUTE,
-        MS_PER_400_YEARS = (365 * 400 + 97) * 24 * MS_PER_HOUR;
-
-    // actual modulo - handles negative numbers (for dates before 1970):
-    function mod$1(dividend, divisor) {
-        return ((dividend % divisor) + divisor) % divisor;
+    // weeks are a special case
+    if (units === 'week') {
+        this.weekday(0);
+    }
+    if (units === 'isoWeek') {
+        this.isoWeekday(1);
     }
 
-    function localStartOfDate(y, m, d) {
-        // the date constructor remaps years 0-99 to 1900-1999
-        if (y < 100 && y >= 0) {
-            // preserve leap years using a full 400 year cycle, then reset
-            return new Date(y + 400, m, d) - MS_PER_400_YEARS;
-        } else {
-            return new Date(y, m, d).valueOf();
-        }
+    // quarters are also special
+    if (units === 'quarter') {
+        this.month(Math.floor(this.month() / 3) * 3);
     }
 
-    function utcStartOfDate(y, m, d) {
-        // Date.UTC remaps years 0-99 to 1900-1999
-        if (y < 100 && y >= 0) {
-            // preserve leap years using a full 400 year cycle, then reset
-            return Date.UTC(y + 400, m, d) - MS_PER_400_YEARS;
-        } else {
-            return Date.UTC(y, m, d);
-        }
-    }
+    return this;
+}
 
-    function startOf(units) {
-        var time, startOfDate;
-        units = normalizeUnits(units);
-        if (units === undefined || units === 'millisecond' || !this.isValid()) {
-            return this;
-        }
-
-        startOfDate = this._isUTC ? utcStartOfDate : localStartOfDate;
-
-        switch (units) {
-            case 'year':
-                time = startOfDate(this.year(), 0, 1);
-                break;
-            case 'quarter':
-                time = startOfDate(
-                    this.year(),
-                    this.month() - (this.month() % 3),
-                    1
-                );
-                break;
-            case 'month':
-                time = startOfDate(this.year(), this.month(), 1);
-                break;
-            case 'week':
-                time = startOfDate(
-                    this.year(),
-                    this.month(),
-                    this.date() - this.weekday()
-                );
-                break;
-            case 'isoWeek':
-                time = startOfDate(
-                    this.year(),
-                    this.month(),
-                    this.date() - (this.isoWeekday() - 1)
-                );
-                break;
-            case 'day':
-            case 'date':
-                time = startOfDate(this.year(), this.month(), this.date());
-                break;
-            case 'hour':
-                time = this._d.valueOf();
-                time -= mod$1(
-                    time + (this._isUTC ? 0 : this.utcOffset() * MS_PER_MINUTE),
-                    MS_PER_HOUR
-                );
-                break;
-            case 'minute':
-                time = this._d.valueOf();
-                time -= mod$1(time, MS_PER_MINUTE);
-                break;
-            case 'second':
-                time = this._d.valueOf();
-                time -= mod$1(time, MS_PER_SECOND);
-                break;
-        }
-
-        this._d.setTime(time);
-        hooks.updateOffset(this, true);
+function endOf (units) {
+    units = normalizeUnits(units);
+    if (units === undefined || units === 'millisecond') {
         return this;
     }
 
-    function endOf(units) {
-        var time, startOfDate;
-        units = normalizeUnits(units);
-        if (units === undefined || units === 'millisecond' || !this.isValid()) {
-            return this;
-        }
-
-        startOfDate = this._isUTC ? utcStartOfDate : localStartOfDate;
-
-        switch (units) {
-            case 'year':
-                time = startOfDate(this.year() + 1, 0, 1) - 1;
-                break;
-            case 'quarter':
-                time =
-                    startOfDate(
-                        this.year(),
-                        this.month() - (this.month() % 3) + 3,
-                        1
-                    ) - 1;
-                break;
-            case 'month':
-                time = startOfDate(this.year(), this.month() + 1, 1) - 1;
-                break;
-            case 'week':
-                time =
-                    startOfDate(
-                        this.year(),
-                        this.month(),
-                        this.date() - this.weekday() + 7
-                    ) - 1;
-                break;
-            case 'isoWeek':
-                time =
-                    startOfDate(
-                        this.year(),
-                        this.month(),
-                        this.date() - (this.isoWeekday() - 1) + 7
-                    ) - 1;
-                break;
-            case 'day':
-            case 'date':
-                time = startOfDate(this.year(), this.month(), this.date() + 1) - 1;
-                break;
-            case 'hour':
-                time = this._d.valueOf();
-                time +=
-                    MS_PER_HOUR -
-                    mod$1(
-                        time + (this._isUTC ? 0 : this.utcOffset() * MS_PER_MINUTE),
-                        MS_PER_HOUR
-                    ) -
-                    1;
-                break;
-            case 'minute':
-                time = this._d.valueOf();
-                time += MS_PER_MINUTE - mod$1(time, MS_PER_MINUTE) - 1;
-                break;
-            case 'second':
-                time = this._d.valueOf();
-                time += MS_PER_SECOND - mod$1(time, MS_PER_SECOND) - 1;
-                break;
-        }
-
-        this._d.setTime(time);
-        hooks.updateOffset(this, true);
-        return this;
+    // 'date' is an alias for 'day', so it should be considered as such.
+    if (units === 'date') {
+        units = 'day';
     }
 
-    function valueOf() {
-        return this._d.valueOf() - (this._offset || 0) * 60000;
-    }
+    return this.startOf(units).add(1, (units === 'isoWeek' ? 'week' : units)).subtract(1, 'ms');
+}
 
-    function unix() {
-        return Math.floor(this.valueOf() / 1000);
-    }
+function valueOf () {
+    return this._d.valueOf() - ((this._offset || 0) * 60000);
+}
 
-    function toDate() {
-        return new Date(this.valueOf());
-    }
+function unix () {
+    return Math.floor(this.valueOf() / 1000);
+}
 
-    function toArray() {
-        var m = this;
-        return [
-            m.year(),
-            m.month(),
-            m.date(),
-            m.hour(),
-            m.minute(),
-            m.second(),
-            m.millisecond(),
-        ];
-    }
+function toDate () {
+    return new Date(this.valueOf());
+}
 
-    function toObject() {
-        var m = this;
-        return {
-            years: m.year(),
-            months: m.month(),
-            date: m.date(),
-            hours: m.hours(),
-            minutes: m.minutes(),
-            seconds: m.seconds(),
-            milliseconds: m.milliseconds(),
-        };
-    }
+function toArray () {
+    var m = this;
+    return [m.year(), m.month(), m.date(), m.hour(), m.minute(), m.second(), m.millisecond()];
+}
 
-    function toJSON() {
-        // new Date(NaN).toJSON() === null
-        return this.isValid() ? this.toISOString() : null;
-    }
+function toObject () {
+    var m = this;
+    return {
+        years: m.year(),
+        months: m.month(),
+        date: m.date(),
+        hours: m.hours(),
+        minutes: m.minutes(),
+        seconds: m.seconds(),
+        milliseconds: m.milliseconds()
+    };
+}
 
-    function isValid$2() {
-        return isValid(this);
-    }
+function toJSON () {
+    // new Date(NaN).toJSON() === null
+    return this.isValid() ? this.toISOString() : null;
+}
 
-    function parsingFlags() {
-        return extend({}, getParsingFlags(this));
-    }
+function isValid$2 () {
+    return isValid(this);
+}
 
-    function invalidAt() {
-        return getParsingFlags(this).overflow;
-    }
+function parsingFlags () {
+    return extend({}, getParsingFlags(this));
+}
 
-    function creationData() {
-        return {
-            input: this._i,
-            format: this._f,
-            locale: this._locale,
-            isUTC: this._isUTC,
-            strict: this._strict,
-        };
-    }
+function invalidAt () {
+    return getParsingFlags(this).overflow;
+}
 
-    addFormatToken('N', 0, 0, 'eraAbbr');
-    addFormatToken('NN', 0, 0, 'eraAbbr');
-    addFormatToken('NNN', 0, 0, 'eraAbbr');
-    addFormatToken('NNNN', 0, 0, 'eraName');
-    addFormatToken('NNNNN', 0, 0, 'eraNarrow');
+function creationData() {
+    return {
+        input: this._i,
+        format: this._f,
+        locale: this._locale,
+        isUTC: this._isUTC,
+        strict: this._strict
+    };
+}
 
-    addFormatToken('y', ['y', 1], 'yo', 'eraYear');
-    addFormatToken('y', ['yy', 2], 0, 'eraYear');
-    addFormatToken('y', ['yyy', 3], 0, 'eraYear');
-    addFormatToken('y', ['yyyy', 4], 0, 'eraYear');
+// FORMATTING
 
-    addRegexToken('N', matchEraAbbr);
-    addRegexToken('NN', matchEraAbbr);
-    addRegexToken('NNN', matchEraAbbr);
-    addRegexToken('NNNN', matchEraName);
-    addRegexToken('NNNNN', matchEraNarrow);
+addFormatToken(0, ['gg', 2], 0, function () {
+    return this.weekYear() % 100;
+});
 
-    addParseToken(
-        ['N', 'NN', 'NNN', 'NNNN', 'NNNNN'],
-        function (input, array, config, token) {
-            var era = config._locale.erasParse(input, token, config._strict);
-            if (era) {
-                getParsingFlags(config).era = era;
-            } else {
-                getParsingFlags(config).invalidEra = input;
-            }
-        }
-    );
+addFormatToken(0, ['GG', 2], 0, function () {
+    return this.isoWeekYear() % 100;
+});
 
-    addRegexToken('y', matchUnsigned);
-    addRegexToken('yy', matchUnsigned);
-    addRegexToken('yyy', matchUnsigned);
-    addRegexToken('yyyy', matchUnsigned);
-    addRegexToken('yo', matchEraYearOrdinal);
+function addWeekYearFormatToken (token, getter) {
+    addFormatToken(0, [token, token.length], 0, getter);
+}
 
-    addParseToken(['y', 'yy', 'yyy', 'yyyy'], YEAR);
-    addParseToken(['yo'], function (input, array, config, token) {
-        var match;
-        if (config._locale._eraYearOrdinalRegex) {
-            match = input.match(config._locale._eraYearOrdinalRegex);
-        }
+addWeekYearFormatToken('gggg',     'weekYear');
+addWeekYearFormatToken('ggggg',    'weekYear');
+addWeekYearFormatToken('GGGG',  'isoWeekYear');
+addWeekYearFormatToken('GGGGG', 'isoWeekYear');
 
-        if (config._locale.eraYearOrdinalParse) {
-            array[YEAR] = config._locale.eraYearOrdinalParse(input, match);
-        } else {
-            array[YEAR] = parseInt(input, 10);
-        }
-    });
+// ALIASES
 
-    function localeEras(m, format) {
-        var i,
-            l,
-            date,
-            eras = this._eras || getLocale('en')._eras;
-        for (i = 0, l = eras.length; i < l; ++i) {
-            switch (typeof eras[i].since) {
-                case 'string':
-                    // truncate time
-                    date = hooks(eras[i].since).startOf('day');
-                    eras[i].since = date.valueOf();
-                    break;
-            }
+addUnitAlias('weekYear', 'gg');
+addUnitAlias('isoWeekYear', 'GG');
 
-            switch (typeof eras[i].until) {
-                case 'undefined':
-                    eras[i].until = +Infinity;
-                    break;
-                case 'string':
-                    // truncate time
-                    date = hooks(eras[i].until).startOf('day').valueOf();
-                    eras[i].until = date.valueOf();
-                    break;
-            }
-        }
-        return eras;
-    }
+// PRIORITY
 
-    function localeErasParse(eraName, format, strict) {
-        var i,
-            l,
-            eras = this.eras(),
-            name,
-            abbr,
-            narrow;
-        eraName = eraName.toUpperCase();
+addUnitPriority('weekYear', 1);
+addUnitPriority('isoWeekYear', 1);
 
-        for (i = 0, l = eras.length; i < l; ++i) {
-            name = eras[i].name.toUpperCase();
-            abbr = eras[i].abbr.toUpperCase();
-            narrow = eras[i].narrow.toUpperCase();
 
-            if (strict) {
-                switch (format) {
-                    case 'N':
-                    case 'NN':
-                    case 'NNN':
-                        if (abbr === eraName) {
-                            return eras[i];
-                        }
-                        break;
+// PARSING
 
-                    case 'NNNN':
-                        if (name === eraName) {
-                            return eras[i];
-                        }
-                        break;
+addRegexToken('G',      matchSigned);
+addRegexToken('g',      matchSigned);
+addRegexToken('GG',     match1to2, match2);
+addRegexToken('gg',     match1to2, match2);
+addRegexToken('GGGG',   match1to4, match4);
+addRegexToken('gggg',   match1to4, match4);
+addRegexToken('GGGGG',  match1to6, match6);
+addRegexToken('ggggg',  match1to6, match6);
 
-                    case 'NNNNN':
-                        if (narrow === eraName) {
-                            return eras[i];
-                        }
-                        break;
-                }
-            } else if ([name, abbr, narrow].indexOf(eraName) >= 0) {
-                return eras[i];
-            }
-        }
-    }
+addWeekParseToken(['gggg', 'ggggg', 'GGGG', 'GGGGG'], function (input, week, config, token) {
+    week[token.substr(0, 2)] = toInt(input);
+});
 
-    function localeErasConvertYear(era, year) {
-        var dir = era.since <= era.until ? +1 : -1;
-        if (year === undefined) {
-            return hooks(era.since).year();
-        } else {
-            return hooks(era.since).year() + (year - era.offset) * dir;
-        }
-    }
+addWeekParseToken(['gg', 'GG'], function (input, week, config, token) {
+    week[token] = hooks.parseTwoDigitYear(input);
+});
 
-    function getEraName() {
-        var i,
-            l,
-            val,
-            eras = this.localeData().eras();
-        for (i = 0, l = eras.length; i < l; ++i) {
-            // truncate time
-            val = this.clone().startOf('day').valueOf();
+// MOMENTS
 
-            if (eras[i].since <= val && val <= eras[i].until) {
-                return eras[i].name;
-            }
-            if (eras[i].until <= val && val <= eras[i].since) {
-                return eras[i].name;
-            }
-        }
-
-        return '';
-    }
-
-    function getEraNarrow() {
-        var i,
-            l,
-            val,
-            eras = this.localeData().eras();
-        for (i = 0, l = eras.length; i < l; ++i) {
-            // truncate time
-            val = this.clone().startOf('day').valueOf();
-
-            if (eras[i].since <= val && val <= eras[i].until) {
-                return eras[i].narrow;
-            }
-            if (eras[i].until <= val && val <= eras[i].since) {
-                return eras[i].narrow;
-            }
-        }
-
-        return '';
-    }
-
-    function getEraAbbr() {
-        var i,
-            l,
-            val,
-            eras = this.localeData().eras();
-        for (i = 0, l = eras.length; i < l; ++i) {
-            // truncate time
-            val = this.clone().startOf('day').valueOf();
-
-            if (eras[i].since <= val && val <= eras[i].until) {
-                return eras[i].abbr;
-            }
-            if (eras[i].until <= val && val <= eras[i].since) {
-                return eras[i].abbr;
-            }
-        }
-
-        return '';
-    }
-
-    function getEraYear() {
-        var i,
-            l,
-            dir,
-            val,
-            eras = this.localeData().eras();
-        for (i = 0, l = eras.length; i < l; ++i) {
-            dir = eras[i].since <= eras[i].until ? +1 : -1;
-
-            // truncate time
-            val = this.clone().startOf('day').valueOf();
-
-            if (
-                (eras[i].since <= val && val <= eras[i].until) ||
-                (eras[i].until <= val && val <= eras[i].since)
-            ) {
-                return (
-                    (this.year() - hooks(eras[i].since).year()) * dir +
-                    eras[i].offset
-                );
-            }
-        }
-
-        return this.year();
-    }
-
-    function erasNameRegex(isStrict) {
-        if (!hasOwnProp(this, '_erasNameRegex')) {
-            computeErasParse.call(this);
-        }
-        return isStrict ? this._erasNameRegex : this._erasRegex;
-    }
-
-    function erasAbbrRegex(isStrict) {
-        if (!hasOwnProp(this, '_erasAbbrRegex')) {
-            computeErasParse.call(this);
-        }
-        return isStrict ? this._erasAbbrRegex : this._erasRegex;
-    }
-
-    function erasNarrowRegex(isStrict) {
-        if (!hasOwnProp(this, '_erasNarrowRegex')) {
-            computeErasParse.call(this);
-        }
-        return isStrict ? this._erasNarrowRegex : this._erasRegex;
-    }
-
-    function matchEraAbbr(isStrict, locale) {
-        return locale.erasAbbrRegex(isStrict);
-    }
-
-    function matchEraName(isStrict, locale) {
-        return locale.erasNameRegex(isStrict);
-    }
-
-    function matchEraNarrow(isStrict, locale) {
-        return locale.erasNarrowRegex(isStrict);
-    }
-
-    function matchEraYearOrdinal(isStrict, locale) {
-        return locale._eraYearOrdinalRegex || matchUnsigned;
-    }
-
-    function computeErasParse() {
-        var abbrPieces = [],
-            namePieces = [],
-            narrowPieces = [],
-            mixedPieces = [],
-            i,
-            l,
-            eras = this.eras();
-
-        for (i = 0, l = eras.length; i < l; ++i) {
-            namePieces.push(regexEscape(eras[i].name));
-            abbrPieces.push(regexEscape(eras[i].abbr));
-            narrowPieces.push(regexEscape(eras[i].narrow));
-
-            mixedPieces.push(regexEscape(eras[i].name));
-            mixedPieces.push(regexEscape(eras[i].abbr));
-            mixedPieces.push(regexEscape(eras[i].narrow));
-        }
-
-        this._erasRegex = new RegExp('^(' + mixedPieces.join('|') + ')', 'i');
-        this._erasNameRegex = new RegExp('^(' + namePieces.join('|') + ')', 'i');
-        this._erasAbbrRegex = new RegExp('^(' + abbrPieces.join('|') + ')', 'i');
-        this._erasNarrowRegex = new RegExp(
-            '^(' + narrowPieces.join('|') + ')',
-            'i'
-        );
-    }
-
-    // FORMATTING
-
-    addFormatToken(0, ['gg', 2], 0, function () {
-        return this.weekYear() % 100;
-    });
-
-    addFormatToken(0, ['GG', 2], 0, function () {
-        return this.isoWeekYear() % 100;
-    });
-
-    function addWeekYearFormatToken(token, getter) {
-        addFormatToken(0, [token, token.length], 0, getter);
-    }
-
-    addWeekYearFormatToken('gggg', 'weekYear');
-    addWeekYearFormatToken('ggggg', 'weekYear');
-    addWeekYearFormatToken('GGGG', 'isoWeekYear');
-    addWeekYearFormatToken('GGGGG', 'isoWeekYear');
-
-    // ALIASES
-
-    addUnitAlias('weekYear', 'gg');
-    addUnitAlias('isoWeekYear', 'GG');
-
-    // PRIORITY
-
-    addUnitPriority('weekYear', 1);
-    addUnitPriority('isoWeekYear', 1);
-
-    // PARSING
-
-    addRegexToken('G', matchSigned);
-    addRegexToken('g', matchSigned);
-    addRegexToken('GG', match1to2, match2);
-    addRegexToken('gg', match1to2, match2);
-    addRegexToken('GGGG', match1to4, match4);
-    addRegexToken('gggg', match1to4, match4);
-    addRegexToken('GGGGG', match1to6, match6);
-    addRegexToken('ggggg', match1to6, match6);
-
-    addWeekParseToken(
-        ['gggg', 'ggggg', 'GGGG', 'GGGGG'],
-        function (input, week, config, token) {
-            week[token.substr(0, 2)] = toInt(input);
-        }
-    );
-
-    addWeekParseToken(['gg', 'GG'], function (input, week, config, token) {
-        week[token] = hooks.parseTwoDigitYear(input);
-    });
-
-    // MOMENTS
-
-    function getSetWeekYear(input) {
-        return getSetWeekYearHelper.call(
-            this,
+function getSetWeekYear (input) {
+    return getSetWeekYearHelper.call(this,
             input,
             this.week(),
             this.weekday(),
             this.localeData()._week.dow,
-            this.localeData()._week.doy
-        );
-    }
+            this.localeData()._week.doy);
+}
 
-    function getSetISOWeekYear(input) {
-        return getSetWeekYearHelper.call(
-            this,
-            input,
-            this.isoWeek(),
-            this.isoWeekday(),
-            1,
-            4
-        );
-    }
+function getSetISOWeekYear (input) {
+    return getSetWeekYearHelper.call(this,
+            input, this.isoWeek(), this.isoWeekday(), 1, 4);
+}
 
-    function getISOWeeksInYear() {
-        return weeksInYear(this.year(), 1, 4);
-    }
+function getISOWeeksInYear () {
+    return weeksInYear(this.year(), 1, 4);
+}
 
-    function getISOWeeksInISOWeekYear() {
-        return weeksInYear(this.isoWeekYear(), 1, 4);
-    }
+function getWeeksInYear () {
+    var weekInfo = this.localeData()._week;
+    return weeksInYear(this.year(), weekInfo.dow, weekInfo.doy);
+}
 
-    function getWeeksInYear() {
-        var weekInfo = this.localeData()._week;
-        return weeksInYear(this.year(), weekInfo.dow, weekInfo.doy);
-    }
-
-    function getWeeksInWeekYear() {
-        var weekInfo = this.localeData()._week;
-        return weeksInYear(this.weekYear(), weekInfo.dow, weekInfo.doy);
-    }
-
-    function getSetWeekYearHelper(input, week, weekday, dow, doy) {
-        var weeksTarget;
-        if (input == null) {
-            return weekOfYear(this, dow, doy).year;
-        } else {
-            weeksTarget = weeksInYear(input, dow, doy);
-            if (week > weeksTarget) {
-                week = weeksTarget;
-            }
-            return setWeekAll.call(this, input, week, weekday, dow, doy);
+function getSetWeekYearHelper(input, week, weekday, dow, doy) {
+    var weeksTarget;
+    if (input == null) {
+        return weekOfYear(this, dow, doy).year;
+    } else {
+        weeksTarget = weeksInYear(input, dow, doy);
+        if (week > weeksTarget) {
+            week = weeksTarget;
         }
+        return setWeekAll.call(this, input, week, weekday, dow, doy);
+    }
+}
+
+function setWeekAll(weekYear, week, weekday, dow, doy) {
+    var dayOfYearData = dayOfYearFromWeeks(weekYear, week, weekday, dow, doy),
+        date = createUTCDate(dayOfYearData.year, 0, dayOfYearData.dayOfYear);
+
+    this.year(date.getUTCFullYear());
+    this.month(date.getUTCMonth());
+    this.date(date.getUTCDate());
+    return this;
+}
+
+// FORMATTING
+
+addFormatToken('Q', 0, 'Qo', 'quarter');
+
+// ALIASES
+
+addUnitAlias('quarter', 'Q');
+
+// PRIORITY
+
+addUnitPriority('quarter', 7);
+
+// PARSING
+
+addRegexToken('Q', match1);
+addParseToken('Q', function (input, array) {
+    array[MONTH] = (toInt(input) - 1) * 3;
+});
+
+// MOMENTS
+
+function getSetQuarter (input) {
+    return input == null ? Math.ceil((this.month() + 1) / 3) : this.month((input - 1) * 3 + this.month() % 3);
+}
+
+// FORMATTING
+
+addFormatToken('D', ['DD', 2], 'Do', 'date');
+
+// ALIASES
+
+addUnitAlias('date', 'D');
+
+// PRIOROITY
+addUnitPriority('date', 9);
+
+// PARSING
+
+addRegexToken('D',  match1to2);
+addRegexToken('DD', match1to2, match2);
+addRegexToken('Do', function (isStrict, locale) {
+    // TODO: Remove "ordinalParse" fallback in next major release.
+    return isStrict ?
+      (locale._dayOfMonthOrdinalParse || locale._ordinalParse) :
+      locale._dayOfMonthOrdinalParseLenient;
+});
+
+addParseToken(['D', 'DD'], DATE);
+addParseToken('Do', function (input, array) {
+    array[DATE] = toInt(input.match(match1to2)[0], 10);
+});
+
+// MOMENTS
+
+var getSetDayOfMonth = makeGetSet('Date', true);
+
+// FORMATTING
+
+addFormatToken('DDD', ['DDDD', 3], 'DDDo', 'dayOfYear');
+
+// ALIASES
+
+addUnitAlias('dayOfYear', 'DDD');
+
+// PRIORITY
+addUnitPriority('dayOfYear', 4);
+
+// PARSING
+
+addRegexToken('DDD',  match1to3);
+addRegexToken('DDDD', match3);
+addParseToken(['DDD', 'DDDD'], function (input, array, config) {
+    config._dayOfYear = toInt(input);
+});
+
+// HELPERS
+
+// MOMENTS
+
+function getSetDayOfYear (input) {
+    var dayOfYear = Math.round((this.clone().startOf('day') - this.clone().startOf('year')) / 864e5) + 1;
+    return input == null ? dayOfYear : this.add((input - dayOfYear), 'd');
+}
+
+// FORMATTING
+
+addFormatToken('m', ['mm', 2], 0, 'minute');
+
+// ALIASES
+
+addUnitAlias('minute', 'm');
+
+// PRIORITY
+
+addUnitPriority('minute', 14);
+
+// PARSING
+
+addRegexToken('m',  match1to2);
+addRegexToken('mm', match1to2, match2);
+addParseToken(['m', 'mm'], MINUTE);
+
+// MOMENTS
+
+var getSetMinute = makeGetSet('Minutes', false);
+
+// FORMATTING
+
+addFormatToken('s', ['ss', 2], 0, 'second');
+
+// ALIASES
+
+addUnitAlias('second', 's');
+
+// PRIORITY
+
+addUnitPriority('second', 15);
+
+// PARSING
+
+addRegexToken('s',  match1to2);
+addRegexToken('ss', match1to2, match2);
+addParseToken(['s', 'ss'], SECOND);
+
+// MOMENTS
+
+var getSetSecond = makeGetSet('Seconds', false);
+
+// FORMATTING
+
+addFormatToken('S', 0, 0, function () {
+    return ~~(this.millisecond() / 100);
+});
+
+addFormatToken(0, ['SS', 2], 0, function () {
+    return ~~(this.millisecond() / 10);
+});
+
+addFormatToken(0, ['SSS', 3], 0, 'millisecond');
+addFormatToken(0, ['SSSS', 4], 0, function () {
+    return this.millisecond() * 10;
+});
+addFormatToken(0, ['SSSSS', 5], 0, function () {
+    return this.millisecond() * 100;
+});
+addFormatToken(0, ['SSSSSS', 6], 0, function () {
+    return this.millisecond() * 1000;
+});
+addFormatToken(0, ['SSSSSSS', 7], 0, function () {
+    return this.millisecond() * 10000;
+});
+addFormatToken(0, ['SSSSSSSS', 8], 0, function () {
+    return this.millisecond() * 100000;
+});
+addFormatToken(0, ['SSSSSSSSS', 9], 0, function () {
+    return this.millisecond() * 1000000;
+});
+
+
+// ALIASES
+
+addUnitAlias('millisecond', 'ms');
+
+// PRIORITY
+
+addUnitPriority('millisecond', 16);
+
+// PARSING
+
+addRegexToken('S',    match1to3, match1);
+addRegexToken('SS',   match1to3, match2);
+addRegexToken('SSS',  match1to3, match3);
+
+var token;
+for (token = 'SSSS'; token.length <= 9; token += 'S') {
+    addRegexToken(token, matchUnsigned);
+}
+
+function parseMs(input, array) {
+    array[MILLISECOND] = toInt(('0.' + input) * 1000);
+}
+
+for (token = 'S'; token.length <= 9; token += 'S') {
+    addParseToken(token, parseMs);
+}
+// MOMENTS
+
+var getSetMillisecond = makeGetSet('Milliseconds', false);
+
+// FORMATTING
+
+addFormatToken('z',  0, 0, 'zoneAbbr');
+addFormatToken('zz', 0, 0, 'zoneName');
+
+// MOMENTS
+
+function getZoneAbbr () {
+    return this._isUTC ? 'UTC' : '';
+}
+
+function getZoneName () {
+    return this._isUTC ? 'Coordinated Universal Time' : '';
+}
+
+var proto = Moment.prototype;
+
+proto.add               = add;
+proto.calendar          = calendar$1;
+proto.clone             = clone;
+proto.diff              = diff;
+proto.endOf             = endOf;
+proto.format            = format;
+proto.from              = from;
+proto.fromNow           = fromNow;
+proto.to                = to;
+proto.toNow             = toNow;
+proto.get               = stringGet;
+proto.invalidAt         = invalidAt;
+proto.isAfter           = isAfter;
+proto.isBefore          = isBefore;
+proto.isBetween         = isBetween;
+proto.isSame            = isSame;
+proto.isSameOrAfter     = isSameOrAfter;
+proto.isSameOrBefore    = isSameOrBefore;
+proto.isValid           = isValid$2;
+proto.lang              = lang;
+proto.locale            = locale;
+proto.localeData        = localeData;
+proto.max               = prototypeMax;
+proto.min               = prototypeMin;
+proto.parsingFlags      = parsingFlags;
+proto.set               = stringSet;
+proto.startOf           = startOf;
+proto.subtract          = subtract;
+proto.toArray           = toArray;
+proto.toObject          = toObject;
+proto.toDate            = toDate;
+proto.toISOString       = toISOString;
+proto.inspect           = inspect;
+proto.toJSON            = toJSON;
+proto.toString          = toString;
+proto.unix              = unix;
+proto.valueOf           = valueOf;
+proto.creationData      = creationData;
+
+// Year
+proto.year       = getSetYear;
+proto.isLeapYear = getIsLeapYear;
+
+// Week Year
+proto.weekYear    = getSetWeekYear;
+proto.isoWeekYear = getSetISOWeekYear;
+
+// Quarter
+proto.quarter = proto.quarters = getSetQuarter;
+
+// Month
+proto.month       = getSetMonth;
+proto.daysInMonth = getDaysInMonth;
+
+// Week
+proto.week           = proto.weeks        = getSetWeek;
+proto.isoWeek        = proto.isoWeeks     = getSetISOWeek;
+proto.weeksInYear    = getWeeksInYear;
+proto.isoWeeksInYear = getISOWeeksInYear;
+
+// Day
+proto.date       = getSetDayOfMonth;
+proto.day        = proto.days             = getSetDayOfWeek;
+proto.weekday    = getSetLocaleDayOfWeek;
+proto.isoWeekday = getSetISODayOfWeek;
+proto.dayOfYear  = getSetDayOfYear;
+
+// Hour
+proto.hour = proto.hours = getSetHour;
+
+// Minute
+proto.minute = proto.minutes = getSetMinute;
+
+// Second
+proto.second = proto.seconds = getSetSecond;
+
+// Millisecond
+proto.millisecond = proto.milliseconds = getSetMillisecond;
+
+// Offset
+proto.utcOffset            = getSetOffset;
+proto.utc                  = setOffsetToUTC;
+proto.local                = setOffsetToLocal;
+proto.parseZone            = setOffsetToParsedOffset;
+proto.hasAlignedHourOffset = hasAlignedHourOffset;
+proto.isDST                = isDaylightSavingTime;
+proto.isLocal              = isLocal;
+proto.isUtcOffset          = isUtcOffset;
+proto.isUtc                = isUtc;
+proto.isUTC                = isUtc;
+
+// Timezone
+proto.zoneAbbr = getZoneAbbr;
+proto.zoneName = getZoneName;
+
+// Deprecations
+proto.dates  = deprecate('dates accessor is deprecated. Use date instead.', getSetDayOfMonth);
+proto.months = deprecate('months accessor is deprecated. Use month instead', getSetMonth);
+proto.years  = deprecate('years accessor is deprecated. Use year instead', getSetYear);
+proto.zone   = deprecate('moment().zone is deprecated, use moment().utcOffset instead. http://momentjs.com/guides/#/warnings/zone/', getSetZone);
+proto.isDSTShifted = deprecate('isDSTShifted is deprecated. See http://momentjs.com/guides/#/warnings/dst-shifted/ for more information', isDaylightSavingTimeShifted);
+
+function createUnix (input) {
+    return createLocal(input * 1000);
+}
+
+function createInZone () {
+    return createLocal.apply(null, arguments).parseZone();
+}
+
+function preParsePostFormat (string) {
+    return string;
+}
+
+var proto$1 = Locale.prototype;
+
+proto$1.calendar        = calendar;
+proto$1.longDateFormat  = longDateFormat;
+proto$1.invalidDate     = invalidDate;
+proto$1.ordinal         = ordinal;
+proto$1.preparse        = preParsePostFormat;
+proto$1.postformat      = preParsePostFormat;
+proto$1.relativeTime    = relativeTime;
+proto$1.pastFuture      = pastFuture;
+proto$1.set             = set;
+
+// Month
+proto$1.months            =        localeMonths;
+proto$1.monthsShort       =        localeMonthsShort;
+proto$1.monthsParse       =        localeMonthsParse;
+proto$1.monthsRegex       = monthsRegex;
+proto$1.monthsShortRegex  = monthsShortRegex;
+
+// Week
+proto$1.week = localeWeek;
+proto$1.firstDayOfYear = localeFirstDayOfYear;
+proto$1.firstDayOfWeek = localeFirstDayOfWeek;
+
+// Day of Week
+proto$1.weekdays       =        localeWeekdays;
+proto$1.weekdaysMin    =        localeWeekdaysMin;
+proto$1.weekdaysShort  =        localeWeekdaysShort;
+proto$1.weekdaysParse  =        localeWeekdaysParse;
+
+proto$1.weekdaysRegex       =        weekdaysRegex;
+proto$1.weekdaysShortRegex  =        weekdaysShortRegex;
+proto$1.weekdaysMinRegex    =        weekdaysMinRegex;
+
+// Hours
+proto$1.isPM = localeIsPM;
+proto$1.meridiem = localeMeridiem;
+
+function get$1 (format, index, field, setter) {
+    var locale = getLocale();
+    var utc = createUTC().set(setter, index);
+    return locale[field](utc, format);
+}
+
+function listMonthsImpl (format, index, field) {
+    if (isNumber(format)) {
+        index = format;
+        format = undefined;
     }
 
-    function setWeekAll(weekYear, week, weekday, dow, doy) {
-        var dayOfYearData = dayOfYearFromWeeks(weekYear, week, weekday, dow, doy),
-            date = createUTCDate(dayOfYearData.year, 0, dayOfYearData.dayOfYear);
+    format = format || '';
 
-        this.year(date.getUTCFullYear());
-        this.month(date.getUTCMonth());
-        this.date(date.getUTCDate());
-        return this;
+    if (index != null) {
+        return get$1(format, index, field, 'month');
     }
 
-    // FORMATTING
-
-    addFormatToken('Q', 0, 'Qo', 'quarter');
-
-    // ALIASES
-
-    addUnitAlias('quarter', 'Q');
-
-    // PRIORITY
-
-    addUnitPriority('quarter', 7);
-
-    // PARSING
-
-    addRegexToken('Q', match1);
-    addParseToken('Q', function (input, array) {
-        array[MONTH] = (toInt(input) - 1) * 3;
-    });
-
-    // MOMENTS
-
-    function getSetQuarter(input) {
-        return input == null
-            ? Math.ceil((this.month() + 1) / 3)
-            : this.month((input - 1) * 3 + (this.month() % 3));
+    var i;
+    var out = [];
+    for (i = 0; i < 12; i++) {
+        out[i] = get$1(format, i, field, 'month');
     }
-
-    // FORMATTING
-
-    addFormatToken('D', ['DD', 2], 'Do', 'date');
-
-    // ALIASES
-
-    addUnitAlias('date', 'D');
-
-    // PRIORITY
-    addUnitPriority('date', 9);
-
-    // PARSING
-
-    addRegexToken('D', match1to2);
-    addRegexToken('DD', match1to2, match2);
-    addRegexToken('Do', function (isStrict, locale) {
-        // TODO: Remove "ordinalParse" fallback in next major release.
-        return isStrict
-            ? locale._dayOfMonthOrdinalParse || locale._ordinalParse
-            : locale._dayOfMonthOrdinalParseLenient;
-    });
-
-    addParseToken(['D', 'DD'], DATE);
-    addParseToken('Do', function (input, array) {
-        array[DATE] = toInt(input.match(match1to2)[0]);
-    });
-
-    // MOMENTS
-
-    var getSetDayOfMonth = makeGetSet('Date', true);
-
-    // FORMATTING
-
-    addFormatToken('DDD', ['DDDD', 3], 'DDDo', 'dayOfYear');
-
-    // ALIASES
-
-    addUnitAlias('dayOfYear', 'DDD');
-
-    // PRIORITY
-    addUnitPriority('dayOfYear', 4);
-
-    // PARSING
-
-    addRegexToken('DDD', match1to3);
-    addRegexToken('DDDD', match3);
-    addParseToken(['DDD', 'DDDD'], function (input, array, config) {
-        config._dayOfYear = toInt(input);
-    });
-
-    // HELPERS
-
-    // MOMENTS
-
-    function getSetDayOfYear(input) {
-        var dayOfYear =
-            Math.round(
-                (this.clone().startOf('day') - this.clone().startOf('year')) / 864e5
-            ) + 1;
-        return input == null ? dayOfYear : this.add(input - dayOfYear, 'd');
-    }
-
-    // FORMATTING
-
-    addFormatToken('m', ['mm', 2], 0, 'minute');
-
-    // ALIASES
-
-    addUnitAlias('minute', 'm');
-
-    // PRIORITY
-
-    addUnitPriority('minute', 14);
-
-    // PARSING
-
-    addRegexToken('m', match1to2);
-    addRegexToken('mm', match1to2, match2);
-    addParseToken(['m', 'mm'], MINUTE);
-
-    // MOMENTS
-
-    var getSetMinute = makeGetSet('Minutes', false);
-
-    // FORMATTING
-
-    addFormatToken('s', ['ss', 2], 0, 'second');
-
-    // ALIASES
-
-    addUnitAlias('second', 's');
-
-    // PRIORITY
-
-    addUnitPriority('second', 15);
-
-    // PARSING
-
-    addRegexToken('s', match1to2);
-    addRegexToken('ss', match1to2, match2);
-    addParseToken(['s', 'ss'], SECOND);
-
-    // MOMENTS
-
-    var getSetSecond = makeGetSet('Seconds', false);
-
-    // FORMATTING
-
-    addFormatToken('S', 0, 0, function () {
-        return ~~(this.millisecond() / 100);
-    });
-
-    addFormatToken(0, ['SS', 2], 0, function () {
-        return ~~(this.millisecond() / 10);
-    });
-
-    addFormatToken(0, ['SSS', 3], 0, 'millisecond');
-    addFormatToken(0, ['SSSS', 4], 0, function () {
-        return this.millisecond() * 10;
-    });
-    addFormatToken(0, ['SSSSS', 5], 0, function () {
-        return this.millisecond() * 100;
-    });
-    addFormatToken(0, ['SSSSSS', 6], 0, function () {
-        return this.millisecond() * 1000;
-    });
-    addFormatToken(0, ['SSSSSSS', 7], 0, function () {
-        return this.millisecond() * 10000;
-    });
-    addFormatToken(0, ['SSSSSSSS', 8], 0, function () {
-        return this.millisecond() * 100000;
-    });
-    addFormatToken(0, ['SSSSSSSSS', 9], 0, function () {
-        return this.millisecond() * 1000000;
-    });
-
-    // ALIASES
-
-    addUnitAlias('millisecond', 'ms');
-
-    // PRIORITY
-
-    addUnitPriority('millisecond', 16);
-
-    // PARSING
-
-    addRegexToken('S', match1to3, match1);
-    addRegexToken('SS', match1to3, match2);
-    addRegexToken('SSS', match1to3, match3);
-
-    var token, getSetMillisecond;
-    for (token = 'SSSS'; token.length <= 9; token += 'S') {
-        addRegexToken(token, matchUnsigned);
-    }
-
-    function parseMs(input, array) {
-        array[MILLISECOND] = toInt(('0.' + input) * 1000);
-    }
-
-    for (token = 'S'; token.length <= 9; token += 'S') {
-        addParseToken(token, parseMs);
-    }
-
-    getSetMillisecond = makeGetSet('Milliseconds', false);
-
-    // FORMATTING
-
-    addFormatToken('z', 0, 0, 'zoneAbbr');
-    addFormatToken('zz', 0, 0, 'zoneName');
-
-    // MOMENTS
-
-    function getZoneAbbr() {
-        return this._isUTC ? 'UTC' : '';
-    }
-
-    function getZoneName() {
-        return this._isUTC ? 'Coordinated Universal Time' : '';
-    }
-
-    var proto = Moment.prototype;
-
-    proto.add = add;
-    proto.calendar = calendar$1;
-    proto.clone = clone;
-    proto.diff = diff;
-    proto.endOf = endOf;
-    proto.format = format;
-    proto.from = from;
-    proto.fromNow = fromNow;
-    proto.to = to;
-    proto.toNow = toNow;
-    proto.get = stringGet;
-    proto.invalidAt = invalidAt;
-    proto.isAfter = isAfter;
-    proto.isBefore = isBefore;
-    proto.isBetween = isBetween;
-    proto.isSame = isSame;
-    proto.isSameOrAfter = isSameOrAfter;
-    proto.isSameOrBefore = isSameOrBefore;
-    proto.isValid = isValid$2;
-    proto.lang = lang;
-    proto.locale = locale;
-    proto.localeData = localeData;
-    proto.max = prototypeMax;
-    proto.min = prototypeMin;
-    proto.parsingFlags = parsingFlags;
-    proto.set = stringSet;
-    proto.startOf = startOf;
-    proto.subtract = subtract;
-    proto.toArray = toArray;
-    proto.toObject = toObject;
-    proto.toDate = toDate;
-    proto.toISOString = toISOString;
-    proto.inspect = inspect;
-    if (typeof Symbol !== 'undefined' && Symbol.for != null) {
-        proto[Symbol.for('nodejs.util.inspect.custom')] = function () {
-            return 'Moment<' + this.format() + '>';
-        };
-    }
-    proto.toJSON = toJSON;
-    proto.toString = toString;
-    proto.unix = unix;
-    proto.valueOf = valueOf;
-    proto.creationData = creationData;
-    proto.eraName = getEraName;
-    proto.eraNarrow = getEraNarrow;
-    proto.eraAbbr = getEraAbbr;
-    proto.eraYear = getEraYear;
-    proto.year = getSetYear;
-    proto.isLeapYear = getIsLeapYear;
-    proto.weekYear = getSetWeekYear;
-    proto.isoWeekYear = getSetISOWeekYear;
-    proto.quarter = proto.quarters = getSetQuarter;
-    proto.month = getSetMonth;
-    proto.daysInMonth = getDaysInMonth;
-    proto.week = proto.weeks = getSetWeek;
-    proto.isoWeek = proto.isoWeeks = getSetISOWeek;
-    proto.weeksInYear = getWeeksInYear;
-    proto.weeksInWeekYear = getWeeksInWeekYear;
-    proto.isoWeeksInYear = getISOWeeksInYear;
-    proto.isoWeeksInISOWeekYear = getISOWeeksInISOWeekYear;
-    proto.date = getSetDayOfMonth;
-    proto.day = proto.days = getSetDayOfWeek;
-    proto.weekday = getSetLocaleDayOfWeek;
-    proto.isoWeekday = getSetISODayOfWeek;
-    proto.dayOfYear = getSetDayOfYear;
-    proto.hour = proto.hours = getSetHour;
-    proto.minute = proto.minutes = getSetMinute;
-    proto.second = proto.seconds = getSetSecond;
-    proto.millisecond = proto.milliseconds = getSetMillisecond;
-    proto.utcOffset = getSetOffset;
-    proto.utc = setOffsetToUTC;
-    proto.local = setOffsetToLocal;
-    proto.parseZone = setOffsetToParsedOffset;
-    proto.hasAlignedHourOffset = hasAlignedHourOffset;
-    proto.isDST = isDaylightSavingTime;
-    proto.isLocal = isLocal;
-    proto.isUtcOffset = isUtcOffset;
-    proto.isUtc = isUtc;
-    proto.isUTC = isUtc;
-    proto.zoneAbbr = getZoneAbbr;
-    proto.zoneName = getZoneName;
-    proto.dates = deprecate(
-        'dates accessor is deprecated. Use date instead.',
-        getSetDayOfMonth
-    );
-    proto.months = deprecate(
-        'months accessor is deprecated. Use month instead',
-        getSetMonth
-    );
-    proto.years = deprecate(
-        'years accessor is deprecated. Use year instead',
-        getSetYear
-    );
-    proto.zone = deprecate(
-        'moment().zone is deprecated, use moment().utcOffset instead. http://momentjs.com/guides/#/warnings/zone/',
-        getSetZone
-    );
-    proto.isDSTShifted = deprecate(
-        'isDSTShifted is deprecated. See http://momentjs.com/guides/#/warnings/dst-shifted/ for more information',
-        isDaylightSavingTimeShifted
-    );
-
-    function createUnix(input) {
-        return createLocal(input * 1000);
-    }
-
-    function createInZone() {
-        return createLocal.apply(null, arguments).parseZone();
-    }
-
-    function preParsePostFormat(string) {
-        return string;
-    }
-
-    var proto$1 = Locale.prototype;
-
-    proto$1.calendar = calendar;
-    proto$1.longDateFormat = longDateFormat;
-    proto$1.invalidDate = invalidDate;
-    proto$1.ordinal = ordinal;
-    proto$1.preparse = preParsePostFormat;
-    proto$1.postformat = preParsePostFormat;
-    proto$1.relativeTime = relativeTime;
-    proto$1.pastFuture = pastFuture;
-    proto$1.set = set;
-    proto$1.eras = localeEras;
-    proto$1.erasParse = localeErasParse;
-    proto$1.erasConvertYear = localeErasConvertYear;
-    proto$1.erasAbbrRegex = erasAbbrRegex;
-    proto$1.erasNameRegex = erasNameRegex;
-    proto$1.erasNarrowRegex = erasNarrowRegex;
-
-    proto$1.months = localeMonths;
-    proto$1.monthsShort = localeMonthsShort;
-    proto$1.monthsParse = localeMonthsParse;
-    proto$1.monthsRegex = monthsRegex;
-    proto$1.monthsShortRegex = monthsShortRegex;
-    proto$1.week = localeWeek;
-    proto$1.firstDayOfYear = localeFirstDayOfYear;
-    proto$1.firstDayOfWeek = localeFirstDayOfWeek;
-
-    proto$1.weekdays = localeWeekdays;
-    proto$1.weekdaysMin = localeWeekdaysMin;
-    proto$1.weekdaysShort = localeWeekdaysShort;
-    proto$1.weekdaysParse = localeWeekdaysParse;
-
-    proto$1.weekdaysRegex = weekdaysRegex;
-    proto$1.weekdaysShortRegex = weekdaysShortRegex;
-    proto$1.weekdaysMinRegex = weekdaysMinRegex;
-
-    proto$1.isPM = localeIsPM;
-    proto$1.meridiem = localeMeridiem;
-
-    function get$1(format, index, field, setter) {
-        var locale = getLocale(),
-            utc = createUTC().set(setter, index);
-        return locale[field](utc, format);
-    }
-
-    function listMonthsImpl(format, index, field) {
+    return out;
+}
+
+// ()
+// (5)
+// (fmt, 5)
+// (fmt)
+// (true)
+// (true, 5)
+// (true, fmt, 5)
+// (true, fmt)
+function listWeekdaysImpl (localeSorted, format, index, field) {
+    if (typeof localeSorted === 'boolean') {
         if (isNumber(format)) {
             index = format;
             format = undefined;
         }
 
         format = format || '';
+    } else {
+        format = localeSorted;
+        index = format;
+        localeSorted = false;
 
-        if (index != null) {
-            return get$1(format, index, field, 'month');
-        }
-
-        var i,
-            out = [];
-        for (i = 0; i < 12; i++) {
-            out[i] = get$1(format, i, field, 'month');
-        }
-        return out;
-    }
-
-    // ()
-    // (5)
-    // (fmt, 5)
-    // (fmt)
-    // (true)
-    // (true, 5)
-    // (true, fmt, 5)
-    // (true, fmt)
-    function listWeekdaysImpl(localeSorted, format, index, field) {
-        if (typeof localeSorted === 'boolean') {
-            if (isNumber(format)) {
-                index = format;
-                format = undefined;
-            }
-
-            format = format || '';
-        } else {
-            format = localeSorted;
+        if (isNumber(format)) {
             index = format;
-            localeSorted = false;
-
-            if (isNumber(format)) {
-                index = format;
-                format = undefined;
-            }
-
-            format = format || '';
+            format = undefined;
         }
 
-        var locale = getLocale(),
-            shift = localeSorted ? locale._week.dow : 0,
-            i,
-            out = [];
+        format = format || '';
+    }
 
-        if (index != null) {
-            return get$1(format, (index + shift) % 7, field, 'day');
+    var locale = getLocale(),
+        shift = localeSorted ? locale._week.dow : 0;
+
+    if (index != null) {
+        return get$1(format, (index + shift) % 7, field, 'day');
+    }
+
+    var i;
+    var out = [];
+    for (i = 0; i < 7; i++) {
+        out[i] = get$1(format, (i + shift) % 7, field, 'day');
+    }
+    return out;
+}
+
+function listMonths (format, index) {
+    return listMonthsImpl(format, index, 'months');
+}
+
+function listMonthsShort (format, index) {
+    return listMonthsImpl(format, index, 'monthsShort');
+}
+
+function listWeekdays (localeSorted, format, index) {
+    return listWeekdaysImpl(localeSorted, format, index, 'weekdays');
+}
+
+function listWeekdaysShort (localeSorted, format, index) {
+    return listWeekdaysImpl(localeSorted, format, index, 'weekdaysShort');
+}
+
+function listWeekdaysMin (localeSorted, format, index) {
+    return listWeekdaysImpl(localeSorted, format, index, 'weekdaysMin');
+}
+
+getSetGlobalLocale('en', {
+    dayOfMonthOrdinalParse: /\d{1,2}(th|st|nd|rd)/,
+    ordinal : function (number) {
+        var b = number % 10,
+            output = (toInt(number % 100 / 10) === 1) ? 'th' :
+            (b === 1) ? 'st' :
+            (b === 2) ? 'nd' :
+            (b === 3) ? 'rd' : 'th';
+        return number + output;
+    }
+});
+
+// Side effect imports
+hooks.lang = deprecate('moment.lang is deprecated. Use moment.locale instead.', getSetGlobalLocale);
+hooks.langData = deprecate('moment.langData is deprecated. Use moment.localeData instead.', getLocale);
+
+var mathAbs = Math.abs;
+
+function abs () {
+    var data           = this._data;
+
+    this._milliseconds = mathAbs(this._milliseconds);
+    this._days         = mathAbs(this._days);
+    this._months       = mathAbs(this._months);
+
+    data.milliseconds  = mathAbs(data.milliseconds);
+    data.seconds       = mathAbs(data.seconds);
+    data.minutes       = mathAbs(data.minutes);
+    data.hours         = mathAbs(data.hours);
+    data.months        = mathAbs(data.months);
+    data.years         = mathAbs(data.years);
+
+    return this;
+}
+
+function addSubtract$1 (duration, input, value, direction) {
+    var other = createDuration(input, value);
+
+    duration._milliseconds += direction * other._milliseconds;
+    duration._days         += direction * other._days;
+    duration._months       += direction * other._months;
+
+    return duration._bubble();
+}
+
+// supports only 2.0-style add(1, 's') or add(duration)
+function add$1 (input, value) {
+    return addSubtract$1(this, input, value, 1);
+}
+
+// supports only 2.0-style subtract(1, 's') or subtract(duration)
+function subtract$1 (input, value) {
+    return addSubtract$1(this, input, value, -1);
+}
+
+function absCeil (number) {
+    if (number < 0) {
+        return Math.floor(number);
+    } else {
+        return Math.ceil(number);
+    }
+}
+
+function bubble () {
+    var milliseconds = this._milliseconds;
+    var days         = this._days;
+    var months       = this._months;
+    var data         = this._data;
+    var seconds, minutes, hours, years, monthsFromDays;
+
+    // if we have a mix of positive and negative values, bubble down first
+    // check: https://github.com/moment/moment/issues/2166
+    if (!((milliseconds >= 0 && days >= 0 && months >= 0) ||
+            (milliseconds <= 0 && days <= 0 && months <= 0))) {
+        milliseconds += absCeil(monthsToDays(months) + days) * 864e5;
+        days = 0;
+        months = 0;
+    }
+
+    // The following code bubbles up values, see the tests for
+    // examples of what that means.
+    data.milliseconds = milliseconds % 1000;
+
+    seconds           = absFloor(milliseconds / 1000);
+    data.seconds      = seconds % 60;
+
+    minutes           = absFloor(seconds / 60);
+    data.minutes      = minutes % 60;
+
+    hours             = absFloor(minutes / 60);
+    data.hours        = hours % 24;
+
+    days += absFloor(hours / 24);
+
+    // convert days to months
+    monthsFromDays = absFloor(daysToMonths(days));
+    months += monthsFromDays;
+    days -= absCeil(monthsToDays(monthsFromDays));
+
+    // 12 months -> 1 year
+    years = absFloor(months / 12);
+    months %= 12;
+
+    data.days   = days;
+    data.months = months;
+    data.years  = years;
+
+    return this;
+}
+
+function daysToMonths (days) {
+    // 400 years have 146097 days (taking into account leap year rules)
+    // 400 years have 12 months === 4800
+    return days * 4800 / 146097;
+}
+
+function monthsToDays (months) {
+    // the reverse of daysToMonths
+    return months * 146097 / 4800;
+}
+
+function as (units) {
+    if (!this.isValid()) {
+        return NaN;
+    }
+    var days;
+    var months;
+    var milliseconds = this._milliseconds;
+
+    units = normalizeUnits(units);
+
+    if (units === 'month' || units === 'year') {
+        days   = this._days   + milliseconds / 864e5;
+        months = this._months + daysToMonths(days);
+        return units === 'month' ? months : months / 12;
+    } else {
+        // handle milliseconds separately because of floating point math errors (issue #1867)
+        days = this._days + Math.round(monthsToDays(this._months));
+        switch (units) {
+            case 'week'   : return days / 7     + milliseconds / 6048e5;
+            case 'day'    : return days         + milliseconds / 864e5;
+            case 'hour'   : return days * 24    + milliseconds / 36e5;
+            case 'minute' : return days * 1440  + milliseconds / 6e4;
+            case 'second' : return days * 86400 + milliseconds / 1000;
+            // Math.floor prevents floating point math errors here
+            case 'millisecond': return Math.floor(days * 864e5) + milliseconds;
+            default: throw new Error('Unknown unit ' + units);
         }
-
-        for (i = 0; i < 7; i++) {
-            out[i] = get$1(format, (i + shift) % 7, field, 'day');
-        }
-        return out;
     }
+}
 
-    function listMonths(format, index) {
-        return listMonthsImpl(format, index, 'months');
+// TODO: Use this.as('ms')?
+function valueOf$1 () {
+    if (!this.isValid()) {
+        return NaN;
     }
-
-    function listMonthsShort(format, index) {
-        return listMonthsImpl(format, index, 'monthsShort');
-    }
-
-    function listWeekdays(localeSorted, format, index) {
-        return listWeekdaysImpl(localeSorted, format, index, 'weekdays');
-    }
-
-    function listWeekdaysShort(localeSorted, format, index) {
-        return listWeekdaysImpl(localeSorted, format, index, 'weekdaysShort');
-    }
-
-    function listWeekdaysMin(localeSorted, format, index) {
-        return listWeekdaysImpl(localeSorted, format, index, 'weekdaysMin');
-    }
-
-    getSetGlobalLocale('en', {
-        eras: [
-            {
-                since: '0001-01-01',
-                until: +Infinity,
-                offset: 1,
-                name: 'Anno Domini',
-                narrow: 'AD',
-                abbr: 'AD',
-            },
-            {
-                since: '0000-12-31',
-                until: -Infinity,
-                offset: 1,
-                name: 'Before Christ',
-                narrow: 'BC',
-                abbr: 'BC',
-            },
-        ],
-        dayOfMonthOrdinalParse: /\d{1,2}(th|st|nd|rd)/,
-        ordinal: function (number) {
-            var b = number % 10,
-                output =
-                    toInt((number % 100) / 10) === 1
-                        ? 'th'
-                        : b === 1
-                        ? 'st'
-                        : b === 2
-                        ? 'nd'
-                        : b === 3
-                        ? 'rd'
-                        : 'th';
-            return number + output;
-        },
-    });
-
-    // Side effect imports
-
-    hooks.lang = deprecate(
-        'moment.lang is deprecated. Use moment.locale instead.',
-        getSetGlobalLocale
+    return (
+        this._milliseconds +
+        this._days * 864e5 +
+        (this._months % 12) * 2592e6 +
+        toInt(this._months / 12) * 31536e6
     );
-    hooks.langData = deprecate(
-        'moment.langData is deprecated. Use moment.localeData instead.',
-        getLocale
-    );
+}
 
-    var mathAbs = Math.abs;
+function makeAs (alias) {
+    return function () {
+        return this.as(alias);
+    };
+}
 
-    function abs() {
-        var data = this._data;
+var asMilliseconds = makeAs('ms');
+var asSeconds      = makeAs('s');
+var asMinutes      = makeAs('m');
+var asHours        = makeAs('h');
+var asDays         = makeAs('d');
+var asWeeks        = makeAs('w');
+var asMonths       = makeAs('M');
+var asYears        = makeAs('y');
 
-        this._milliseconds = mathAbs(this._milliseconds);
-        this._days = mathAbs(this._days);
-        this._months = mathAbs(this._months);
+function get$2 (units) {
+    units = normalizeUnits(units);
+    return this.isValid() ? this[units + 's']() : NaN;
+}
 
-        data.milliseconds = mathAbs(data.milliseconds);
-        data.seconds = mathAbs(data.seconds);
-        data.minutes = mathAbs(data.minutes);
-        data.hours = mathAbs(data.hours);
-        data.months = mathAbs(data.months);
-        data.years = mathAbs(data.years);
+function makeGetter(name) {
+    return function () {
+        return this.isValid() ? this._data[name] : NaN;
+    };
+}
 
-        return this;
+var milliseconds = makeGetter('milliseconds');
+var seconds      = makeGetter('seconds');
+var minutes      = makeGetter('minutes');
+var hours        = makeGetter('hours');
+var days         = makeGetter('days');
+var months       = makeGetter('months');
+var years        = makeGetter('years');
+
+function weeks () {
+    return absFloor(this.days() / 7);
+}
+
+var round = Math.round;
+var thresholds = {
+    ss: 44,         // a few seconds to seconds
+    s : 45,         // seconds to minute
+    m : 45,         // minutes to hour
+    h : 22,         // hours to day
+    d : 26,         // days to month
+    M : 11          // months to year
+};
+
+// helper function for moment.fn.from, moment.fn.fromNow, and moment.duration.fn.humanize
+function substituteTimeAgo(string, number, withoutSuffix, isFuture, locale) {
+    return locale.relativeTime(number || 1, !!withoutSuffix, string, isFuture);
+}
+
+function relativeTime$1 (posNegDuration, withoutSuffix, locale) {
+    var duration = createDuration(posNegDuration).abs();
+    var seconds  = round(duration.as('s'));
+    var minutes  = round(duration.as('m'));
+    var hours    = round(duration.as('h'));
+    var days     = round(duration.as('d'));
+    var months   = round(duration.as('M'));
+    var years    = round(duration.as('y'));
+
+    var a = seconds <= thresholds.ss && ['s', seconds]  ||
+            seconds < thresholds.s   && ['ss', seconds] ||
+            minutes <= 1             && ['m']           ||
+            minutes < thresholds.m   && ['mm', minutes] ||
+            hours   <= 1             && ['h']           ||
+            hours   < thresholds.h   && ['hh', hours]   ||
+            days    <= 1             && ['d']           ||
+            days    < thresholds.d   && ['dd', days]    ||
+            months  <= 1             && ['M']           ||
+            months  < thresholds.M   && ['MM', months]  ||
+            years   <= 1             && ['y']           || ['yy', years];
+
+    a[2] = withoutSuffix;
+    a[3] = +posNegDuration > 0;
+    a[4] = locale;
+    return substituteTimeAgo.apply(null, a);
+}
+
+// This function allows you to set the rounding function for relative time strings
+function getSetRelativeTimeRounding (roundingFunction) {
+    if (roundingFunction === undefined) {
+        return round;
     }
-
-    function addSubtract$1(duration, input, value, direction) {
-        var other = createDuration(input, value);
-
-        duration._milliseconds += direction * other._milliseconds;
-        duration._days += direction * other._days;
-        duration._months += direction * other._months;
-
-        return duration._bubble();
-    }
-
-    // supports only 2.0-style add(1, 's') or add(duration)
-    function add$1(input, value) {
-        return addSubtract$1(this, input, value, 1);
-    }
-
-    // supports only 2.0-style subtract(1, 's') or subtract(duration)
-    function subtract$1(input, value) {
-        return addSubtract$1(this, input, value, -1);
-    }
-
-    function absCeil(number) {
-        if (number < 0) {
-            return Math.floor(number);
-        } else {
-            return Math.ceil(number);
-        }
-    }
-
-    function bubble() {
-        var milliseconds = this._milliseconds,
-            days = this._days,
-            months = this._months,
-            data = this._data,
-            seconds,
-            minutes,
-            hours,
-            years,
-            monthsFromDays;
-
-        // if we have a mix of positive and negative values, bubble down first
-        // check: https://github.com/moment/moment/issues/2166
-        if (
-            !(
-                (milliseconds >= 0 && days >= 0 && months >= 0) ||
-                (milliseconds <= 0 && days <= 0 && months <= 0)
-            )
-        ) {
-            milliseconds += absCeil(monthsToDays(months) + days) * 864e5;
-            days = 0;
-            months = 0;
-        }
-
-        // The following code bubbles up values, see the tests for
-        // examples of what that means.
-        data.milliseconds = milliseconds % 1000;
-
-        seconds = absFloor(milliseconds / 1000);
-        data.seconds = seconds % 60;
-
-        minutes = absFloor(seconds / 60);
-        data.minutes = minutes % 60;
-
-        hours = absFloor(minutes / 60);
-        data.hours = hours % 24;
-
-        days += absFloor(hours / 24);
-
-        // convert days to months
-        monthsFromDays = absFloor(daysToMonths(days));
-        months += monthsFromDays;
-        days -= absCeil(monthsToDays(monthsFromDays));
-
-        // 12 months -> 1 year
-        years = absFloor(months / 12);
-        months %= 12;
-
-        data.days = days;
-        data.months = months;
-        data.years = years;
-
-        return this;
-    }
-
-    function daysToMonths(days) {
-        // 400 years have 146097 days (taking into account leap year rules)
-        // 400 years have 12 months === 4800
-        return (days * 4800) / 146097;
-    }
-
-    function monthsToDays(months) {
-        // the reverse of daysToMonths
-        return (months * 146097) / 4800;
-    }
-
-    function as(units) {
-        if (!this.isValid()) {
-            return NaN;
-        }
-        var days,
-            months,
-            milliseconds = this._milliseconds;
-
-        units = normalizeUnits(units);
-
-        if (units === 'month' || units === 'quarter' || units === 'year') {
-            days = this._days + milliseconds / 864e5;
-            months = this._months + daysToMonths(days);
-            switch (units) {
-                case 'month':
-                    return months;
-                case 'quarter':
-                    return months / 3;
-                case 'year':
-                    return months / 12;
-            }
-        } else {
-            // handle milliseconds separately because of floating point math errors (issue #1867)
-            days = this._days + Math.round(monthsToDays(this._months));
-            switch (units) {
-                case 'week':
-                    return days / 7 + milliseconds / 6048e5;
-                case 'day':
-                    return days + milliseconds / 864e5;
-                case 'hour':
-                    return days * 24 + milliseconds / 36e5;
-                case 'minute':
-                    return days * 1440 + milliseconds / 6e4;
-                case 'second':
-                    return days * 86400 + milliseconds / 1000;
-                // Math.floor prevents floating point math errors here
-                case 'millisecond':
-                    return Math.floor(days * 864e5) + milliseconds;
-                default:
-                    throw new Error('Unknown unit ' + units);
-            }
-        }
-    }
-
-    // TODO: Use this.as('ms')?
-    function valueOf$1() {
-        if (!this.isValid()) {
-            return NaN;
-        }
-        return (
-            this._milliseconds +
-            this._days * 864e5 +
-            (this._months % 12) * 2592e6 +
-            toInt(this._months / 12) * 31536e6
-        );
-    }
-
-    function makeAs(alias) {
-        return function () {
-            return this.as(alias);
-        };
-    }
-
-    var asMilliseconds = makeAs('ms'),
-        asSeconds = makeAs('s'),
-        asMinutes = makeAs('m'),
-        asHours = makeAs('h'),
-        asDays = makeAs('d'),
-        asWeeks = makeAs('w'),
-        asMonths = makeAs('M'),
-        asQuarters = makeAs('Q'),
-        asYears = makeAs('y');
-
-    function clone$1() {
-        return createDuration(this);
-    }
-
-    function get$2(units) {
-        units = normalizeUnits(units);
-        return this.isValid() ? this[units + 's']() : NaN;
-    }
-
-    function makeGetter(name) {
-        return function () {
-            return this.isValid() ? this._data[name] : NaN;
-        };
-    }
-
-    var milliseconds = makeGetter('milliseconds'),
-        seconds = makeGetter('seconds'),
-        minutes = makeGetter('minutes'),
-        hours = makeGetter('hours'),
-        days = makeGetter('days'),
-        months = makeGetter('months'),
-        years = makeGetter('years');
-
-    function weeks() {
-        return absFloor(this.days() / 7);
-    }
-
-    var round = Math.round,
-        thresholds = {
-            ss: 44, // a few seconds to seconds
-            s: 45, // seconds to minute
-            m: 45, // minutes to hour
-            h: 22, // hours to day
-            d: 26, // days to month/week
-            w: null, // weeks to month
-            M: 11, // months to year
-        };
-
-    // helper function for moment.fn.from, moment.fn.fromNow, and moment.duration.fn.humanize
-    function substituteTimeAgo(string, number, withoutSuffix, isFuture, locale) {
-        return locale.relativeTime(number || 1, !!withoutSuffix, string, isFuture);
-    }
-
-    function relativeTime$1(posNegDuration, withoutSuffix, thresholds, locale) {
-        var duration = createDuration(posNegDuration).abs(),
-            seconds = round(duration.as('s')),
-            minutes = round(duration.as('m')),
-            hours = round(duration.as('h')),
-            days = round(duration.as('d')),
-            months = round(duration.as('M')),
-            weeks = round(duration.as('w')),
-            years = round(duration.as('y')),
-            a =
-                (seconds <= thresholds.ss && ['s', seconds]) ||
-                (seconds < thresholds.s && ['ss', seconds]) ||
-                (minutes <= 1 && ['m']) ||
-                (minutes < thresholds.m && ['mm', minutes]) ||
-                (hours <= 1 && ['h']) ||
-                (hours < thresholds.h && ['hh', hours]) ||
-                (days <= 1 && ['d']) ||
-                (days < thresholds.d && ['dd', days]);
-
-        if (thresholds.w != null) {
-            a =
-                a ||
-                (weeks <= 1 && ['w']) ||
-                (weeks < thresholds.w && ['ww', weeks]);
-        }
-        a = a ||
-            (months <= 1 && ['M']) ||
-            (months < thresholds.M && ['MM', months]) ||
-            (years <= 1 && ['y']) || ['yy', years];
-
-        a[2] = withoutSuffix;
-        a[3] = +posNegDuration > 0;
-        a[4] = locale;
-        return substituteTimeAgo.apply(null, a);
-    }
-
-    // This function allows you to set the rounding function for relative time strings
-    function getSetRelativeTimeRounding(roundingFunction) {
-        if (roundingFunction === undefined) {
-            return round;
-        }
-        if (typeof roundingFunction === 'function') {
-            round = roundingFunction;
-            return true;
-        }
-        return false;
-    }
-
-    // This function allows you to set a threshold for relative time strings
-    function getSetRelativeTimeThreshold(threshold, limit) {
-        if (thresholds[threshold] === undefined) {
-            return false;
-        }
-        if (limit === undefined) {
-            return thresholds[threshold];
-        }
-        thresholds[threshold] = limit;
-        if (threshold === 's') {
-            thresholds.ss = limit - 1;
-        }
+    if (typeof(roundingFunction) === 'function') {
+        round = roundingFunction;
         return true;
     }
+    return false;
+}
 
-    function humanize(argWithSuffix, argThresholds) {
-        if (!this.isValid()) {
-            return this.localeData().invalidDate();
-        }
+// This function allows you to set a threshold for relative time strings
+function getSetRelativeTimeThreshold (threshold, limit) {
+    if (thresholds[threshold] === undefined) {
+        return false;
+    }
+    if (limit === undefined) {
+        return thresholds[threshold];
+    }
+    thresholds[threshold] = limit;
+    if (threshold === 's') {
+        thresholds.ss = limit - 1;
+    }
+    return true;
+}
 
-        var withSuffix = false,
-            th = thresholds,
-            locale,
-            output;
-
-        if (typeof argWithSuffix === 'object') {
-            argThresholds = argWithSuffix;
-            argWithSuffix = false;
-        }
-        if (typeof argWithSuffix === 'boolean') {
-            withSuffix = argWithSuffix;
-        }
-        if (typeof argThresholds === 'object') {
-            th = Object.assign({}, thresholds, argThresholds);
-            if (argThresholds.s != null && argThresholds.ss == null) {
-                th.ss = argThresholds.s - 1;
-            }
-        }
-
-        locale = this.localeData();
-        output = relativeTime$1(this, !withSuffix, th, locale);
-
-        if (withSuffix) {
-            output = locale.pastFuture(+this, output);
-        }
-
-        return locale.postformat(output);
+function humanize (withSuffix) {
+    if (!this.isValid()) {
+        return this.localeData().invalidDate();
     }
 
-    var abs$1 = Math.abs;
+    var locale = this.localeData();
+    var output = relativeTime$1(this, !withSuffix, locale);
 
-    function sign(x) {
-        return (x > 0) - (x < 0) || +x;
+    if (withSuffix) {
+        output = locale.pastFuture(+this, output);
     }
 
-    function toISOString$1() {
-        // for ISO strings we do not use the normal bubbling rules:
-        //  * milliseconds bubble up until they become hours
-        //  * days do not bubble at all
-        //  * months bubble up until they become years
-        // This is because there is no context-free conversion between hours and days
-        // (think of clock changes)
-        // and also not between days and months (28-31 days per month)
-        if (!this.isValid()) {
-            return this.localeData().invalidDate();
-        }
+    return locale.postformat(output);
+}
 
-        var seconds = abs$1(this._milliseconds) / 1000,
-            days = abs$1(this._days),
-            months = abs$1(this._months),
-            minutes,
-            hours,
-            years,
-            s,
-            total = this.asSeconds(),
-            totalSign,
-            ymSign,
-            daysSign,
-            hmsSign;
+var abs$1 = Math.abs;
 
-        if (!total) {
-            // this is the same as C#'s (Noda) and python (isodate)...
-            // but not other JS (goog.date)
-            return 'P0D';
-        }
-
-        // 3600 seconds -> 60 minutes -> 1 hour
-        minutes = absFloor(seconds / 60);
-        hours = absFloor(minutes / 60);
-        seconds %= 60;
-        minutes %= 60;
-
-        // 12 months -> 1 year
-        years = absFloor(months / 12);
-        months %= 12;
-
-        // inspired by https://github.com/dordille/moment-isoduration/blob/master/moment.isoduration.js
-        s = seconds ? seconds.toFixed(3).replace(/\.?0+$/, '') : '';
-
-        totalSign = total < 0 ? '-' : '';
-        ymSign = sign(this._months) !== sign(total) ? '-' : '';
-        daysSign = sign(this._days) !== sign(total) ? '-' : '';
-        hmsSign = sign(this._milliseconds) !== sign(total) ? '-' : '';
-
-        return (
-            totalSign +
-            'P' +
-            (years ? ymSign + years + 'Y' : '') +
-            (months ? ymSign + months + 'M' : '') +
-            (days ? daysSign + days + 'D' : '') +
-            (hours || minutes || seconds ? 'T' : '') +
-            (hours ? hmsSign + hours + 'H' : '') +
-            (minutes ? hmsSign + minutes + 'M' : '') +
-            (seconds ? hmsSign + s + 'S' : '')
-        );
+function toISOString$1() {
+    // for ISO strings we do not use the normal bubbling rules:
+    //  * milliseconds bubble up until they become hours
+    //  * days do not bubble at all
+    //  * months bubble up until they become years
+    // This is because there is no context-free conversion between hours and days
+    // (think of clock changes)
+    // and also not between days and months (28-31 days per month)
+    if (!this.isValid()) {
+        return this.localeData().invalidDate();
     }
 
-    var proto$2 = Duration.prototype;
+    var seconds = abs$1(this._milliseconds) / 1000;
+    var days         = abs$1(this._days);
+    var months       = abs$1(this._months);
+    var minutes, hours, years;
 
-    proto$2.isValid = isValid$1;
-    proto$2.abs = abs;
-    proto$2.add = add$1;
-    proto$2.subtract = subtract$1;
-    proto$2.as = as;
-    proto$2.asMilliseconds = asMilliseconds;
-    proto$2.asSeconds = asSeconds;
-    proto$2.asMinutes = asMinutes;
-    proto$2.asHours = asHours;
-    proto$2.asDays = asDays;
-    proto$2.asWeeks = asWeeks;
-    proto$2.asMonths = asMonths;
-    proto$2.asQuarters = asQuarters;
-    proto$2.asYears = asYears;
-    proto$2.valueOf = valueOf$1;
-    proto$2._bubble = bubble;
-    proto$2.clone = clone$1;
-    proto$2.get = get$2;
-    proto$2.milliseconds = milliseconds;
-    proto$2.seconds = seconds;
-    proto$2.minutes = minutes;
-    proto$2.hours = hours;
-    proto$2.days = days;
-    proto$2.weeks = weeks;
-    proto$2.months = months;
-    proto$2.years = years;
-    proto$2.humanize = humanize;
-    proto$2.toISOString = toISOString$1;
-    proto$2.toString = toISOString$1;
-    proto$2.toJSON = toISOString$1;
-    proto$2.locale = locale;
-    proto$2.localeData = localeData;
+    // 3600 seconds -> 60 minutes -> 1 hour
+    minutes           = absFloor(seconds / 60);
+    hours             = absFloor(minutes / 60);
+    seconds %= 60;
+    minutes %= 60;
 
-    proto$2.toIsoString = deprecate(
-        'toIsoString() is deprecated. Please use toISOString() instead (notice the capitals)',
-        toISOString$1
-    );
-    proto$2.lang = lang;
+    // 12 months -> 1 year
+    years  = absFloor(months / 12);
+    months %= 12;
 
-    // FORMATTING
 
-    addFormatToken('X', 0, 0, 'unix');
-    addFormatToken('x', 0, 0, 'valueOf');
+    // inspired by https://github.com/dordille/moment-isoduration/blob/master/moment.isoduration.js
+    var Y = years;
+    var M = months;
+    var D = days;
+    var h = hours;
+    var m = minutes;
+    var s = seconds;
+    var total = this.asSeconds();
 
-    // PARSING
+    if (!total) {
+        // this is the same as C#'s (Noda) and python (isodate)...
+        // but not other JS (goog.date)
+        return 'P0D';
+    }
 
-    addRegexToken('x', matchSigned);
-    addRegexToken('X', matchTimestamp);
-    addParseToken('X', function (input, array, config) {
-        config._d = new Date(parseFloat(input) * 1000);
-    });
-    addParseToken('x', function (input, array, config) {
-        config._d = new Date(toInt(input));
-    });
+    return (total < 0 ? '-' : '') +
+        'P' +
+        (Y ? Y + 'Y' : '') +
+        (M ? M + 'M' : '') +
+        (D ? D + 'D' : '') +
+        ((h || m || s) ? 'T' : '') +
+        (h ? h + 'H' : '') +
+        (m ? m + 'M' : '') +
+        (s ? s + 'S' : '');
+}
 
-    //! moment.js
+var proto$2 = Duration.prototype;
 
-    hooks.version = '2.29.3';
+proto$2.isValid        = isValid$1;
+proto$2.abs            = abs;
+proto$2.add            = add$1;
+proto$2.subtract       = subtract$1;
+proto$2.as             = as;
+proto$2.asMilliseconds = asMilliseconds;
+proto$2.asSeconds      = asSeconds;
+proto$2.asMinutes      = asMinutes;
+proto$2.asHours        = asHours;
+proto$2.asDays         = asDays;
+proto$2.asWeeks        = asWeeks;
+proto$2.asMonths       = asMonths;
+proto$2.asYears        = asYears;
+proto$2.valueOf        = valueOf$1;
+proto$2._bubble        = bubble;
+proto$2.get            = get$2;
+proto$2.milliseconds   = milliseconds;
+proto$2.seconds        = seconds;
+proto$2.minutes        = minutes;
+proto$2.hours          = hours;
+proto$2.days           = days;
+proto$2.weeks          = weeks;
+proto$2.months         = months;
+proto$2.years          = years;
+proto$2.humanize       = humanize;
+proto$2.toISOString    = toISOString$1;
+proto$2.toString       = toISOString$1;
+proto$2.toJSON         = toISOString$1;
+proto$2.locale         = locale;
+proto$2.localeData     = localeData;
 
-    setHookCallback(createLocal);
+// Deprecations
+proto$2.toIsoString = deprecate('toIsoString() is deprecated. Please use toISOString() instead (notice the capitals)', toISOString$1);
+proto$2.lang = lang;
 
-    hooks.fn = proto;
-    hooks.min = min;
-    hooks.max = max;
-    hooks.now = now;
-    hooks.utc = createUTC;
-    hooks.unix = createUnix;
-    hooks.months = listMonths;
-    hooks.isDate = isDate;
-    hooks.locale = getSetGlobalLocale;
-    hooks.invalid = createInvalid;
-    hooks.duration = createDuration;
-    hooks.isMoment = isMoment;
-    hooks.weekdays = listWeekdays;
-    hooks.parseZone = createInZone;
-    hooks.localeData = getLocale;
-    hooks.isDuration = isDuration;
-    hooks.monthsShort = listMonthsShort;
-    hooks.weekdaysMin = listWeekdaysMin;
-    hooks.defineLocale = defineLocale;
-    hooks.updateLocale = updateLocale;
-    hooks.locales = listLocales;
-    hooks.weekdaysShort = listWeekdaysShort;
-    hooks.normalizeUnits = normalizeUnits;
-    hooks.relativeTimeRounding = getSetRelativeTimeRounding;
-    hooks.relativeTimeThreshold = getSetRelativeTimeThreshold;
-    hooks.calendarFormat = getCalendarFormat;
-    hooks.prototype = proto;
+// Side effect imports
 
-    // currently HTML5 input type only supports 24-hour formats
-    hooks.HTML5_FMT = {
-        DATETIME_LOCAL: 'YYYY-MM-DDTHH:mm', // <input type="datetime-local" />
-        DATETIME_LOCAL_SECONDS: 'YYYY-MM-DDTHH:mm:ss', // <input type="datetime-local" step="1" />
-        DATETIME_LOCAL_MS: 'YYYY-MM-DDTHH:mm:ss.SSS', // <input type="datetime-local" step="0.001" />
-        DATE: 'YYYY-MM-DD', // <input type="date" />
-        TIME: 'HH:mm', // <input type="time" />
-        TIME_SECONDS: 'HH:mm:ss', // <input type="time" step="1" />
-        TIME_MS: 'HH:mm:ss.SSS', // <input type="time" step="0.001" />
-        WEEK: 'GGGG-[W]WW', // <input type="week" />
-        MONTH: 'YYYY-MM', // <input type="month" />
-    };
+// FORMATTING
 
-    return hooks;
+addFormatToken('X', 0, 0, 'unix');
+addFormatToken('x', 0, 0, 'valueOf');
+
+// PARSING
+
+addRegexToken('x', matchSigned);
+addRegexToken('X', matchTimestamp);
+addParseToken('X', function (input, array, config) {
+    config._d = new Date(parseFloat(input, 10) * 1000);
+});
+addParseToken('x', function (input, array, config) {
+    config._d = new Date(toInt(input));
+});
+
+// Side effect imports
+
+
+hooks.version = '2.18.1';
+
+setHookCallback(createLocal);
+
+hooks.fn                    = proto;
+hooks.min                   = min;
+hooks.max                   = max;
+hooks.now                   = now;
+hooks.utc                   = createUTC;
+hooks.unix                  = createUnix;
+hooks.months                = listMonths;
+hooks.isDate                = isDate;
+hooks.locale                = getSetGlobalLocale;
+hooks.invalid               = createInvalid;
+hooks.duration              = createDuration;
+hooks.isMoment              = isMoment;
+hooks.weekdays              = listWeekdays;
+hooks.parseZone             = createInZone;
+hooks.localeData            = getLocale;
+hooks.isDuration            = isDuration;
+hooks.monthsShort           = listMonthsShort;
+hooks.weekdaysMin           = listWeekdaysMin;
+hooks.defineLocale          = defineLocale;
+hooks.updateLocale          = updateLocale;
+hooks.locales               = listLocales;
+hooks.weekdaysShort         = listWeekdaysShort;
+hooks.normalizeUnits        = normalizeUnits;
+hooks.relativeTimeRounding = getSetRelativeTimeRounding;
+hooks.relativeTimeThreshold = getSetRelativeTimeThreshold;
+hooks.calendarFormat        = getCalendarFormat;
+hooks.prototype             = proto;
+
+return hooks;
 
 })));
 
@@ -61690,11 +57481,20 @@ ___scope___.file("index.js", function(exports, require, module, __filename, __di
  * Listens to 'async' requets and if the name is a css file
  * wires it to `__fsbx_css`
  */
+if (typeof FuseBox !== "undefined" && FuseBox.isBrowser) {
+    FuseBox.on('async', function(name) {
+        if (FuseBox.isServer) {
+            return;
+        }
+        if (/\.css$/.test(name)) {
+            __fsbx_css(name);
+            return false;
+        }
+    });
+}
 
-var runningInBrowser = FuseBox.isBrowser || FuseBox.target === "electron";
-
-var cssHandler = function(__filename, contents) {
-    if (runningInBrowser) {
+module.exports = function(__filename, contents) {
+    if (!FuseBox.isServer) {
         var styleId = __filename.replace(/[\.\/]+/g, '-');
         if (styleId.charAt(0) === '-') styleId = styleId.substring(1);
         var exists = document.getElementById(styleId);
@@ -61717,16 +57517,6 @@ var cssHandler = function(__filename, contents) {
         }
     }
 }
-if (typeof FuseBox !== "undefined" && runningInBrowser) {
-    FuseBox.on('async', function(name) {
-        if (/\.css$/.test(name)) {
-            cssHandler(name);
-            return false;
-        }
-    });
-}
-
-module.exports = cssHandler;
 });
 return ___scope___.entry = "index.js";
 });
@@ -65547,7 +61337,6 @@ require('./_fix-re-wks')('match', 1, function (defined, MATCH, $match, maybeCall
       return n === 0 ? null : A;
     }
   ];
-<<<<<<< HEAD:dist/4d666053-vendor.js
 });
 
 });
@@ -65563,23 +61352,6 @@ module.exports = function (S, index, unicode) {
 };
 
 });
-=======
-});
-
-});
-___scope___.file("modules/_advance-string-index.js", function(exports, require, module, __filename, __dirname){
-
-'use strict';
-var at = require('./_string-at')(true);
-
- // `AdvanceStringIndex` abstract operation
-// https://tc39.github.io/ecma262/#sec-advancestringindex
-module.exports = function (S, index, unicode) {
-  return index + (unicode ? at(S, index).length : 1);
-};
-
-});
->>>>>>> Add Logs page to the router:dist/248bd47e-vendor.js
 ___scope___.file("modules/_regexp-exec-abstract.js", function(exports, require, module, __filename, __dirname){
 
 'use strict';
@@ -65997,15 +61769,9 @@ require('./_fix-re-wks')('split', 2, function (defined, SPLIT, $split, maybeCall
       return A;
     }
   ];
-<<<<<<< HEAD:dist/4d666053-vendor.js
 });
 
 });
-=======
-});
-
-});
->>>>>>> Add Logs page to the router:dist/248bd47e-vendor.js
 ___scope___.file("modules/_species-constructor.js", function(exports, require, module, __filename, __dirname){
 
 // 7.3.20 SpeciesConstructor(O, defaultConstructor)
@@ -70397,6 +66163,847 @@ ___scope___.file("runtime.js", function(exports, require, module, __filename, __
 });
 return ___scope___.entry = "runtime-module.js";
 });
-FuseBox.target = "universal"
+FuseBox.pkg("ansi-to-react", {}, function(___scope___){
+___scope___.file("lib/index.js", function(exports, require, module, __filename, __dirname){
+
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const anser_1 = __importDefault(require("anser"));
+const escape_carriage_1 = require("escape-carriage");
+const React = __importStar(require("react"));
+/**
+ * Converts ANSI strings into JSON output.
+ * @name ansiToJSON
+ * @function
+ * @param {String} input The input string.
+ * @param {boolean} use_classes If `true`, HTML classes will be appended
+ *                              to the HTML output.
+ * @return {Array} The parsed input.
+ */
+function ansiToJSON(input, use_classes = false) {
+    input = escape_carriage_1.escapeCarriageReturn(fixBackspace(input));
+    return anser_1.default.ansiToJson(input, {
+        json: true,
+        remove_empty: true,
+        use_classes,
+    });
+}
+/**
+ * Create a class string.
+ * @name createClass
+ * @function
+ * @param {AnserJsonEntry} bundle
+ * @return {String} class name(s)
+ */
+function createClass(bundle) {
+    let classNames = "";
+    if (bundle.bg) {
+        classNames += `${bundle.bg}-bg `;
+    }
+    if (bundle.fg) {
+        classNames += `${bundle.fg}-fg `;
+    }
+    if (bundle.decoration) {
+        classNames += `ansi-${bundle.decoration} `;
+    }
+    if (classNames === "") {
+        return null;
+    }
+    classNames = classNames.substring(0, classNames.length - 1);
+    return classNames;
+}
+/**
+ * Create the style attribute.
+ * @name createStyle
+ * @function
+ * @param {AnserJsonEntry} bundle
+ * @return {Object} returns the style object
+ */
+function createStyle(bundle) {
+    const style = {};
+    if (bundle.bg) {
+        style.backgroundColor = `rgb(${bundle.bg})`;
+    }
+    if (bundle.fg) {
+        style.color = `rgb(${bundle.fg})`;
+    }
+    return style;
+}
+/**
+ * Converts an Anser bundle into a React Node.
+ * @param linkify whether links should be converting into clickable anchor tags.
+ * @param useClasses should render the span with a class instead of style.
+ * @param bundle Anser output.
+ * @param key
+ */
+function convertBundleIntoReact(linkify, useClasses, bundle, key) {
+    const style = useClasses ? null : createStyle(bundle);
+    const className = useClasses ? createClass(bundle) : null;
+    if (!linkify) {
+        return React.createElement("span", { style, key, className }, bundle.content);
+    }
+    const content = [];
+    const linkRegex = /(\s|^)(https?:\/\/(?:www\.|(?!www))[^\s.]+\.[^\s]{2,}|www\.[^\s]+\.[^\s]{2,})/g;
+    let index = 0;
+    let match;
+    while ((match = linkRegex.exec(bundle.content)) !== null) {
+        const [, pre, url] = match;
+        const startIndex = match.index + pre.length;
+        if (startIndex > index) {
+            content.push(bundle.content.substring(index, startIndex));
+        }
+        // Make sure the href we generate from the link is fully qualified. We assume http
+        // if it starts with a www because many sites don't support https
+        const href = url.startsWith("www.") ? `http://${url}` : url;
+        content.push(React.createElement("a", {
+            key: index,
+            href,
+            target: "_blank",
+        }, `${url}`));
+        index = linkRegex.lastIndex;
+    }
+    if (index < bundle.content.length) {
+        content.push(bundle.content.substring(index));
+    }
+    return React.createElement("span", { style, key, className }, content);
+}
+function Ansi(props) {
+    const { className, useClasses, children, linkify } = props;
+    return React.createElement("code", { className }, ansiToJSON(children !== null && children !== void 0 ? children : "", useClasses !== null && useClasses !== void 0 ? useClasses : false).map(convertBundleIntoReact.bind(null, linkify !== null && linkify !== void 0 ? linkify : false, useClasses !== null && useClasses !== void 0 ? useClasses : false)));
+}
+exports.default = Ansi;
+// This is copied from the Jupyter Classic source code
+// notebook/static/base/js/utils.js to handle \b in a way
+// that is **compatible with Jupyter classic**.   One can
+// argue that this behavior is questionable:
+//   https://stackoverflow.com/questions/55440152/multiple-b-doesnt-work-as-expected-in-jupyter#
+function fixBackspace(txt) {
+    let tmp = txt;
+    do {
+        txt = tmp;
+        // Cancel out anything-but-newline followed by backspace
+        tmp = txt.replace(/[^\n]\x08/gm, "");
+    } while (tmp.length < txt.length);
+    return txt;
+}
+
+});
+return ___scope___.entry = "lib/index.js";
+});
+FuseBox.pkg("anser", {}, function(___scope___){
+___scope___.file("lib/index.js", function(exports, require, module, __filename, __dirname){
+
+"use strict";
+
+// This file was originally written by @drudru (https://github.com/drudru/ansi_up), MIT, 2011
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var ANSI_COLORS = [[{ color: "0, 0, 0", "class": "ansi-black" }, { color: "187, 0, 0", "class": "ansi-red" }, { color: "0, 187, 0", "class": "ansi-green" }, { color: "187, 187, 0", "class": "ansi-yellow" }, { color: "0, 0, 187", "class": "ansi-blue" }, { color: "187, 0, 187", "class": "ansi-magenta" }, { color: "0, 187, 187", "class": "ansi-cyan" }, { color: "255,255,255", "class": "ansi-white" }], [{ color: "85, 85, 85", "class": "ansi-bright-black" }, { color: "255, 85, 85", "class": "ansi-bright-red" }, { color: "0, 255, 0", "class": "ansi-bright-green" }, { color: "255, 255, 85", "class": "ansi-bright-yellow" }, { color: "85, 85, 255", "class": "ansi-bright-blue" }, { color: "255, 85, 255", "class": "ansi-bright-magenta" }, { color: "85, 255, 255", "class": "ansi-bright-cyan" }, { color: "255, 255, 255", "class": "ansi-bright-white" }]];
+
+var Anser = function () {
+    _createClass(Anser, null, [{
+        key: "escapeForHtml",
+
+
+        /**
+         * Anser.escapeForHtml
+         * Escape the input HTML.
+         *
+         * This does the minimum escaping of text to make it compliant with HTML.
+         * In particular, the '&','<', and '>' characters are escaped. This should
+         * be run prior to `ansiToHtml`.
+         *
+         * @name Anser.escapeForHtml
+         * @function
+         * @param {String} txt The input text (containing the ANSI snippets).
+         * @returns {String} The escaped html.
+         */
+        value: function escapeForHtml(txt) {
+            return new Anser().escapeForHtml(txt);
+        }
+
+        /**
+         * Anser.linkify
+         * Adds the links in the HTML.
+         *
+         * This replaces any links in the text with anchor tags that display the
+         * link. The links should have at least one whitespace character
+         * surrounding it. Also, you should apply this after you have run
+         * `ansiToHtml` on the text.
+         *
+         * @name Anser.linkify
+         * @function
+         * @param {String} txt The input text.
+         * @returns {String} The HTML containing the <a> tags (unescaped).
+         */
+
+    }, {
+        key: "linkify",
+        value: function linkify(txt) {
+            return new Anser().linkify(txt);
+        }
+
+        /**
+         * Anser.ansiToHtml
+         * This replaces ANSI terminal escape codes with SPAN tags that wrap the
+         * content.
+         *
+         * This function only interprets ANSI SGR (Select Graphic Rendition) codes
+         * that can be represented in HTML.
+         * For example, cursor movement codes are ignored and hidden from output.
+         * The default style uses colors that are very close to the prescribed
+         * standard. The standard assumes that the text will have a black
+         * background. These colors are set as inline styles on the SPAN tags.
+         *
+         * Another option is to set `use_classes: true` in the options argument.
+         * This will instead set classes on the spans so the colors can be set via
+         * CSS. The class names used are of the format `ansi-*-fg/bg` and
+         * `ansi-bright-*-fg/bg` where `*` is the color name,
+         * i.e black/red/green/yellow/blue/magenta/cyan/white.
+         *
+         * @name Anser.ansiToHtml
+         * @function
+         * @param {String} txt The input text.
+         * @param {Object} options The options passed to the ansiToHTML method.
+         * @returns {String} The HTML output.
+         */
+
+    }, {
+        key: "ansiToHtml",
+        value: function ansiToHtml(txt, options) {
+            return new Anser().ansiToHtml(txt, options);
+        }
+
+        /**
+         * Anser.ansiToJson
+         * Converts ANSI input into JSON output.
+         *
+         * @name Anser.ansiToJson
+         * @function
+         * @param {String} txt The input text.
+         * @param {Object} options The options passed to the ansiToHTML method.
+         * @returns {String} The HTML output.
+         */
+
+    }, {
+        key: "ansiToJson",
+        value: function ansiToJson(txt, options) {
+            return new Anser().ansiToJson(txt, options);
+        }
+
+        /**
+         * Anser.ansiToText
+         * Converts ANSI input into text output.
+         *
+         * @name Anser.ansiToText
+         * @function
+         * @param {String} txt The input text.
+         * @returns {String} The text output.
+         */
+
+    }, {
+        key: "ansiToText",
+        value: function ansiToText(txt) {
+            return new Anser().ansiToText(txt);
+        }
+
+        /**
+         * Anser
+         * The `Anser` class.
+         *
+         * @name Anser
+         * @function
+         * @returns {Anser}
+         */
+
+    }]);
+
+    function Anser() {
+        _classCallCheck(this, Anser);
+
+        this.fg = this.bg = this.fg_truecolor = this.bg_truecolor = null;
+        this.bright = 0;
+    }
+
+    /**
+     * setupPalette
+     * Sets up the palette.
+     *
+     * @name setupPalette
+     * @function
+     */
+
+
+    _createClass(Anser, [{
+        key: "setupPalette",
+        value: function setupPalette() {
+            this.PALETTE_COLORS = [];
+
+            // Index 0..15 : System color
+            for (var i = 0; i < 2; ++i) {
+                for (var j = 0; j < 8; ++j) {
+                    this.PALETTE_COLORS.push(ANSI_COLORS[i][j].color);
+                }
+            }
+
+            // Index 16..231 : RGB 6x6x6
+            // https://gist.github.com/jasonm23/2868981#file-xterm-256color-yaml
+            var levels = [0, 95, 135, 175, 215, 255];
+            var format = function format(r, g, b) {
+                return levels[r] + ", " + levels[g] + ", " + levels[b];
+            };
+            var r = void 0,
+                g = void 0,
+                b = void 0;
+            for (var _r = 0; _r < 6; ++_r) {
+                for (var _g = 0; _g < 6; ++_g) {
+                    for (var _b = 0; _b < 6; ++_b) {
+                        this.PALETTE_COLORS.push(format(_r, _g, _b));
+                    }
+                }
+            }
+
+            // Index 232..255 : Grayscale
+            var level = 8;
+            for (var _i = 0; _i < 24; ++_i, level += 10) {
+                this.PALETTE_COLORS.push(format(level, level, level));
+            }
+        }
+
+        /**
+         * escapeForHtml
+         * Escapes the input text.
+         *
+         * @name escapeForHtml
+         * @function
+         * @param {String} txt The input text.
+         * @returns {String} The escpaed HTML output.
+         */
+
+    }, {
+        key: "escapeForHtml",
+        value: function escapeForHtml(txt) {
+            return txt.replace(/[&<>]/gm, function (str) {
+                return str == "&" ? "&amp;" : str == "<" ? "&lt;" : str == ">" ? "&gt;" : "";
+            });
+        }
+
+        /**
+         * linkify
+         * Adds HTML link elements.
+         *
+         * @name linkify
+         * @function
+         * @param {String} txt The input text.
+         * @returns {String} The HTML output containing link elements.
+         */
+
+    }, {
+        key: "linkify",
+        value: function linkify(txt) {
+            return txt.replace(/(https?:\/\/[^\s]+)/gm, function (str) {
+                return "<a href=\"" + str + "\">" + str + "</a>";
+            });
+        }
+
+        /**
+         * ansiToHtml
+         * Converts ANSI input into HTML output.
+         *
+         * @name ansiToHtml
+         * @function
+         * @param {String} txt The input text.
+         * @param {Object} options The options passed ot the `process` method.
+         * @returns {String} The HTML output.
+         */
+
+    }, {
+        key: "ansiToHtml",
+        value: function ansiToHtml(txt, options) {
+            return this.process(txt, options, true);
+        }
+
+        /**
+         * ansiToJson
+         * Converts ANSI input into HTML output.
+         *
+         * @name ansiToJson
+         * @function
+         * @param {String} txt The input text.
+         * @param {Object} options The options passed ot the `process` method.
+         * @returns {String} The JSON output.
+         */
+
+    }, {
+        key: "ansiToJson",
+        value: function ansiToJson(txt, options) {
+            options = options || {};
+            options.json = true;
+            options.clearLine = false;
+            return this.process(txt, options, true);
+        }
+
+        /**
+         * ansiToText
+         * Converts ANSI input into HTML output.
+         *
+         * @name ansiToText
+         * @function
+         * @param {String} txt The input text.
+         * @returns {String} The text output.
+         */
+
+    }, {
+        key: "ansiToText",
+        value: function ansiToText(txt) {
+            return this.process(txt, {}, false);
+        }
+
+        /**
+         * process
+         * Processes the input.
+         *
+         * @name process
+         * @function
+         * @param {String} txt The input text.
+         * @param {Object} options An object passed to `processChunk` method, extended with:
+         *
+         *  - `json` (Boolean): If `true`, the result will be an object.
+         *  - `use_classes` (Boolean): If `true`, HTML classes will be appended to the HTML output.
+         *
+         * @param {Boolean} markup
+         */
+
+    }, {
+        key: "process",
+        value: function process(txt, options, markup) {
+            var _this = this;
+
+            var self = this;
+            var raw_text_chunks = txt.split(/\033\[/);
+            var first_chunk = raw_text_chunks.shift(); // the first chunk is not the result of the split
+
+            if (options === undefined || options === null) {
+                options = {};
+            }
+            options.clearLine = /\r/.test(txt); // check for Carriage Return
+            var color_chunks = raw_text_chunks.map(function (chunk) {
+                return _this.processChunk(chunk, options, markup);
+            });
+
+            if (options && options.json) {
+                var first = self.processChunkJson("");
+                first.content = first_chunk;
+                first.clearLine = options.clearLine;
+                color_chunks.unshift(first);
+                if (options.remove_empty) {
+                    color_chunks = color_chunks.filter(function (c) {
+                        return !c.isEmpty();
+                    });
+                }
+                return color_chunks;
+            } else {
+                color_chunks.unshift(first_chunk);
+            }
+
+            return color_chunks.join("");
+        }
+
+        /**
+         * processChunkJson
+         * Processes the current chunk into json output.
+         *
+         * @name processChunkJson
+         * @function
+         * @param {String} text The input text.
+         * @param {Object} options An object containing the following fields:
+         *
+         *  - `json` (Boolean): If `true`, the result will be an object.
+         *  - `use_classes` (Boolean): If `true`, HTML classes will be appended to the HTML output.
+         *
+         * @param {Boolean} markup If false, the colors will not be parsed.
+         * @return {Object} The result object:
+         *
+         *  - `content` (String): The text.
+         *  - `fg` (String|null): The foreground color.
+         *  - `bg` (String|null): The background color.
+         *  - `fg_truecolor` (String|null): The foreground true color (if 16m color is enabled).
+         *  - `bg_truecolor` (String|null): The background true color (if 16m color is enabled).
+         *  - `clearLine` (Boolean): `true` if a carriageReturn \r was fount at end of line.
+         *  - `was_processed` (Bolean): `true` if the colors were processed, `false` otherwise.
+         *  - `isEmpty` (Function): A function returning `true` if the content is empty, or `false` otherwise.
+         *
+         */
+
+    }, {
+        key: "processChunkJson",
+        value: function processChunkJson(text, options, markup) {
+
+            // Are we using classes or styles?
+            options = typeof options == "undefined" ? {} : options;
+            var use_classes = options.use_classes = typeof options.use_classes != "undefined" && options.use_classes;
+            var key = options.key = use_classes ? "class" : "color";
+
+            var result = {
+                content: text,
+                fg: null,
+                bg: null,
+                fg_truecolor: null,
+                bg_truecolor: null,
+                clearLine: options.clearLine,
+                decoration: null,
+                was_processed: false,
+                isEmpty: function isEmpty() {
+                    return !result.content;
+                }
+            };
+
+            // Each "chunk" is the text after the CSI (ESC + "[") and before the next CSI/EOF.
+            //
+            // This regex matches four groups within a chunk.
+            //
+            // The first and third groups match code type.
+            // We supported only SGR command. It has empty first group and "m" in third.
+            //
+            // The second group matches all of the number+semicolon command sequences
+            // before the "m" (or other trailing) character.
+            // These are the graphics or SGR commands.
+            //
+            // The last group is the text (including newlines) that is colored by
+            // the other group"s commands.
+            var matches = text.match(/^([!\x3c-\x3f]*)([\d;]*)([\x20-\x2c]*[\x40-\x7e])([\s\S]*)/m);
+
+            if (!matches) return result;
+
+            var orig_txt = result.content = matches[4];
+            var nums = matches[2].split(";");
+
+            // We currently support only "SGR" (Select Graphic Rendition)
+            // Simply ignore if not a SGR command.
+            if (matches[1] !== "" || matches[3] !== "m") {
+                return result;
+            }
+
+            if (!markup) {
+                return result;
+            }
+
+            var self = this;
+
+            self.decoration = null;
+
+            while (nums.length > 0) {
+                var num_str = nums.shift();
+                var num = parseInt(num_str);
+
+                if (isNaN(num) || num === 0) {
+                    self.fg = self.bg = self.decoration = null;
+                } else if (num === 1) {
+                    self.decoration = "bold";
+                } else if (num === 2) {
+                    self.decoration = "dim";
+                    // Enable code 2 to get string
+                } else if (num == 3) {
+                    self.decoration = "italic";
+                } else if (num == 4) {
+                    self.decoration = "underline";
+                } else if (num == 5) {
+                    self.decoration = "blink";
+                } else if (num === 7) {
+                    self.decoration = "reverse";
+                } else if (num === 8) {
+                    self.decoration = "hidden";
+                    // Enable code 9 to get strikethrough
+                } else if (num === 9) {
+                    self.decoration = "strikethrough";
+                } else if (num == 39) {
+                    self.fg = null;
+                } else if (num == 49) {
+                    self.bg = null;
+                    // Foreground color
+                } else if (num >= 30 && num < 38) {
+                    self.fg = ANSI_COLORS[0][num % 10][key];
+                    // Foreground bright color
+                } else if (num >= 90 && num < 98) {
+                    self.fg = ANSI_COLORS[1][num % 10][key];
+                    // Background color
+                } else if (num >= 40 && num < 48) {
+                    self.bg = ANSI_COLORS[0][num % 10][key];
+                    // Background bright color
+                } else if (num >= 100 && num < 108) {
+                    self.bg = ANSI_COLORS[1][num % 10][key];
+                } else if (num === 38 || num === 48) {
+                    // extend color (38=fg, 48=bg)
+                    var is_foreground = num === 38;
+                    if (nums.length >= 1) {
+                        var mode = nums.shift();
+                        if (mode === "5" && nums.length >= 1) {
+                            // palette color
+                            var palette_index = parseInt(nums.shift());
+                            if (palette_index >= 0 && palette_index <= 255) {
+                                if (!use_classes) {
+                                    if (!this.PALETTE_COLORS) {
+                                        self.setupPalette();
+                                    }
+                                    if (is_foreground) {
+                                        self.fg = this.PALETTE_COLORS[palette_index];
+                                    } else {
+                                        self.bg = this.PALETTE_COLORS[palette_index];
+                                    }
+                                } else {
+                                    var klass = palette_index >= 16 ? "ansi-palette-" + palette_index : ANSI_COLORS[palette_index > 7 ? 1 : 0][palette_index % 8]["class"];
+                                    if (is_foreground) {
+                                        self.fg = klass;
+                                    } else {
+                                        self.bg = klass;
+                                    }
+                                }
+                            }
+                        } else if (mode === "2" && nums.length >= 3) {
+                            // true color
+                            var r = parseInt(nums.shift());
+                            var g = parseInt(nums.shift());
+                            var b = parseInt(nums.shift());
+                            if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) {
+                                var color = r + ", " + g + ", " + b;
+                                if (!use_classes) {
+                                    if (is_foreground) {
+                                        self.fg = color;
+                                    } else {
+                                        self.bg = color;
+                                    }
+                                } else {
+                                    if (is_foreground) {
+                                        self.fg = "ansi-truecolor";
+                                        self.fg_truecolor = color;
+                                    } else {
+                                        self.bg = "ansi-truecolor";
+                                        self.bg_truecolor = color;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (self.fg === null && self.bg === null && self.decoration === null) {
+                return result;
+            } else {
+                var styles = [];
+                var classes = [];
+                var data = {};
+
+                result.fg = self.fg;
+                result.bg = self.bg;
+                result.fg_truecolor = self.fg_truecolor;
+                result.bg_truecolor = self.bg_truecolor;
+                result.decoration = self.decoration;
+                result.was_processed = true;
+
+                return result;
+            }
+        }
+
+        /**
+         * processChunk
+         * Processes the current chunk of text.
+         *
+         * @name processChunk
+         * @function
+         * @param {String} text The input text.
+         * @param {Object} options An object containing the following fields:
+         *
+         *  - `json` (Boolean): If `true`, the result will be an object.
+         *  - `use_classes` (Boolean): If `true`, HTML classes will be appended to the HTML output.
+         *
+         * @param {Boolean} markup If false, the colors will not be parsed.
+         * @return {Object|String} The result (object if `json` is wanted back or string otherwise).
+         */
+
+    }, {
+        key: "processChunk",
+        value: function processChunk(text, options, markup) {
+            var _this2 = this;
+
+            var self = this;
+            options = options || {};
+            var jsonChunk = this.processChunkJson(text, options, markup);
+
+            if (options.json) {
+                return jsonChunk;
+            }
+            if (jsonChunk.isEmpty()) {
+                return "";
+            }
+            if (!jsonChunk.was_processed) {
+                return jsonChunk.content;
+            }
+
+            var use_classes = options.use_classes;
+
+            var styles = [];
+            var classes = [];
+            var data = {};
+            var render_data = function render_data(data) {
+                var fragments = [];
+                var key = void 0;
+                for (key in data) {
+                    if (data.hasOwnProperty(key)) {
+                        fragments.push("data-" + key + "=\"" + _this2.escapeForHtml(data[key]) + "\"");
+                    }
+                }
+                return fragments.length > 0 ? " " + fragments.join(" ") : "";
+            };
+
+            if (jsonChunk.fg) {
+                if (use_classes) {
+                    classes.push(jsonChunk.fg + "-fg");
+                    if (jsonChunk.fg_truecolor !== null) {
+                        data["ansi-truecolor-fg"] = jsonChunk.fg_truecolor;
+                        jsonChunk.fg_truecolor = null;
+                    }
+                } else {
+                    styles.push("color:rgb(" + jsonChunk.fg + ")");
+                }
+            }
+
+            if (jsonChunk.bg) {
+                if (use_classes) {
+                    classes.push(jsonChunk.bg + "-bg");
+                    if (jsonChunk.bg_truecolor !== null) {
+                        data["ansi-truecolor-bg"] = jsonChunk.bg_truecolor;
+                        jsonChunk.bg_truecolor = null;
+                    }
+                } else {
+                    styles.push("background-color:rgb(" + jsonChunk.bg + ")");
+                }
+            }
+
+            if (jsonChunk.decoration) {
+                if (use_classes) {
+                    classes.push("ansi-" + jsonChunk.decoration);
+                } else if (jsonChunk.decoration === "bold") {
+                    styles.push("font-weight:bold");
+                } else if (jsonChunk.decoration === "dim") {
+                    styles.push("opacity:0.5");
+                } else if (jsonChunk.decoration === "italic") {
+                    styles.push("font-style:italic");
+                    // underline and blink are treated bellow
+                } else if (jsonChunk.decoration === "reverse") {
+                    styles.push("filter:invert(100%)");
+                } else if (jsonChunk.decoration === "hidden") {
+                    styles.push("visibility:hidden");
+                } else if (jsonChunk.decoration === "strikethrough") {
+                    styles.push("text-decoration:line-through");
+                } else {
+                    styles.push("text-decoration:" + jsonChunk.decoration);
+                }
+            }
+
+            if (use_classes) {
+                return "<span class=\"" + classes.join(" ") + "\"" + render_data(data) + ">" + jsonChunk.content + "</span>";
+            } else {
+                return "<span style=\"" + styles.join(";") + "\"" + render_data(data) + ">" + jsonChunk.content + "</span>";
+            }
+        }
+    }]);
+
+    return Anser;
+}();
+
+;
+
+module.exports = Anser;
+});
+return ___scope___.entry = "lib/index.js";
+});
+FuseBox.pkg("escape-carriage", {}, function(___scope___){
+___scope___.file("index.js", function(exports, require, module, __filename, __dirname){
+
+/**
+ * Escape carrigage returns like a terminal
+ * @param {string} txt - String to escape.
+ * @return {string}    - Escaped string.
+ */
+function escapeCarriageReturn(txt) {
+  if (!txt) return "";
+  if (!/\r/.test(txt)) return txt;
+  txt = txt.replace(/\r+\n/gm, "\n"); // \r followed by \n --> newline
+  while (/\r[^$]/.test(txt)) {
+    var base = /^(.*)\r+/m.exec(txt)[1];
+    var insert = /\r+(.*)$/m.exec(txt)[1];
+    insert = insert + base.slice(insert.length, base.length);
+    txt = txt.replace(/\r+.*$/m, "\r").replace(/^.*\r/m, insert);
+  }
+  return txt;
+}
+
+function findLongestString(arr) {
+  var longest = 0;
+  for (var i = 0; i < arr.length; i++) {
+    if (arr[longest].length <= arr[i].length) {
+      longest = i;
+    }
+  }
+  return longest;
+}
+
+function escapeSingleLineSafe(txt) {
+  if (!/\r/.test(txt)) return txt;
+  var arr = txt.split("\r");
+  var res = [];
+
+  while (arr.length > 0) {
+    var longest = findLongestString(arr);
+    res.push(arr[longest]);
+    arr = arr.slice(longest + 1);
+  }
+
+  return res.join("\r");
+}
+
+/**
+ * Safely escape carrigage returns like a terminal.
+ * This allows to escape carrigage returns while allowing future output to be appended
+ * without loosing information.
+ * Use this as a intermediate escape step if your stream hasn't completed yet.
+ * @param {string} txt - String to escape.
+ * @return {string}    - Escaped string.
+ */
+function escapeCarriageReturnSafe(txt) {
+  if (!txt) return "";
+  if (!/\r/.test(txt)) return txt;
+  if (!/\n/.test(txt)) return escapeSingleLineSafe(txt);
+  txt = txt.replace(/\r+\n/gm, "\n"); // \r followed by \n --> newline
+  var idx = txt.lastIndexOf("\n");
+
+  return (
+    escapeCarriageReturn(txt.slice(0, idx)) +
+    "\n" +
+    escapeSingleLineSafe(txt.slice(idx + 1))
+  );
+}
+
+module.exports = escapeCarriageReturn;
+module.exports.escapeCarriageReturn = escapeCarriageReturn;
+module.exports.escapeCarriageReturnSafe = escapeCarriageReturnSafe;
+
+});
+return ___scope___.entry = "index.js";
+});
 })
-(function(e){function r(e){var r=e.charCodeAt(0),n=e.charCodeAt(1);if((p||58!==n)&&(r>=97&&r<=122||64===r)){if(64===r){var t=e.split("/"),i=t.splice(2,t.length).join("/");return[t[0]+"/"+t[1],i||void 0]}var o=e.indexOf("/");if(o===-1)return[e];var a=e.substring(0,o),u=e.substring(o+1);return[a,u]}}function n(e){return e.substring(0,e.lastIndexOf("/"))||"./"}function t(){for(var e=[],r=0;r<arguments.length;r++)e[r]=arguments[r];for(var n=[],t=0,i=arguments.length;t<i;t++)n=n.concat(arguments[t].split("/"));for(var o=[],t=0,i=n.length;t<i;t++){var a=n[t];a&&"."!==a&&(".."===a?o.pop():o.push(a))}return""===n[0]&&o.unshift(""),o.join("/")||(o.length?"/":".")}function i(e){var r=e.match(/\.(\w{1,})$/);return r&&r[1]?e:e+".js"}function o(e){if(p){var r,n=document,t=n.getElementsByTagName("head")[0];/\.css$/.test(e)?(r=n.createElement("link"),r.rel="stylesheet",r.type="text/css",r.href=e):(r=n.createElement("script"),r.type="text/javascript",r.src=e,r.async=!0),t.insertBefore(r,t.firstChild)}}function a(e,r){for(var n in e)e.hasOwnProperty(n)&&r(n,e[n])}function u(e){return{server:require(e)}}function f(e,n){var o=n.path||"./",a=n.pkg||"default",f=r(e);if(f&&(o="./",a=f[0],n.v&&n.v[a]&&(a=a+"@"+n.v[a]),e=f[1]),e)if(126===e.charCodeAt(0))e=e.slice(2,e.length),o="./";else if(!p&&(47===e.charCodeAt(0)||58===e.charCodeAt(1)))return u(e);var s=g[a];if(!s){if(p&&"electron"!==x.target)throw"Package not found "+a;return u(a+(e?"/"+e:""))}e=e?e:"./"+s.s.entry;var l,c=t(o,e),d=i(c),v=s.f[d];return!v&&d.indexOf("*")>-1&&(l=d),v||l||(d=t(c,"/","index.js"),v=s.f[d],v||"."!==c||(d=s.s&&s.s.entry||"index.js",v=s.f[d]),v||(d=c+".js",v=s.f[d]),v||(v=s.f[c+".jsx"]),v||(d=c+"/index.jsx",v=s.f[d])),{file:v,wildcard:l,pkgName:a,versions:s.v,filePath:c,validPath:d}}function s(e,r,n){if(void 0===n&&(n={}),!p)return r(/\.(js|json)$/.test(e)?v.require(e):"");if(n&&n.ajaxed===e)return console.error(e,"does not provide a module");var i=new XMLHttpRequest;i.onreadystatechange=function(){if(4==i.readyState)if(200==i.status){var n=i.getResponseHeader("Content-Type"),o=i.responseText;/json/.test(n)?o="module.exports = "+o:/javascript/.test(n)||(o="module.exports = "+JSON.stringify(o));var a=t("./",e);x.dynamic(a,o),r(x.import(e,{ajaxed:e}))}else console.error(e,"not found on request"),r(void 0)},i.open("GET",e,!0),i.send()}function l(e,r){var n=h[e];if(n)for(var t in n){var i=n[t].apply(null,r);if(i===!1)return!1}}function c(e,r){if(void 0===r&&(r={}),58===e.charCodeAt(4)||58===e.charCodeAt(5))return o(e);var t=f(e,r);if(t.server)return t.server;var i=t.file;if(t.wildcard){var a=new RegExp(t.wildcard.replace(/\*/g,"@").replace(/[.?*+^$[\]\\(){}|-]/g,"\\$&").replace(/@@/g,".*").replace(/@/g,"[a-z0-9$_-]+"),"i"),u=g[t.pkgName];if(u){var d={};for(var m in u.f)a.test(m)&&(d[m]=c(t.pkgName+"/"+m));return d}}if(!i){var h="function"==typeof r,x=l("async",[e,r]);if(x===!1)return;return s(e,function(e){return h?r(e):null},r)}var _=t.pkgName;if(i.locals&&i.locals.module)return i.locals.module.exports;var y=i.locals={},w=n(t.validPath);y.exports={},y.module={exports:y.exports},y.require=function(e,r){return c(e,{pkg:_,path:w,v:t.versions})},p||!v.require.main?y.require.main={filename:"./",paths:[]}:y.require.main=v.require.main;var j=[y.module.exports,y.require,y.module,t.validPath,w,_];return l("before-import",j),i.fn.apply(0,j),l("after-import",j),y.module.exports}if(e.FuseBox)return e.FuseBox;var d="undefined"!=typeof WorkerGlobalScope,p="undefined"!=typeof window&&window.navigator||d,v=p?d?{}:window:global;p&&(v.global=d?{}:window),e=p&&"undefined"==typeof __fbx__dnm__?e:module.exports;var m=p?d?{}:window.__fsbx__=window.__fsbx__||{}:v.$fsbx=v.$fsbx||{};p||(v.require=require);var g=m.p=m.p||{},h=m.e=m.e||{},x=function(){function r(){}return r.global=function(e,r){return void 0===r?v[e]:void(v[e]=r)},r.import=function(e,r){return c(e,r)},r.on=function(e,r){h[e]=h[e]||[],h[e].push(r)},r.exists=function(e){try{var r=f(e,{});return void 0!==r.file}catch(e){return!1}},r.remove=function(e){var r=f(e,{}),n=g[r.pkgName];n&&n.f[r.validPath]&&delete n.f[r.validPath]},r.main=function(e){return this.mainFile=e,r.import(e,{})},r.expose=function(r){var n=function(n){var t=r[n].alias,i=c(r[n].pkg);"*"===t?a(i,function(r,n){return e[r]=n}):"object"==typeof t?a(t,function(r,n){return e[n]=i[r]}):e[t]=i};for(var t in r)n(t)},r.dynamic=function(r,n,t){this.pkg(t&&t.pkg||"default",{},function(t){t.file(r,function(r,t,i,o,a){var u=new Function("__fbx__dnm__","exports","require","module","__filename","__dirname","__root__",n);u(!0,r,t,i,o,a,e)})})},r.flush=function(e){var r=g.default;for(var n in r.f)e&&!e(n)||delete r.f[n].locals},r.pkg=function(e,r,n){if(g[e])return n(g[e].s);var t=g[e]={};return t.f={},t.v=r,t.s={file:function(e,r){return t.f[e]={fn:r}}},n(t.s)},r.addPlugin=function(e){this.plugins.push(e)},r.packages=g,r.isBrowser=p,r.isServer=!p,r.plugins=[],r}();return p||(v.FuseBox=x),e.FuseBox=x}(this))
+(function(e){function r(e){var r=e.charCodeAt(0),n=e.charCodeAt(1);if((d||58!==n)&&(r>=97&&r<=122||64===r)){if(64===r){var t=e.split("/"),i=t.splice(2,t.length).join("/");return[t[0]+"/"+t[1],i||void 0]}var o=e.indexOf("/");if(o===-1)return[e];var a=e.substring(0,o),u=e.substring(o+1);return[a,u]}}function n(e){return e.substring(0,e.lastIndexOf("/"))||"./"}function t(){for(var e=[],r=0;r<arguments.length;r++)e[r]=arguments[r];for(var n=[],t=0,i=arguments.length;t<i;t++)n=n.concat(arguments[t].split("/"));for(var o=[],t=0,i=n.length;t<i;t++){var a=n[t];a&&"."!==a&&(".."===a?o.pop():o.push(a))}return""===n[0]&&o.unshift(""),o.join("/")||(o.length?"/":".")}function i(e){var r=e.match(/\.(\w{1,})$/);return r&&r[1]?e:e+".js"}function o(e){if(d){var r,n=document,t=n.getElementsByTagName("head")[0];/\.css$/.test(e)?(r=n.createElement("link"),r.rel="stylesheet",r.type="text/css",r.href=e):(r=n.createElement("script"),r.type="text/javascript",r.src=e,r.async=!0),t.insertBefore(r,t.firstChild)}}function a(e,r){for(var n in e)e.hasOwnProperty(n)&&r(n,e[n])}function u(e){return{server:require(e)}}function f(e,n){var o=n.path||"./",a=n.pkg||"default",f=r(e);if(f&&(o="./",a=f[0],n.v&&n.v[a]&&(a=a+"@"+n.v[a]),e=f[1]),e)if(126===e.charCodeAt(0))e=e.slice(2,e.length),o="./";else if(!d&&(47===e.charCodeAt(0)||58===e.charCodeAt(1)))return u(e);var s=h[a];if(!s){if(d&&"electron"!==g.target)throw"Package not found "+a;return u(a+(e?"/"+e:""))}e=e?e:"./"+s.s.entry;var l,c=t(o,e),v=i(c),p=s.f[v];return!p&&v.indexOf("*")>-1&&(l=v),p||l||(v=t(c,"/","index.js"),p=s.f[v],p||(v=c+".js",p=s.f[v]),p||(p=s.f[c+".jsx"]),p||(v=c+"/index.jsx",p=s.f[v])),{file:p,wildcard:l,pkgName:a,versions:s.v,filePath:c,validPath:v}}function s(e,r,n){if(void 0===n&&(n={}),!d)return r(/\.(js|json)$/.test(e)?v.require(e):"");if(n&&n.ajaxed===e)return console.error(e,"does not provide a module");var i=new XMLHttpRequest;i.onreadystatechange=function(){if(4==i.readyState)if(200==i.status){var n=i.getResponseHeader("Content-Type"),o=i.responseText;/json/.test(n)?o="module.exports = "+o:/javascript/.test(n)||(o="module.exports = "+JSON.stringify(o));var a=t("./",e);g.dynamic(a,o),r(g.import(e,{ajaxed:e}))}else console.error(e,"not found on request"),r(void 0)},i.open("GET",e,!0),i.send()}function l(e,r){var n=m[e];if(n)for(var t in n){var i=n[t].apply(null,r);if(i===!1)return!1}}function c(e,r){if(void 0===r&&(r={}),58===e.charCodeAt(4)||58===e.charCodeAt(5))return o(e);var t=f(e,r);if(t.server)return t.server;var i=t.file;if(t.wildcard){var a=new RegExp(t.wildcard.replace(/\*/g,"@").replace(/[.?*+^$[\]\\(){}|-]/g,"\\$&").replace(/@@/g,".*").replace(/@/g,"[a-z0-9$_-]+"),"i"),u=h[t.pkgName];if(u){var p={};for(var m in u.f)a.test(m)&&(p[m]=c(t.pkgName+"/"+m));return p}}if(!i){var g="function"==typeof r,x=l("async",[e,r]);if(x===!1)return;return s(e,function(e){return g?r(e):null},r)}var _=t.pkgName;if(i.locals&&i.locals.module)return i.locals.module.exports;var w=i.locals={},y=n(t.validPath);w.exports={},w.module={exports:w.exports},w.require=function(e,r){return c(e,{pkg:_,path:y,v:t.versions})},w.require.main={filename:d?"./":v.require.main.filename,paths:d?[]:v.require.main.paths};var j=[w.module.exports,w.require,w.module,t.validPath,y,_];return l("before-import",j),i.fn.apply(0,j),l("after-import",j),w.module.exports}if(e.FuseBox)return e.FuseBox;var d="undefined"!=typeof window&&window.navigator,v=d?window:global;d&&(v.global=window),e=d&&"undefined"==typeof __fbx__dnm__?e:module.exports;var p=d?window.__fsbx__=window.__fsbx__||{}:v.$fsbx=v.$fsbx||{};d||(v.require=require);var h=p.p=p.p||{},m=p.e=p.e||{},g=function(){function r(){}return r.global=function(e,r){return void 0===r?v[e]:void(v[e]=r)},r.import=function(e,r){return c(e,r)},r.on=function(e,r){m[e]=m[e]||[],m[e].push(r)},r.exists=function(e){try{var r=f(e,{});return void 0!==r.file}catch(e){return!1}},r.remove=function(e){var r=f(e,{}),n=h[r.pkgName];n&&n.f[r.validPath]&&delete n.f[r.validPath]},r.main=function(e){return this.mainFile=e,r.import(e,{})},r.expose=function(r){var n=function(n){var t=r[n].alias,i=c(r[n].pkg);"*"===t?a(i,function(r,n){return e[r]=n}):"object"==typeof t?a(t,function(r,n){return e[n]=i[r]}):e[t]=i};for(var t in r)n(t)},r.dynamic=function(r,n,t){this.pkg(t&&t.pkg||"default",{},function(t){t.file(r,function(r,t,i,o,a){var u=new Function("__fbx__dnm__","exports","require","module","__filename","__dirname","__root__",n);u(!0,r,t,i,o,a,e)})})},r.flush=function(e){var r=h.default;for(var n in r.f)e&&!e(n)||delete r.f[n].locals},r.pkg=function(e,r,n){if(h[e])return n(h[e].s);var t=h[e]={};return t.f={},t.v=r,t.s={file:function(e,r){return t.f[e]={fn:r}}},n(t.s)},r.addPlugin=function(e){this.plugins.push(e)},r}();return g.packages=h,g.isBrowser=d,g.isServer=!d,g.plugins=[],d||(v.FuseBox=g),e.FuseBox=g}(this))

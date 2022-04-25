@@ -1,6 +1,7 @@
 import {inject, observer} from 'mobx-react'
 import React from 'react'
 import AppStore from 'stores/AppStore'
+import Ansi from 'ansi-to-react'
 
 @inject('store')
 @observer
@@ -17,30 +18,20 @@ export default class Logs extends React.Component {
   }
 
   componentDidMount() {
-    this.loadContainers()
+    this.containerId = new URLSearchParams(window.location.search).get('containerId')
+    this.containersStore.loadContainersLogs(this.containerId)
   }
-
-  getContainerLogs = id => {
-    this.logs =  this.containersStore.loadContainersLogs(id)
+  componentWillUnmount() {
+    this.containersStore.inspect = null
   }
-
   
   render() {
-    const containerId = new URLSearchParams(window.location.search).get('containerId')
-    console.log(containerId)
+    const { inspect } = this.containersStore
+    const lines = inspect ? inspect.message.split('\n') : null
     return (
       <div className="Logs">
-        <div className="table-responsive">
-          <h1>Container {containerId} Logs</h1>
-          <table className="table">
-            <thead>
-            <tr>
-            </tr>
-            </thead>
-            <tbody>
-            </tbody>
-          </table>
-        </div>
+          <h1>Container {this.containerId} Logs</h1>
+          {lines ? lines.map((line,idx) => <div key={idx}><Ansi>{line}</Ansi><br/></div>) : null}
       </div>
     )
   }
