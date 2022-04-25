@@ -41,6 +41,10 @@ export default class Containers extends React.Component {
     this.containersStore.loadContainers()
   }
 
+  loadContainersLogs = () => {
+    this.containersStore.loadContainersLogs()
+  }
+
   pauseContainer = id => {
     if (confirm(`Are you sure you want to pause container ${id}?`)) {
       this.containersStore.pauseContainer(id)
