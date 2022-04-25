@@ -18,6 +18,7 @@ module.exports = production => {
     plugins: [
       ['.json', JSONPlugin()],
       ['.scss', SassPlugin(), CSSPlugin({outFile: `${output}/app.css`, group: 'app.css'})],
+      ['.css', CSSPlugin()],
       ['.js', ESLintPlugin(), BabelPlugin()],
       WebIndexPlugin({
         title:    'Docker UI',
