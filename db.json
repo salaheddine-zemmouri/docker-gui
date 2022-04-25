@@ -1,0 +1,46 @@
+{
+    "container-stats" : {
+        "total_memory_usage": 6.3990868984174485,
+        "total_cpu_usage": 0.39557894736842103,
+        "containers_states": [
+            {
+                "container_id": "c58a425b33d556c13f4cc064ea761f74b6123a276c7952c14396c8155d1259cd",
+                "container_name": "/mysql-cont",
+                "cpu_usage": 0.39557894736842103,
+                "memory_usage": 5.634439331375615,
+                "net_usage": {
+                    "eth0": {
+                        "rx_bytes": 1032,
+                        "rx_packets": 12,
+                        "rx_errors": 0,
+                        "rx_dropped": 0,
+                        "tx_bytes": 0,
+                        "tx_packets": 0,
+                        "tx_errors": 0,
+                        "tx_dropped": 0
+                    }
+                },
+                "io_usage": "TODO"
+            },
+            {
+                "container_id": "f9512c3ddb38ea0e41c3fc8bd06114836251377e97b9d6f80b7b37fb7e9c54fb",
+                "container_name": "/docker-ui",
+                "cpu_usage": 0,
+                "memory_usage": 0.7646475670418335,
+                "net_usage": {
+                    "eth0": {
+                        "rx_bytes": 926,
+                        "rx_packets": 11,
+                        "rx_errors": 0,
+                        "rx_dropped": 0,
+                        "tx_bytes": 0,
+                        "tx_packets": 0,
+                        "tx_errors": 0,
+                        "tx_dropped": 0
+                    }
+                },
+                "io_usage": "TODO"
+            }
+        ]
+    }
+}
