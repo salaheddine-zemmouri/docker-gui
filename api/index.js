@@ -16,12 +16,10 @@ router.get   ('/images/:id',   auth.middleware, images.read)
 router.delete('/images/:id',   auth.middleware, images.destroy)
 router.post  ('/images/prune', auth.middleware, images.prune)
 
-
-router.get   ('/container_stats',        auth.middleware, containerStats.stats)
-
 router.get   ('/containers',             auth.middleware, containers.list)
 router.get   ('/containers/:id',         auth.middleware, containers.read)
 router.put   ('/containers/:id/rename',  auth.middleware, containers.rename)
+router.get   ('/containers/:id/logs',    auth.middleware, containers.logs)
 router.put   ('/containers/:id/restart', auth.middleware, containers.restart)
 router.put   ('/containers/:id/start',   auth.middleware, containers.start)
 router.put   ('/containers/:id/stop',    auth.middleware, containers.stop)
@@ -29,8 +27,10 @@ router.put   ('/containers/:id/kill',    auth.middleware, containers.kill)
 router.put   ('/containers/:id/pause',   auth.middleware, containers.pause)
 router.put   ('/containers/:id/unpause', auth.middleware, containers.unpause)
 router.delete('/containers/:id',         auth.middleware, containers.destroy)
-router.post   ('/containers/prune',      auth.middleware, containers.prune)
+router.post   ('/containers/prune',      auth.middleware, containers.prune)ç
 
+
+router.get   ('/container_stats',        auth.middleware, containerStats.stats)
 
 router.get   ('/volumes',       auth.middleware, volumes.list)
 router.post  ('/volumes',       auth.middleware, volumes.create)

@@ -51,6 +51,18 @@ export default class Containers extends BaseStore {
     }
   }
 
+  @action loadContainersLogs = async id => {
+    this.setError()
+
+    try {
+      const res = await axios.get(`containers/${id}/logs`)
+      this.inspect = res.data
+    }
+    catch(e) {
+      this.setError(e)
+    }
+  }
+
   @action loadContainers = async () => {
     this.setError()
 
