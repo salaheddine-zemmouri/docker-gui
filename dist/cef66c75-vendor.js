@@ -31265,6 +31265,13 @@ module.exports = function httpAdapter(config) {
 ___scope___.file("package.json", function(exports, require, module, __filename, __dirname){
 
 module.exports = {
+  "_args": [
+    [
+      "axios@0.16.2",
+      "/mnt/c/Users/zemms/Desktop/Projects/docker-gui"
+    ]
+  ],
+  "_development": true,
   "_from": "axios@0.16.2",
   "_id": "axios@0.16.2",
   "_inBundle": false,
@@ -31285,9 +31292,8 @@ module.exports = {
     "#DEV:/"
   ],
   "_resolved": "https://registry.npmjs.org/axios/-/axios-0.16.2.tgz",
-  "_shasum": "ba4f92f17167dfbab40983785454b9ac149c3c6d",
-  "_spec": "axios@0.16.2",
-  "_where": "/home/kim/workspace/docker-gui",
+  "_spec": "0.16.2",
+  "_where": "/mnt/c/Users/zemms/Desktop/Projects/docker-gui",
   "author": {
     "name": "Matt Zabriskie"
   },
@@ -31297,12 +31303,10 @@ module.exports = {
   "bugs": {
     "url": "https://github.com/mzabriskie/axios/issues"
   },
-  "bundleDependencies": false,
   "dependencies": {
     "follow-redirects": "^1.2.3",
     "is-buffer": "^1.1.5"
   },
-  "deprecated": "Critical security vulnerability fixed in v0.21.1. For more information, see https://github.com/axios/axios/pull/3410",
   "description": "Promise based HTTP client for the browser and node.js",
   "devDependencies": {
     "coveralls": "^2.11.9",
@@ -57520,6 +57524,848 @@ module.exports = function(__filename, contents) {
 });
 return ___scope___.entry = "index.js";
 });
+FuseBox.pkg("ansi-to-react", {}, function(___scope___){
+___scope___.file("lib/index.js", function(exports, require, module, __filename, __dirname){
+
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const anser_1 = __importDefault(require("anser"));
+const escape_carriage_1 = require("escape-carriage");
+const React = __importStar(require("react"));
+/**
+ * Converts ANSI strings into JSON output.
+ * @name ansiToJSON
+ * @function
+ * @param {String} input The input string.
+ * @param {boolean} use_classes If `true`, HTML classes will be appended
+ *                              to the HTML output.
+ * @return {Array} The parsed input.
+ */
+function ansiToJSON(input, use_classes = false) {
+    input = escape_carriage_1.escapeCarriageReturn(fixBackspace(input));
+    return anser_1.default.ansiToJson(input, {
+        json: true,
+        remove_empty: true,
+        use_classes,
+    });
+}
+/**
+ * Create a class string.
+ * @name createClass
+ * @function
+ * @param {AnserJsonEntry} bundle
+ * @return {String} class name(s)
+ */
+function createClass(bundle) {
+    let classNames = "";
+    if (bundle.bg) {
+        classNames += `${bundle.bg}-bg `;
+    }
+    if (bundle.fg) {
+        classNames += `${bundle.fg}-fg `;
+    }
+    if (bundle.decoration) {
+        classNames += `ansi-${bundle.decoration} `;
+    }
+    if (classNames === "") {
+        return null;
+    }
+    classNames = classNames.substring(0, classNames.length - 1);
+    return classNames;
+}
+/**
+ * Create the style attribute.
+ * @name createStyle
+ * @function
+ * @param {AnserJsonEntry} bundle
+ * @return {Object} returns the style object
+ */
+function createStyle(bundle) {
+    const style = {};
+    if (bundle.bg) {
+        style.backgroundColor = `rgb(${bundle.bg})`;
+    }
+    if (bundle.fg) {
+        style.color = `rgb(${bundle.fg})`;
+    }
+    return style;
+}
+/**
+ * Converts an Anser bundle into a React Node.
+ * @param linkify whether links should be converting into clickable anchor tags.
+ * @param useClasses should render the span with a class instead of style.
+ * @param bundle Anser output.
+ * @param key
+ */
+function convertBundleIntoReact(linkify, useClasses, bundle, key) {
+    const style = useClasses ? null : createStyle(bundle);
+    const className = useClasses ? createClass(bundle) : null;
+    if (!linkify) {
+        return React.createElement("span", { style, key, className }, bundle.content);
+    }
+    const content = [];
+    const linkRegex = /(\s|^)(https?:\/\/(?:www\.|(?!www))[^\s.]+\.[^\s]{2,}|www\.[^\s]+\.[^\s]{2,})/g;
+    let index = 0;
+    let match;
+    while ((match = linkRegex.exec(bundle.content)) !== null) {
+        const [, pre, url] = match;
+        const startIndex = match.index + pre.length;
+        if (startIndex > index) {
+            content.push(bundle.content.substring(index, startIndex));
+        }
+        // Make sure the href we generate from the link is fully qualified. We assume http
+        // if it starts with a www because many sites don't support https
+        const href = url.startsWith("www.") ? `http://${url}` : url;
+        content.push(React.createElement("a", {
+            key: index,
+            href,
+            target: "_blank",
+        }, `${url}`));
+        index = linkRegex.lastIndex;
+    }
+    if (index < bundle.content.length) {
+        content.push(bundle.content.substring(index));
+    }
+    return React.createElement("span", { style, key, className }, content);
+}
+function Ansi(props) {
+    const { className, useClasses, children, linkify } = props;
+    return React.createElement("code", { className }, ansiToJSON(children !== null && children !== void 0 ? children : "", useClasses !== null && useClasses !== void 0 ? useClasses : false).map(convertBundleIntoReact.bind(null, linkify !== null && linkify !== void 0 ? linkify : false, useClasses !== null && useClasses !== void 0 ? useClasses : false)));
+}
+exports.default = Ansi;
+// This is copied from the Jupyter Classic source code
+// notebook/static/base/js/utils.js to handle \b in a way
+// that is **compatible with Jupyter classic**.   One can
+// argue that this behavior is questionable:
+//   https://stackoverflow.com/questions/55440152/multiple-b-doesnt-work-as-expected-in-jupyter#
+function fixBackspace(txt) {
+    let tmp = txt;
+    do {
+        txt = tmp;
+        // Cancel out anything-but-newline followed by backspace
+        tmp = txt.replace(/[^\n]\x08/gm, "");
+    } while (tmp.length < txt.length);
+    return txt;
+}
+
+});
+return ___scope___.entry = "lib/index.js";
+});
+FuseBox.pkg("anser", {}, function(___scope___){
+___scope___.file("lib/index.js", function(exports, require, module, __filename, __dirname){
+
+"use strict";
+
+// This file was originally written by @drudru (https://github.com/drudru/ansi_up), MIT, 2011
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var ANSI_COLORS = [[{ color: "0, 0, 0", "class": "ansi-black" }, { color: "187, 0, 0", "class": "ansi-red" }, { color: "0, 187, 0", "class": "ansi-green" }, { color: "187, 187, 0", "class": "ansi-yellow" }, { color: "0, 0, 187", "class": "ansi-blue" }, { color: "187, 0, 187", "class": "ansi-magenta" }, { color: "0, 187, 187", "class": "ansi-cyan" }, { color: "255,255,255", "class": "ansi-white" }], [{ color: "85, 85, 85", "class": "ansi-bright-black" }, { color: "255, 85, 85", "class": "ansi-bright-red" }, { color: "0, 255, 0", "class": "ansi-bright-green" }, { color: "255, 255, 85", "class": "ansi-bright-yellow" }, { color: "85, 85, 255", "class": "ansi-bright-blue" }, { color: "255, 85, 255", "class": "ansi-bright-magenta" }, { color: "85, 255, 255", "class": "ansi-bright-cyan" }, { color: "255, 255, 255", "class": "ansi-bright-white" }]];
+
+var Anser = function () {
+    _createClass(Anser, null, [{
+        key: "escapeForHtml",
+
+
+        /**
+         * Anser.escapeForHtml
+         * Escape the input HTML.
+         *
+         * This does the minimum escaping of text to make it compliant with HTML.
+         * In particular, the '&','<', and '>' characters are escaped. This should
+         * be run prior to `ansiToHtml`.
+         *
+         * @name Anser.escapeForHtml
+         * @function
+         * @param {String} txt The input text (containing the ANSI snippets).
+         * @returns {String} The escaped html.
+         */
+        value: function escapeForHtml(txt) {
+            return new Anser().escapeForHtml(txt);
+        }
+
+        /**
+         * Anser.linkify
+         * Adds the links in the HTML.
+         *
+         * This replaces any links in the text with anchor tags that display the
+         * link. The links should have at least one whitespace character
+         * surrounding it. Also, you should apply this after you have run
+         * `ansiToHtml` on the text.
+         *
+         * @name Anser.linkify
+         * @function
+         * @param {String} txt The input text.
+         * @returns {String} The HTML containing the <a> tags (unescaped).
+         */
+
+    }, {
+        key: "linkify",
+        value: function linkify(txt) {
+            return new Anser().linkify(txt);
+        }
+
+        /**
+         * Anser.ansiToHtml
+         * This replaces ANSI terminal escape codes with SPAN tags that wrap the
+         * content.
+         *
+         * This function only interprets ANSI SGR (Select Graphic Rendition) codes
+         * that can be represented in HTML.
+         * For example, cursor movement codes are ignored and hidden from output.
+         * The default style uses colors that are very close to the prescribed
+         * standard. The standard assumes that the text will have a black
+         * background. These colors are set as inline styles on the SPAN tags.
+         *
+         * Another option is to set `use_classes: true` in the options argument.
+         * This will instead set classes on the spans so the colors can be set via
+         * CSS. The class names used are of the format `ansi-*-fg/bg` and
+         * `ansi-bright-*-fg/bg` where `*` is the color name,
+         * i.e black/red/green/yellow/blue/magenta/cyan/white.
+         *
+         * @name Anser.ansiToHtml
+         * @function
+         * @param {String} txt The input text.
+         * @param {Object} options The options passed to the ansiToHTML method.
+         * @returns {String} The HTML output.
+         */
+
+    }, {
+        key: "ansiToHtml",
+        value: function ansiToHtml(txt, options) {
+            return new Anser().ansiToHtml(txt, options);
+        }
+
+        /**
+         * Anser.ansiToJson
+         * Converts ANSI input into JSON output.
+         *
+         * @name Anser.ansiToJson
+         * @function
+         * @param {String} txt The input text.
+         * @param {Object} options The options passed to the ansiToHTML method.
+         * @returns {String} The HTML output.
+         */
+
+    }, {
+        key: "ansiToJson",
+        value: function ansiToJson(txt, options) {
+            return new Anser().ansiToJson(txt, options);
+        }
+
+        /**
+         * Anser.ansiToText
+         * Converts ANSI input into text output.
+         *
+         * @name Anser.ansiToText
+         * @function
+         * @param {String} txt The input text.
+         * @returns {String} The text output.
+         */
+
+    }, {
+        key: "ansiToText",
+        value: function ansiToText(txt) {
+            return new Anser().ansiToText(txt);
+        }
+
+        /**
+         * Anser
+         * The `Anser` class.
+         *
+         * @name Anser
+         * @function
+         * @returns {Anser}
+         */
+
+    }]);
+
+    function Anser() {
+        _classCallCheck(this, Anser);
+
+        this.fg = this.bg = this.fg_truecolor = this.bg_truecolor = null;
+        this.bright = 0;
+    }
+
+    /**
+     * setupPalette
+     * Sets up the palette.
+     *
+     * @name setupPalette
+     * @function
+     */
+
+
+    _createClass(Anser, [{
+        key: "setupPalette",
+        value: function setupPalette() {
+            this.PALETTE_COLORS = [];
+
+            // Index 0..15 : System color
+            for (var i = 0; i < 2; ++i) {
+                for (var j = 0; j < 8; ++j) {
+                    this.PALETTE_COLORS.push(ANSI_COLORS[i][j].color);
+                }
+            }
+
+            // Index 16..231 : RGB 6x6x6
+            // https://gist.github.com/jasonm23/2868981#file-xterm-256color-yaml
+            var levels = [0, 95, 135, 175, 215, 255];
+            var format = function format(r, g, b) {
+                return levels[r] + ", " + levels[g] + ", " + levels[b];
+            };
+            var r = void 0,
+                g = void 0,
+                b = void 0;
+            for (var _r = 0; _r < 6; ++_r) {
+                for (var _g = 0; _g < 6; ++_g) {
+                    for (var _b = 0; _b < 6; ++_b) {
+                        this.PALETTE_COLORS.push(format(_r, _g, _b));
+                    }
+                }
+            }
+
+            // Index 232..255 : Grayscale
+            var level = 8;
+            for (var _i = 0; _i < 24; ++_i, level += 10) {
+                this.PALETTE_COLORS.push(format(level, level, level));
+            }
+        }
+
+        /**
+         * escapeForHtml
+         * Escapes the input text.
+         *
+         * @name escapeForHtml
+         * @function
+         * @param {String} txt The input text.
+         * @returns {String} The escpaed HTML output.
+         */
+
+    }, {
+        key: "escapeForHtml",
+        value: function escapeForHtml(txt) {
+            return txt.replace(/[&<>]/gm, function (str) {
+                return str == "&" ? "&amp;" : str == "<" ? "&lt;" : str == ">" ? "&gt;" : "";
+            });
+        }
+
+        /**
+         * linkify
+         * Adds HTML link elements.
+         *
+         * @name linkify
+         * @function
+         * @param {String} txt The input text.
+         * @returns {String} The HTML output containing link elements.
+         */
+
+    }, {
+        key: "linkify",
+        value: function linkify(txt) {
+            return txt.replace(/(https?:\/\/[^\s]+)/gm, function (str) {
+                return "<a href=\"" + str + "\">" + str + "</a>";
+            });
+        }
+
+        /**
+         * ansiToHtml
+         * Converts ANSI input into HTML output.
+         *
+         * @name ansiToHtml
+         * @function
+         * @param {String} txt The input text.
+         * @param {Object} options The options passed ot the `process` method.
+         * @returns {String} The HTML output.
+         */
+
+    }, {
+        key: "ansiToHtml",
+        value: function ansiToHtml(txt, options) {
+            return this.process(txt, options, true);
+        }
+
+        /**
+         * ansiToJson
+         * Converts ANSI input into HTML output.
+         *
+         * @name ansiToJson
+         * @function
+         * @param {String} txt The input text.
+         * @param {Object} options The options passed ot the `process` method.
+         * @returns {String} The JSON output.
+         */
+
+    }, {
+        key: "ansiToJson",
+        value: function ansiToJson(txt, options) {
+            options = options || {};
+            options.json = true;
+            options.clearLine = false;
+            return this.process(txt, options, true);
+        }
+
+        /**
+         * ansiToText
+         * Converts ANSI input into HTML output.
+         *
+         * @name ansiToText
+         * @function
+         * @param {String} txt The input text.
+         * @returns {String} The text output.
+         */
+
+    }, {
+        key: "ansiToText",
+        value: function ansiToText(txt) {
+            return this.process(txt, {}, false);
+        }
+
+        /**
+         * process
+         * Processes the input.
+         *
+         * @name process
+         * @function
+         * @param {String} txt The input text.
+         * @param {Object} options An object passed to `processChunk` method, extended with:
+         *
+         *  - `json` (Boolean): If `true`, the result will be an object.
+         *  - `use_classes` (Boolean): If `true`, HTML classes will be appended to the HTML output.
+         *
+         * @param {Boolean} markup
+         */
+
+    }, {
+        key: "process",
+        value: function process(txt, options, markup) {
+            var _this = this;
+
+            var self = this;
+            var raw_text_chunks = txt.split(/\033\[/);
+            var first_chunk = raw_text_chunks.shift(); // the first chunk is not the result of the split
+
+            if (options === undefined || options === null) {
+                options = {};
+            }
+            options.clearLine = /\r/.test(txt); // check for Carriage Return
+            var color_chunks = raw_text_chunks.map(function (chunk) {
+                return _this.processChunk(chunk, options, markup);
+            });
+
+            if (options && options.json) {
+                var first = self.processChunkJson("");
+                first.content = first_chunk;
+                first.clearLine = options.clearLine;
+                color_chunks.unshift(first);
+                if (options.remove_empty) {
+                    color_chunks = color_chunks.filter(function (c) {
+                        return !c.isEmpty();
+                    });
+                }
+                return color_chunks;
+            } else {
+                color_chunks.unshift(first_chunk);
+            }
+
+            return color_chunks.join("");
+        }
+
+        /**
+         * processChunkJson
+         * Processes the current chunk into json output.
+         *
+         * @name processChunkJson
+         * @function
+         * @param {String} text The input text.
+         * @param {Object} options An object containing the following fields:
+         *
+         *  - `json` (Boolean): If `true`, the result will be an object.
+         *  - `use_classes` (Boolean): If `true`, HTML classes will be appended to the HTML output.
+         *
+         * @param {Boolean} markup If false, the colors will not be parsed.
+         * @return {Object} The result object:
+         *
+         *  - `content` (String): The text.
+         *  - `fg` (String|null): The foreground color.
+         *  - `bg` (String|null): The background color.
+         *  - `fg_truecolor` (String|null): The foreground true color (if 16m color is enabled).
+         *  - `bg_truecolor` (String|null): The background true color (if 16m color is enabled).
+         *  - `clearLine` (Boolean): `true` if a carriageReturn \r was fount at end of line.
+         *  - `was_processed` (Bolean): `true` if the colors were processed, `false` otherwise.
+         *  - `isEmpty` (Function): A function returning `true` if the content is empty, or `false` otherwise.
+         *
+         */
+
+    }, {
+        key: "processChunkJson",
+        value: function processChunkJson(text, options, markup) {
+
+            // Are we using classes or styles?
+            options = typeof options == "undefined" ? {} : options;
+            var use_classes = options.use_classes = typeof options.use_classes != "undefined" && options.use_classes;
+            var key = options.key = use_classes ? "class" : "color";
+
+            var result = {
+                content: text,
+                fg: null,
+                bg: null,
+                fg_truecolor: null,
+                bg_truecolor: null,
+                clearLine: options.clearLine,
+                decoration: null,
+                was_processed: false,
+                isEmpty: function isEmpty() {
+                    return !result.content;
+                }
+            };
+
+            // Each "chunk" is the text after the CSI (ESC + "[") and before the next CSI/EOF.
+            //
+            // This regex matches four groups within a chunk.
+            //
+            // The first and third groups match code type.
+            // We supported only SGR command. It has empty first group and "m" in third.
+            //
+            // The second group matches all of the number+semicolon command sequences
+            // before the "m" (or other trailing) character.
+            // These are the graphics or SGR commands.
+            //
+            // The last group is the text (including newlines) that is colored by
+            // the other group"s commands.
+            var matches = text.match(/^([!\x3c-\x3f]*)([\d;]*)([\x20-\x2c]*[\x40-\x7e])([\s\S]*)/m);
+
+            if (!matches) return result;
+
+            var orig_txt = result.content = matches[4];
+            var nums = matches[2].split(";");
+
+            // We currently support only "SGR" (Select Graphic Rendition)
+            // Simply ignore if not a SGR command.
+            if (matches[1] !== "" || matches[3] !== "m") {
+                return result;
+            }
+
+            if (!markup) {
+                return result;
+            }
+
+            var self = this;
+
+            self.decoration = null;
+
+            while (nums.length > 0) {
+                var num_str = nums.shift();
+                var num = parseInt(num_str);
+
+                if (isNaN(num) || num === 0) {
+                    self.fg = self.bg = self.decoration = null;
+                } else if (num === 1) {
+                    self.decoration = "bold";
+                } else if (num === 2) {
+                    self.decoration = "dim";
+                    // Enable code 2 to get string
+                } else if (num == 3) {
+                    self.decoration = "italic";
+                } else if (num == 4) {
+                    self.decoration = "underline";
+                } else if (num == 5) {
+                    self.decoration = "blink";
+                } else if (num === 7) {
+                    self.decoration = "reverse";
+                } else if (num === 8) {
+                    self.decoration = "hidden";
+                    // Enable code 9 to get strikethrough
+                } else if (num === 9) {
+                    self.decoration = "strikethrough";
+                } else if (num == 39) {
+                    self.fg = null;
+                } else if (num == 49) {
+                    self.bg = null;
+                    // Foreground color
+                } else if (num >= 30 && num < 38) {
+                    self.fg = ANSI_COLORS[0][num % 10][key];
+                    // Foreground bright color
+                } else if (num >= 90 && num < 98) {
+                    self.fg = ANSI_COLORS[1][num % 10][key];
+                    // Background color
+                } else if (num >= 40 && num < 48) {
+                    self.bg = ANSI_COLORS[0][num % 10][key];
+                    // Background bright color
+                } else if (num >= 100 && num < 108) {
+                    self.bg = ANSI_COLORS[1][num % 10][key];
+                } else if (num === 38 || num === 48) {
+                    // extend color (38=fg, 48=bg)
+                    var is_foreground = num === 38;
+                    if (nums.length >= 1) {
+                        var mode = nums.shift();
+                        if (mode === "5" && nums.length >= 1) {
+                            // palette color
+                            var palette_index = parseInt(nums.shift());
+                            if (palette_index >= 0 && palette_index <= 255) {
+                                if (!use_classes) {
+                                    if (!this.PALETTE_COLORS) {
+                                        self.setupPalette();
+                                    }
+                                    if (is_foreground) {
+                                        self.fg = this.PALETTE_COLORS[palette_index];
+                                    } else {
+                                        self.bg = this.PALETTE_COLORS[palette_index];
+                                    }
+                                } else {
+                                    var klass = palette_index >= 16 ? "ansi-palette-" + palette_index : ANSI_COLORS[palette_index > 7 ? 1 : 0][palette_index % 8]["class"];
+                                    if (is_foreground) {
+                                        self.fg = klass;
+                                    } else {
+                                        self.bg = klass;
+                                    }
+                                }
+                            }
+                        } else if (mode === "2" && nums.length >= 3) {
+                            // true color
+                            var r = parseInt(nums.shift());
+                            var g = parseInt(nums.shift());
+                            var b = parseInt(nums.shift());
+                            if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) {
+                                var color = r + ", " + g + ", " + b;
+                                if (!use_classes) {
+                                    if (is_foreground) {
+                                        self.fg = color;
+                                    } else {
+                                        self.bg = color;
+                                    }
+                                } else {
+                                    if (is_foreground) {
+                                        self.fg = "ansi-truecolor";
+                                        self.fg_truecolor = color;
+                                    } else {
+                                        self.bg = "ansi-truecolor";
+                                        self.bg_truecolor = color;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (self.fg === null && self.bg === null && self.decoration === null) {
+                return result;
+            } else {
+                var styles = [];
+                var classes = [];
+                var data = {};
+
+                result.fg = self.fg;
+                result.bg = self.bg;
+                result.fg_truecolor = self.fg_truecolor;
+                result.bg_truecolor = self.bg_truecolor;
+                result.decoration = self.decoration;
+                result.was_processed = true;
+
+                return result;
+            }
+        }
+
+        /**
+         * processChunk
+         * Processes the current chunk of text.
+         *
+         * @name processChunk
+         * @function
+         * @param {String} text The input text.
+         * @param {Object} options An object containing the following fields:
+         *
+         *  - `json` (Boolean): If `true`, the result will be an object.
+         *  - `use_classes` (Boolean): If `true`, HTML classes will be appended to the HTML output.
+         *
+         * @param {Boolean} markup If false, the colors will not be parsed.
+         * @return {Object|String} The result (object if `json` is wanted back or string otherwise).
+         */
+
+    }, {
+        key: "processChunk",
+        value: function processChunk(text, options, markup) {
+            var _this2 = this;
+
+            var self = this;
+            options = options || {};
+            var jsonChunk = this.processChunkJson(text, options, markup);
+
+            if (options.json) {
+                return jsonChunk;
+            }
+            if (jsonChunk.isEmpty()) {
+                return "";
+            }
+            if (!jsonChunk.was_processed) {
+                return jsonChunk.content;
+            }
+
+            var use_classes = options.use_classes;
+
+            var styles = [];
+            var classes = [];
+            var data = {};
+            var render_data = function render_data(data) {
+                var fragments = [];
+                var key = void 0;
+                for (key in data) {
+                    if (data.hasOwnProperty(key)) {
+                        fragments.push("data-" + key + "=\"" + _this2.escapeForHtml(data[key]) + "\"");
+                    }
+                }
+                return fragments.length > 0 ? " " + fragments.join(" ") : "";
+            };
+
+            if (jsonChunk.fg) {
+                if (use_classes) {
+                    classes.push(jsonChunk.fg + "-fg");
+                    if (jsonChunk.fg_truecolor !== null) {
+                        data["ansi-truecolor-fg"] = jsonChunk.fg_truecolor;
+                        jsonChunk.fg_truecolor = null;
+                    }
+                } else {
+                    styles.push("color:rgb(" + jsonChunk.fg + ")");
+                }
+            }
+
+            if (jsonChunk.bg) {
+                if (use_classes) {
+                    classes.push(jsonChunk.bg + "-bg");
+                    if (jsonChunk.bg_truecolor !== null) {
+                        data["ansi-truecolor-bg"] = jsonChunk.bg_truecolor;
+                        jsonChunk.bg_truecolor = null;
+                    }
+                } else {
+                    styles.push("background-color:rgb(" + jsonChunk.bg + ")");
+                }
+            }
+
+            if (jsonChunk.decoration) {
+                if (use_classes) {
+                    classes.push("ansi-" + jsonChunk.decoration);
+                } else if (jsonChunk.decoration === "bold") {
+                    styles.push("font-weight:bold");
+                } else if (jsonChunk.decoration === "dim") {
+                    styles.push("opacity:0.5");
+                } else if (jsonChunk.decoration === "italic") {
+                    styles.push("font-style:italic");
+                    // underline and blink are treated bellow
+                } else if (jsonChunk.decoration === "reverse") {
+                    styles.push("filter:invert(100%)");
+                } else if (jsonChunk.decoration === "hidden") {
+                    styles.push("visibility:hidden");
+                } else if (jsonChunk.decoration === "strikethrough") {
+                    styles.push("text-decoration:line-through");
+                } else {
+                    styles.push("text-decoration:" + jsonChunk.decoration);
+                }
+            }
+
+            if (use_classes) {
+                return "<span class=\"" + classes.join(" ") + "\"" + render_data(data) + ">" + jsonChunk.content + "</span>";
+            } else {
+                return "<span style=\"" + styles.join(";") + "\"" + render_data(data) + ">" + jsonChunk.content + "</span>";
+            }
+        }
+    }]);
+
+    return Anser;
+}();
+
+;
+
+module.exports = Anser;
+});
+return ___scope___.entry = "lib/index.js";
+});
+FuseBox.pkg("escape-carriage", {}, function(___scope___){
+___scope___.file("index.js", function(exports, require, module, __filename, __dirname){
+
+/**
+ * Escape carrigage returns like a terminal
+ * @param {string} txt - String to escape.
+ * @return {string}    - Escaped string.
+ */
+function escapeCarriageReturn(txt) {
+  if (!txt) return "";
+  if (!/\r/.test(txt)) return txt;
+  txt = txt.replace(/\r+\n/gm, "\n"); // \r followed by \n --> newline
+  while (/\r[^$]/.test(txt)) {
+    var base = /^(.*)\r+/m.exec(txt)[1];
+    var insert = /\r+(.*)$/m.exec(txt)[1];
+    insert = insert + base.slice(insert.length, base.length);
+    txt = txt.replace(/\r+.*$/m, "\r").replace(/^.*\r/m, insert);
+  }
+  return txt;
+}
+
+function findLongestString(arr) {
+  var longest = 0;
+  for (var i = 0; i < arr.length; i++) {
+    if (arr[longest].length <= arr[i].length) {
+      longest = i;
+    }
+  }
+  return longest;
+}
+
+function escapeSingleLineSafe(txt) {
+  if (!/\r/.test(txt)) return txt;
+  var arr = txt.split("\r");
+  var res = [];
+
+  while (arr.length > 0) {
+    var longest = findLongestString(arr);
+    res.push(arr[longest]);
+    arr = arr.slice(longest + 1);
+  }
+
+  return res.join("\r");
+}
+
+/**
+ * Safely escape carrigage returns like a terminal.
+ * This allows to escape carrigage returns while allowing future output to be appended
+ * without loosing information.
+ * Use this as a intermediate escape step if your stream hasn't completed yet.
+ * @param {string} txt - String to escape.
+ * @return {string}    - Escaped string.
+ */
+function escapeCarriageReturnSafe(txt) {
+  if (!txt) return "";
+  if (!/\r/.test(txt)) return txt;
+  if (!/\n/.test(txt)) return escapeSingleLineSafe(txt);
+  txt = txt.replace(/\r+\n/gm, "\n"); // \r followed by \n --> newline
+  var idx = txt.lastIndexOf("\n");
+
+  return (
+    escapeCarriageReturn(txt.slice(0, idx)) +
+    "\n" +
+    escapeSingleLineSafe(txt.slice(idx + 1))
+  );
+}
+
+module.exports = escapeCarriageReturn;
+module.exports.escapeCarriageReturn = escapeCarriageReturn;
+module.exports.escapeCarriageReturnSafe = escapeCarriageReturnSafe;
+
+});
+return ___scope___.entry = "index.js";
+});
 FuseBox.pkg("babel-polyfill", {"regenerator-runtime":"0.10.5"}, function(___scope___){
 ___scope___.file("lib/index.js", function(exports, require, module, __filename, __dirname){
 
@@ -66162,848 +67008,6 @@ ___scope___.file("runtime.js", function(exports, require, module, __filename, __
 
 });
 return ___scope___.entry = "runtime-module.js";
-});
-FuseBox.pkg("ansi-to-react", {}, function(___scope___){
-___scope___.file("lib/index.js", function(exports, require, module, __filename, __dirname){
-
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
-    result["default"] = mod;
-    return result;
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const anser_1 = __importDefault(require("anser"));
-const escape_carriage_1 = require("escape-carriage");
-const React = __importStar(require("react"));
-/**
- * Converts ANSI strings into JSON output.
- * @name ansiToJSON
- * @function
- * @param {String} input The input string.
- * @param {boolean} use_classes If `true`, HTML classes will be appended
- *                              to the HTML output.
- * @return {Array} The parsed input.
- */
-function ansiToJSON(input, use_classes = false) {
-    input = escape_carriage_1.escapeCarriageReturn(fixBackspace(input));
-    return anser_1.default.ansiToJson(input, {
-        json: true,
-        remove_empty: true,
-        use_classes,
-    });
-}
-/**
- * Create a class string.
- * @name createClass
- * @function
- * @param {AnserJsonEntry} bundle
- * @return {String} class name(s)
- */
-function createClass(bundle) {
-    let classNames = "";
-    if (bundle.bg) {
-        classNames += `${bundle.bg}-bg `;
-    }
-    if (bundle.fg) {
-        classNames += `${bundle.fg}-fg `;
-    }
-    if (bundle.decoration) {
-        classNames += `ansi-${bundle.decoration} `;
-    }
-    if (classNames === "") {
-        return null;
-    }
-    classNames = classNames.substring(0, classNames.length - 1);
-    return classNames;
-}
-/**
- * Create the style attribute.
- * @name createStyle
- * @function
- * @param {AnserJsonEntry} bundle
- * @return {Object} returns the style object
- */
-function createStyle(bundle) {
-    const style = {};
-    if (bundle.bg) {
-        style.backgroundColor = `rgb(${bundle.bg})`;
-    }
-    if (bundle.fg) {
-        style.color = `rgb(${bundle.fg})`;
-    }
-    return style;
-}
-/**
- * Converts an Anser bundle into a React Node.
- * @param linkify whether links should be converting into clickable anchor tags.
- * @param useClasses should render the span with a class instead of style.
- * @param bundle Anser output.
- * @param key
- */
-function convertBundleIntoReact(linkify, useClasses, bundle, key) {
-    const style = useClasses ? null : createStyle(bundle);
-    const className = useClasses ? createClass(bundle) : null;
-    if (!linkify) {
-        return React.createElement("span", { style, key, className }, bundle.content);
-    }
-    const content = [];
-    const linkRegex = /(\s|^)(https?:\/\/(?:www\.|(?!www))[^\s.]+\.[^\s]{2,}|www\.[^\s]+\.[^\s]{2,})/g;
-    let index = 0;
-    let match;
-    while ((match = linkRegex.exec(bundle.content)) !== null) {
-        const [, pre, url] = match;
-        const startIndex = match.index + pre.length;
-        if (startIndex > index) {
-            content.push(bundle.content.substring(index, startIndex));
-        }
-        // Make sure the href we generate from the link is fully qualified. We assume http
-        // if it starts with a www because many sites don't support https
-        const href = url.startsWith("www.") ? `http://${url}` : url;
-        content.push(React.createElement("a", {
-            key: index,
-            href,
-            target: "_blank",
-        }, `${url}`));
-        index = linkRegex.lastIndex;
-    }
-    if (index < bundle.content.length) {
-        content.push(bundle.content.substring(index));
-    }
-    return React.createElement("span", { style, key, className }, content);
-}
-function Ansi(props) {
-    const { className, useClasses, children, linkify } = props;
-    return React.createElement("code", { className }, ansiToJSON(children !== null && children !== void 0 ? children : "", useClasses !== null && useClasses !== void 0 ? useClasses : false).map(convertBundleIntoReact.bind(null, linkify !== null && linkify !== void 0 ? linkify : false, useClasses !== null && useClasses !== void 0 ? useClasses : false)));
-}
-exports.default = Ansi;
-// This is copied from the Jupyter Classic source code
-// notebook/static/base/js/utils.js to handle \b in a way
-// that is **compatible with Jupyter classic**.   One can
-// argue that this behavior is questionable:
-//   https://stackoverflow.com/questions/55440152/multiple-b-doesnt-work-as-expected-in-jupyter#
-function fixBackspace(txt) {
-    let tmp = txt;
-    do {
-        txt = tmp;
-        // Cancel out anything-but-newline followed by backspace
-        tmp = txt.replace(/[^\n]\x08/gm, "");
-    } while (tmp.length < txt.length);
-    return txt;
-}
-
-});
-return ___scope___.entry = "lib/index.js";
-});
-FuseBox.pkg("anser", {}, function(___scope___){
-___scope___.file("lib/index.js", function(exports, require, module, __filename, __dirname){
-
-"use strict";
-
-// This file was originally written by @drudru (https://github.com/drudru/ansi_up), MIT, 2011
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var ANSI_COLORS = [[{ color: "0, 0, 0", "class": "ansi-black" }, { color: "187, 0, 0", "class": "ansi-red" }, { color: "0, 187, 0", "class": "ansi-green" }, { color: "187, 187, 0", "class": "ansi-yellow" }, { color: "0, 0, 187", "class": "ansi-blue" }, { color: "187, 0, 187", "class": "ansi-magenta" }, { color: "0, 187, 187", "class": "ansi-cyan" }, { color: "255,255,255", "class": "ansi-white" }], [{ color: "85, 85, 85", "class": "ansi-bright-black" }, { color: "255, 85, 85", "class": "ansi-bright-red" }, { color: "0, 255, 0", "class": "ansi-bright-green" }, { color: "255, 255, 85", "class": "ansi-bright-yellow" }, { color: "85, 85, 255", "class": "ansi-bright-blue" }, { color: "255, 85, 255", "class": "ansi-bright-magenta" }, { color: "85, 255, 255", "class": "ansi-bright-cyan" }, { color: "255, 255, 255", "class": "ansi-bright-white" }]];
-
-var Anser = function () {
-    _createClass(Anser, null, [{
-        key: "escapeForHtml",
-
-
-        /**
-         * Anser.escapeForHtml
-         * Escape the input HTML.
-         *
-         * This does the minimum escaping of text to make it compliant with HTML.
-         * In particular, the '&','<', and '>' characters are escaped. This should
-         * be run prior to `ansiToHtml`.
-         *
-         * @name Anser.escapeForHtml
-         * @function
-         * @param {String} txt The input text (containing the ANSI snippets).
-         * @returns {String} The escaped html.
-         */
-        value: function escapeForHtml(txt) {
-            return new Anser().escapeForHtml(txt);
-        }
-
-        /**
-         * Anser.linkify
-         * Adds the links in the HTML.
-         *
-         * This replaces any links in the text with anchor tags that display the
-         * link. The links should have at least one whitespace character
-         * surrounding it. Also, you should apply this after you have run
-         * `ansiToHtml` on the text.
-         *
-         * @name Anser.linkify
-         * @function
-         * @param {String} txt The input text.
-         * @returns {String} The HTML containing the <a> tags (unescaped).
-         */
-
-    }, {
-        key: "linkify",
-        value: function linkify(txt) {
-            return new Anser().linkify(txt);
-        }
-
-        /**
-         * Anser.ansiToHtml
-         * This replaces ANSI terminal escape codes with SPAN tags that wrap the
-         * content.
-         *
-         * This function only interprets ANSI SGR (Select Graphic Rendition) codes
-         * that can be represented in HTML.
-         * For example, cursor movement codes are ignored and hidden from output.
-         * The default style uses colors that are very close to the prescribed
-         * standard. The standard assumes that the text will have a black
-         * background. These colors are set as inline styles on the SPAN tags.
-         *
-         * Another option is to set `use_classes: true` in the options argument.
-         * This will instead set classes on the spans so the colors can be set via
-         * CSS. The class names used are of the format `ansi-*-fg/bg` and
-         * `ansi-bright-*-fg/bg` where `*` is the color name,
-         * i.e black/red/green/yellow/blue/magenta/cyan/white.
-         *
-         * @name Anser.ansiToHtml
-         * @function
-         * @param {String} txt The input text.
-         * @param {Object} options The options passed to the ansiToHTML method.
-         * @returns {String} The HTML output.
-         */
-
-    }, {
-        key: "ansiToHtml",
-        value: function ansiToHtml(txt, options) {
-            return new Anser().ansiToHtml(txt, options);
-        }
-
-        /**
-         * Anser.ansiToJson
-         * Converts ANSI input into JSON output.
-         *
-         * @name Anser.ansiToJson
-         * @function
-         * @param {String} txt The input text.
-         * @param {Object} options The options passed to the ansiToHTML method.
-         * @returns {String} The HTML output.
-         */
-
-    }, {
-        key: "ansiToJson",
-        value: function ansiToJson(txt, options) {
-            return new Anser().ansiToJson(txt, options);
-        }
-
-        /**
-         * Anser.ansiToText
-         * Converts ANSI input into text output.
-         *
-         * @name Anser.ansiToText
-         * @function
-         * @param {String} txt The input text.
-         * @returns {String} The text output.
-         */
-
-    }, {
-        key: "ansiToText",
-        value: function ansiToText(txt) {
-            return new Anser().ansiToText(txt);
-        }
-
-        /**
-         * Anser
-         * The `Anser` class.
-         *
-         * @name Anser
-         * @function
-         * @returns {Anser}
-         */
-
-    }]);
-
-    function Anser() {
-        _classCallCheck(this, Anser);
-
-        this.fg = this.bg = this.fg_truecolor = this.bg_truecolor = null;
-        this.bright = 0;
-    }
-
-    /**
-     * setupPalette
-     * Sets up the palette.
-     *
-     * @name setupPalette
-     * @function
-     */
-
-
-    _createClass(Anser, [{
-        key: "setupPalette",
-        value: function setupPalette() {
-            this.PALETTE_COLORS = [];
-
-            // Index 0..15 : System color
-            for (var i = 0; i < 2; ++i) {
-                for (var j = 0; j < 8; ++j) {
-                    this.PALETTE_COLORS.push(ANSI_COLORS[i][j].color);
-                }
-            }
-
-            // Index 16..231 : RGB 6x6x6
-            // https://gist.github.com/jasonm23/2868981#file-xterm-256color-yaml
-            var levels = [0, 95, 135, 175, 215, 255];
-            var format = function format(r, g, b) {
-                return levels[r] + ", " + levels[g] + ", " + levels[b];
-            };
-            var r = void 0,
-                g = void 0,
-                b = void 0;
-            for (var _r = 0; _r < 6; ++_r) {
-                for (var _g = 0; _g < 6; ++_g) {
-                    for (var _b = 0; _b < 6; ++_b) {
-                        this.PALETTE_COLORS.push(format(_r, _g, _b));
-                    }
-                }
-            }
-
-            // Index 232..255 : Grayscale
-            var level = 8;
-            for (var _i = 0; _i < 24; ++_i, level += 10) {
-                this.PALETTE_COLORS.push(format(level, level, level));
-            }
-        }
-
-        /**
-         * escapeForHtml
-         * Escapes the input text.
-         *
-         * @name escapeForHtml
-         * @function
-         * @param {String} txt The input text.
-         * @returns {String} The escpaed HTML output.
-         */
-
-    }, {
-        key: "escapeForHtml",
-        value: function escapeForHtml(txt) {
-            return txt.replace(/[&<>]/gm, function (str) {
-                return str == "&" ? "&amp;" : str == "<" ? "&lt;" : str == ">" ? "&gt;" : "";
-            });
-        }
-
-        /**
-         * linkify
-         * Adds HTML link elements.
-         *
-         * @name linkify
-         * @function
-         * @param {String} txt The input text.
-         * @returns {String} The HTML output containing link elements.
-         */
-
-    }, {
-        key: "linkify",
-        value: function linkify(txt) {
-            return txt.replace(/(https?:\/\/[^\s]+)/gm, function (str) {
-                return "<a href=\"" + str + "\">" + str + "</a>";
-            });
-        }
-
-        /**
-         * ansiToHtml
-         * Converts ANSI input into HTML output.
-         *
-         * @name ansiToHtml
-         * @function
-         * @param {String} txt The input text.
-         * @param {Object} options The options passed ot the `process` method.
-         * @returns {String} The HTML output.
-         */
-
-    }, {
-        key: "ansiToHtml",
-        value: function ansiToHtml(txt, options) {
-            return this.process(txt, options, true);
-        }
-
-        /**
-         * ansiToJson
-         * Converts ANSI input into HTML output.
-         *
-         * @name ansiToJson
-         * @function
-         * @param {String} txt The input text.
-         * @param {Object} options The options passed ot the `process` method.
-         * @returns {String} The JSON output.
-         */
-
-    }, {
-        key: "ansiToJson",
-        value: function ansiToJson(txt, options) {
-            options = options || {};
-            options.json = true;
-            options.clearLine = false;
-            return this.process(txt, options, true);
-        }
-
-        /**
-         * ansiToText
-         * Converts ANSI input into HTML output.
-         *
-         * @name ansiToText
-         * @function
-         * @param {String} txt The input text.
-         * @returns {String} The text output.
-         */
-
-    }, {
-        key: "ansiToText",
-        value: function ansiToText(txt) {
-            return this.process(txt, {}, false);
-        }
-
-        /**
-         * process
-         * Processes the input.
-         *
-         * @name process
-         * @function
-         * @param {String} txt The input text.
-         * @param {Object} options An object passed to `processChunk` method, extended with:
-         *
-         *  - `json` (Boolean): If `true`, the result will be an object.
-         *  - `use_classes` (Boolean): If `true`, HTML classes will be appended to the HTML output.
-         *
-         * @param {Boolean} markup
-         */
-
-    }, {
-        key: "process",
-        value: function process(txt, options, markup) {
-            var _this = this;
-
-            var self = this;
-            var raw_text_chunks = txt.split(/\033\[/);
-            var first_chunk = raw_text_chunks.shift(); // the first chunk is not the result of the split
-
-            if (options === undefined || options === null) {
-                options = {};
-            }
-            options.clearLine = /\r/.test(txt); // check for Carriage Return
-            var color_chunks = raw_text_chunks.map(function (chunk) {
-                return _this.processChunk(chunk, options, markup);
-            });
-
-            if (options && options.json) {
-                var first = self.processChunkJson("");
-                first.content = first_chunk;
-                first.clearLine = options.clearLine;
-                color_chunks.unshift(first);
-                if (options.remove_empty) {
-                    color_chunks = color_chunks.filter(function (c) {
-                        return !c.isEmpty();
-                    });
-                }
-                return color_chunks;
-            } else {
-                color_chunks.unshift(first_chunk);
-            }
-
-            return color_chunks.join("");
-        }
-
-        /**
-         * processChunkJson
-         * Processes the current chunk into json output.
-         *
-         * @name processChunkJson
-         * @function
-         * @param {String} text The input text.
-         * @param {Object} options An object containing the following fields:
-         *
-         *  - `json` (Boolean): If `true`, the result will be an object.
-         *  - `use_classes` (Boolean): If `true`, HTML classes will be appended to the HTML output.
-         *
-         * @param {Boolean} markup If false, the colors will not be parsed.
-         * @return {Object} The result object:
-         *
-         *  - `content` (String): The text.
-         *  - `fg` (String|null): The foreground color.
-         *  - `bg` (String|null): The background color.
-         *  - `fg_truecolor` (String|null): The foreground true color (if 16m color is enabled).
-         *  - `bg_truecolor` (String|null): The background true color (if 16m color is enabled).
-         *  - `clearLine` (Boolean): `true` if a carriageReturn \r was fount at end of line.
-         *  - `was_processed` (Bolean): `true` if the colors were processed, `false` otherwise.
-         *  - `isEmpty` (Function): A function returning `true` if the content is empty, or `false` otherwise.
-         *
-         */
-
-    }, {
-        key: "processChunkJson",
-        value: function processChunkJson(text, options, markup) {
-
-            // Are we using classes or styles?
-            options = typeof options == "undefined" ? {} : options;
-            var use_classes = options.use_classes = typeof options.use_classes != "undefined" && options.use_classes;
-            var key = options.key = use_classes ? "class" : "color";
-
-            var result = {
-                content: text,
-                fg: null,
-                bg: null,
-                fg_truecolor: null,
-                bg_truecolor: null,
-                clearLine: options.clearLine,
-                decoration: null,
-                was_processed: false,
-                isEmpty: function isEmpty() {
-                    return !result.content;
-                }
-            };
-
-            // Each "chunk" is the text after the CSI (ESC + "[") and before the next CSI/EOF.
-            //
-            // This regex matches four groups within a chunk.
-            //
-            // The first and third groups match code type.
-            // We supported only SGR command. It has empty first group and "m" in third.
-            //
-            // The second group matches all of the number+semicolon command sequences
-            // before the "m" (or other trailing) character.
-            // These are the graphics or SGR commands.
-            //
-            // The last group is the text (including newlines) that is colored by
-            // the other group"s commands.
-            var matches = text.match(/^([!\x3c-\x3f]*)([\d;]*)([\x20-\x2c]*[\x40-\x7e])([\s\S]*)/m);
-
-            if (!matches) return result;
-
-            var orig_txt = result.content = matches[4];
-            var nums = matches[2].split(";");
-
-            // We currently support only "SGR" (Select Graphic Rendition)
-            // Simply ignore if not a SGR command.
-            if (matches[1] !== "" || matches[3] !== "m") {
-                return result;
-            }
-
-            if (!markup) {
-                return result;
-            }
-
-            var self = this;
-
-            self.decoration = null;
-
-            while (nums.length > 0) {
-                var num_str = nums.shift();
-                var num = parseInt(num_str);
-
-                if (isNaN(num) || num === 0) {
-                    self.fg = self.bg = self.decoration = null;
-                } else if (num === 1) {
-                    self.decoration = "bold";
-                } else if (num === 2) {
-                    self.decoration = "dim";
-                    // Enable code 2 to get string
-                } else if (num == 3) {
-                    self.decoration = "italic";
-                } else if (num == 4) {
-                    self.decoration = "underline";
-                } else if (num == 5) {
-                    self.decoration = "blink";
-                } else if (num === 7) {
-                    self.decoration = "reverse";
-                } else if (num === 8) {
-                    self.decoration = "hidden";
-                    // Enable code 9 to get strikethrough
-                } else if (num === 9) {
-                    self.decoration = "strikethrough";
-                } else if (num == 39) {
-                    self.fg = null;
-                } else if (num == 49) {
-                    self.bg = null;
-                    // Foreground color
-                } else if (num >= 30 && num < 38) {
-                    self.fg = ANSI_COLORS[0][num % 10][key];
-                    // Foreground bright color
-                } else if (num >= 90 && num < 98) {
-                    self.fg = ANSI_COLORS[1][num % 10][key];
-                    // Background color
-                } else if (num >= 40 && num < 48) {
-                    self.bg = ANSI_COLORS[0][num % 10][key];
-                    // Background bright color
-                } else if (num >= 100 && num < 108) {
-                    self.bg = ANSI_COLORS[1][num % 10][key];
-                } else if (num === 38 || num === 48) {
-                    // extend color (38=fg, 48=bg)
-                    var is_foreground = num === 38;
-                    if (nums.length >= 1) {
-                        var mode = nums.shift();
-                        if (mode === "5" && nums.length >= 1) {
-                            // palette color
-                            var palette_index = parseInt(nums.shift());
-                            if (palette_index >= 0 && palette_index <= 255) {
-                                if (!use_classes) {
-                                    if (!this.PALETTE_COLORS) {
-                                        self.setupPalette();
-                                    }
-                                    if (is_foreground) {
-                                        self.fg = this.PALETTE_COLORS[palette_index];
-                                    } else {
-                                        self.bg = this.PALETTE_COLORS[palette_index];
-                                    }
-                                } else {
-                                    var klass = palette_index >= 16 ? "ansi-palette-" + palette_index : ANSI_COLORS[palette_index > 7 ? 1 : 0][palette_index % 8]["class"];
-                                    if (is_foreground) {
-                                        self.fg = klass;
-                                    } else {
-                                        self.bg = klass;
-                                    }
-                                }
-                            }
-                        } else if (mode === "2" && nums.length >= 3) {
-                            // true color
-                            var r = parseInt(nums.shift());
-                            var g = parseInt(nums.shift());
-                            var b = parseInt(nums.shift());
-                            if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) {
-                                var color = r + ", " + g + ", " + b;
-                                if (!use_classes) {
-                                    if (is_foreground) {
-                                        self.fg = color;
-                                    } else {
-                                        self.bg = color;
-                                    }
-                                } else {
-                                    if (is_foreground) {
-                                        self.fg = "ansi-truecolor";
-                                        self.fg_truecolor = color;
-                                    } else {
-                                        self.bg = "ansi-truecolor";
-                                        self.bg_truecolor = color;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (self.fg === null && self.bg === null && self.decoration === null) {
-                return result;
-            } else {
-                var styles = [];
-                var classes = [];
-                var data = {};
-
-                result.fg = self.fg;
-                result.bg = self.bg;
-                result.fg_truecolor = self.fg_truecolor;
-                result.bg_truecolor = self.bg_truecolor;
-                result.decoration = self.decoration;
-                result.was_processed = true;
-
-                return result;
-            }
-        }
-
-        /**
-         * processChunk
-         * Processes the current chunk of text.
-         *
-         * @name processChunk
-         * @function
-         * @param {String} text The input text.
-         * @param {Object} options An object containing the following fields:
-         *
-         *  - `json` (Boolean): If `true`, the result will be an object.
-         *  - `use_classes` (Boolean): If `true`, HTML classes will be appended to the HTML output.
-         *
-         * @param {Boolean} markup If false, the colors will not be parsed.
-         * @return {Object|String} The result (object if `json` is wanted back or string otherwise).
-         */
-
-    }, {
-        key: "processChunk",
-        value: function processChunk(text, options, markup) {
-            var _this2 = this;
-
-            var self = this;
-            options = options || {};
-            var jsonChunk = this.processChunkJson(text, options, markup);
-
-            if (options.json) {
-                return jsonChunk;
-            }
-            if (jsonChunk.isEmpty()) {
-                return "";
-            }
-            if (!jsonChunk.was_processed) {
-                return jsonChunk.content;
-            }
-
-            var use_classes = options.use_classes;
-
-            var styles = [];
-            var classes = [];
-            var data = {};
-            var render_data = function render_data(data) {
-                var fragments = [];
-                var key = void 0;
-                for (key in data) {
-                    if (data.hasOwnProperty(key)) {
-                        fragments.push("data-" + key + "=\"" + _this2.escapeForHtml(data[key]) + "\"");
-                    }
-                }
-                return fragments.length > 0 ? " " + fragments.join(" ") : "";
-            };
-
-            if (jsonChunk.fg) {
-                if (use_classes) {
-                    classes.push(jsonChunk.fg + "-fg");
-                    if (jsonChunk.fg_truecolor !== null) {
-                        data["ansi-truecolor-fg"] = jsonChunk.fg_truecolor;
-                        jsonChunk.fg_truecolor = null;
-                    }
-                } else {
-                    styles.push("color:rgb(" + jsonChunk.fg + ")");
-                }
-            }
-
-            if (jsonChunk.bg) {
-                if (use_classes) {
-                    classes.push(jsonChunk.bg + "-bg");
-                    if (jsonChunk.bg_truecolor !== null) {
-                        data["ansi-truecolor-bg"] = jsonChunk.bg_truecolor;
-                        jsonChunk.bg_truecolor = null;
-                    }
-                } else {
-                    styles.push("background-color:rgb(" + jsonChunk.bg + ")");
-                }
-            }
-
-            if (jsonChunk.decoration) {
-                if (use_classes) {
-                    classes.push("ansi-" + jsonChunk.decoration);
-                } else if (jsonChunk.decoration === "bold") {
-                    styles.push("font-weight:bold");
-                } else if (jsonChunk.decoration === "dim") {
-                    styles.push("opacity:0.5");
-                } else if (jsonChunk.decoration === "italic") {
-                    styles.push("font-style:italic");
-                    // underline and blink are treated bellow
-                } else if (jsonChunk.decoration === "reverse") {
-                    styles.push("filter:invert(100%)");
-                } else if (jsonChunk.decoration === "hidden") {
-                    styles.push("visibility:hidden");
-                } else if (jsonChunk.decoration === "strikethrough") {
-                    styles.push("text-decoration:line-through");
-                } else {
-                    styles.push("text-decoration:" + jsonChunk.decoration);
-                }
-            }
-
-            if (use_classes) {
-                return "<span class=\"" + classes.join(" ") + "\"" + render_data(data) + ">" + jsonChunk.content + "</span>";
-            } else {
-                return "<span style=\"" + styles.join(";") + "\"" + render_data(data) + ">" + jsonChunk.content + "</span>";
-            }
-        }
-    }]);
-
-    return Anser;
-}();
-
-;
-
-module.exports = Anser;
-});
-return ___scope___.entry = "lib/index.js";
-});
-FuseBox.pkg("escape-carriage", {}, function(___scope___){
-___scope___.file("index.js", function(exports, require, module, __filename, __dirname){
-
-/**
- * Escape carrigage returns like a terminal
- * @param {string} txt - String to escape.
- * @return {string}    - Escaped string.
- */
-function escapeCarriageReturn(txt) {
-  if (!txt) return "";
-  if (!/\r/.test(txt)) return txt;
-  txt = txt.replace(/\r+\n/gm, "\n"); // \r followed by \n --> newline
-  while (/\r[^$]/.test(txt)) {
-    var base = /^(.*)\r+/m.exec(txt)[1];
-    var insert = /\r+(.*)$/m.exec(txt)[1];
-    insert = insert + base.slice(insert.length, base.length);
-    txt = txt.replace(/\r+.*$/m, "\r").replace(/^.*\r/m, insert);
-  }
-  return txt;
-}
-
-function findLongestString(arr) {
-  var longest = 0;
-  for (var i = 0; i < arr.length; i++) {
-    if (arr[longest].length <= arr[i].length) {
-      longest = i;
-    }
-  }
-  return longest;
-}
-
-function escapeSingleLineSafe(txt) {
-  if (!/\r/.test(txt)) return txt;
-  var arr = txt.split("\r");
-  var res = [];
-
-  while (arr.length > 0) {
-    var longest = findLongestString(arr);
-    res.push(arr[longest]);
-    arr = arr.slice(longest + 1);
-  }
-
-  return res.join("\r");
-}
-
-/**
- * Safely escape carrigage returns like a terminal.
- * This allows to escape carrigage returns while allowing future output to be appended
- * without loosing information.
- * Use this as a intermediate escape step if your stream hasn't completed yet.
- * @param {string} txt - String to escape.
- * @return {string}    - Escaped string.
- */
-function escapeCarriageReturnSafe(txt) {
-  if (!txt) return "";
-  if (!/\r/.test(txt)) return txt;
-  if (!/\n/.test(txt)) return escapeSingleLineSafe(txt);
-  txt = txt.replace(/\r+\n/gm, "\n"); // \r followed by \n --> newline
-  var idx = txt.lastIndexOf("\n");
-
-  return (
-    escapeCarriageReturn(txt.slice(0, idx)) +
-    "\n" +
-    escapeSingleLineSafe(txt.slice(idx + 1))
-  );
-}
-
-module.exports = escapeCarriageReturn;
-module.exports.escapeCarriageReturn = escapeCarriageReturn;
-module.exports.escapeCarriageReturnSafe = escapeCarriageReturnSafe;
-
-});
-return ___scope___.entry = "index.js";
 });
 })
 (function(e){function r(e){var r=e.charCodeAt(0),n=e.charCodeAt(1);if((d||58!==n)&&(r>=97&&r<=122||64===r)){if(64===r){var t=e.split("/"),i=t.splice(2,t.length).join("/");return[t[0]+"/"+t[1],i||void 0]}var o=e.indexOf("/");if(o===-1)return[e];var a=e.substring(0,o),u=e.substring(o+1);return[a,u]}}function n(e){return e.substring(0,e.lastIndexOf("/"))||"./"}function t(){for(var e=[],r=0;r<arguments.length;r++)e[r]=arguments[r];for(var n=[],t=0,i=arguments.length;t<i;t++)n=n.concat(arguments[t].split("/"));for(var o=[],t=0,i=n.length;t<i;t++){var a=n[t];a&&"."!==a&&(".."===a?o.pop():o.push(a))}return""===n[0]&&o.unshift(""),o.join("/")||(o.length?"/":".")}function i(e){var r=e.match(/\.(\w{1,})$/);return r&&r[1]?e:e+".js"}function o(e){if(d){var r,n=document,t=n.getElementsByTagName("head")[0];/\.css$/.test(e)?(r=n.createElement("link"),r.rel="stylesheet",r.type="text/css",r.href=e):(r=n.createElement("script"),r.type="text/javascript",r.src=e,r.async=!0),t.insertBefore(r,t.firstChild)}}function a(e,r){for(var n in e)e.hasOwnProperty(n)&&r(n,e[n])}function u(e){return{server:require(e)}}function f(e,n){var o=n.path||"./",a=n.pkg||"default",f=r(e);if(f&&(o="./",a=f[0],n.v&&n.v[a]&&(a=a+"@"+n.v[a]),e=f[1]),e)if(126===e.charCodeAt(0))e=e.slice(2,e.length),o="./";else if(!d&&(47===e.charCodeAt(0)||58===e.charCodeAt(1)))return u(e);var s=h[a];if(!s){if(d&&"electron"!==g.target)throw"Package not found "+a;return u(a+(e?"/"+e:""))}e=e?e:"./"+s.s.entry;var l,c=t(o,e),v=i(c),p=s.f[v];return!p&&v.indexOf("*")>-1&&(l=v),p||l||(v=t(c,"/","index.js"),p=s.f[v],p||(v=c+".js",p=s.f[v]),p||(p=s.f[c+".jsx"]),p||(v=c+"/index.jsx",p=s.f[v])),{file:p,wildcard:l,pkgName:a,versions:s.v,filePath:c,validPath:v}}function s(e,r,n){if(void 0===n&&(n={}),!d)return r(/\.(js|json)$/.test(e)?v.require(e):"");if(n&&n.ajaxed===e)return console.error(e,"does not provide a module");var i=new XMLHttpRequest;i.onreadystatechange=function(){if(4==i.readyState)if(200==i.status){var n=i.getResponseHeader("Content-Type"),o=i.responseText;/json/.test(n)?o="module.exports = "+o:/javascript/.test(n)||(o="module.exports = "+JSON.stringify(o));var a=t("./",e);g.dynamic(a,o),r(g.import(e,{ajaxed:e}))}else console.error(e,"not found on request"),r(void 0)},i.open("GET",e,!0),i.send()}function l(e,r){var n=m[e];if(n)for(var t in n){var i=n[t].apply(null,r);if(i===!1)return!1}}function c(e,r){if(void 0===r&&(r={}),58===e.charCodeAt(4)||58===e.charCodeAt(5))return o(e);var t=f(e,r);if(t.server)return t.server;var i=t.file;if(t.wildcard){var a=new RegExp(t.wildcard.replace(/\*/g,"@").replace(/[.?*+^$[\]\\(){}|-]/g,"\\$&").replace(/@@/g,".*").replace(/@/g,"[a-z0-9$_-]+"),"i"),u=h[t.pkgName];if(u){var p={};for(var m in u.f)a.test(m)&&(p[m]=c(t.pkgName+"/"+m));return p}}if(!i){var g="function"==typeof r,x=l("async",[e,r]);if(x===!1)return;return s(e,function(e){return g?r(e):null},r)}var _=t.pkgName;if(i.locals&&i.locals.module)return i.locals.module.exports;var w=i.locals={},y=n(t.validPath);w.exports={},w.module={exports:w.exports},w.require=function(e,r){return c(e,{pkg:_,path:y,v:t.versions})},w.require.main={filename:d?"./":v.require.main.filename,paths:d?[]:v.require.main.paths};var j=[w.module.exports,w.require,w.module,t.validPath,y,_];return l("before-import",j),i.fn.apply(0,j),l("after-import",j),w.module.exports}if(e.FuseBox)return e.FuseBox;var d="undefined"!=typeof window&&window.navigator,v=d?window:global;d&&(v.global=window),e=d&&"undefined"==typeof __fbx__dnm__?e:module.exports;var p=d?window.__fsbx__=window.__fsbx__||{}:v.$fsbx=v.$fsbx||{};d||(v.require=require);var h=p.p=p.p||{},m=p.e=p.e||{},g=function(){function r(){}return r.global=function(e,r){return void 0===r?v[e]:void(v[e]=r)},r.import=function(e,r){return c(e,r)},r.on=function(e,r){m[e]=m[e]||[],m[e].push(r)},r.exists=function(e){try{var r=f(e,{});return void 0!==r.file}catch(e){return!1}},r.remove=function(e){var r=f(e,{}),n=h[r.pkgName];n&&n.f[r.validPath]&&delete n.f[r.validPath]},r.main=function(e){return this.mainFile=e,r.import(e,{})},r.expose=function(r){var n=function(n){var t=r[n].alias,i=c(r[n].pkg);"*"===t?a(i,function(r,n){return e[r]=n}):"object"==typeof t?a(t,function(r,n){return e[n]=i[r]}):e[t]=i};for(var t in r)n(t)},r.dynamic=function(r,n,t){this.pkg(t&&t.pkg||"default",{},function(t){t.file(r,function(r,t,i,o,a){var u=new Function("__fbx__dnm__","exports","require","module","__filename","__dirname","__root__",n);u(!0,r,t,i,o,a,e)})})},r.flush=function(e){var r=h.default;for(var n in r.f)e&&!e(n)||delete r.f[n].locals},r.pkg=function(e,r,n){if(h[e])return n(h[e].s);var t=h[e]={};return t.f={},t.v=r,t.s={file:function(e,r){return t.f[e]={fn:r}}},n(t.s)},r.addPlugin=function(e){this.plugins.push(e)},r}();return g.packages=h,g.isBrowser=d,g.isServer=!d,g.plugins=[],d||(v.FuseBox=g),e.FuseBox=g}(this))
