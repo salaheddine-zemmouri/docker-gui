@@ -707,7 +707,6 @@ var Containers = (_class = function (_BaseStore) {
   initializer: function initializer() {
     var _this4 = this;
 
-<<<<<<< HEAD:dist/9132b3f5-app.js
     return function () {
       var _ref3 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(id) {
         var res;
@@ -753,9 +752,6 @@ var Containers = (_class = function (_BaseStore) {
     var _this5 = this;
 
     return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4() {
-=======
-    return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3() {
->>>>>>> Update node-sass dependency:dist/6edb1c9-app.js
       var res;
       return regeneratorRuntime.wrap(function _callee4$(_context4) {
         while (1) {
@@ -821,13 +817,8 @@ var Containers = (_class = function (_BaseStore) {
   initializer: function initializer() {
     var _this6 = this;
 
-<<<<<<< HEAD:dist/9132b3f5-app.js
     return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5() {
       return regeneratorRuntime.wrap(function _callee5$(_context5) {
-=======
-    return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4() {
-      return regeneratorRuntime.wrap(function _callee4$(_context4) {
->>>>>>> Update node-sass dependency:dist/6edb1c9-app.js
         while (1) {
           switch (_context5.prev = _context5.next) {
             case 0:
@@ -856,62 +847,13 @@ var Containers = (_class = function (_BaseStore) {
       }, _callee5, _this6, [[1, 7]]);
     }));
   }
-<<<<<<< HEAD:dist/9132b3f5-app.js
 }), _descriptor7 = _applyDecoratedDescriptor(_class.prototype, "renameContainer", [_mobx.action], {
-=======
-}), _descriptor6 = _applyDecoratedDescriptor(_class.prototype, "renameContainer", [_mobx.action], {
-  enumerable: true,
-  initializer: function initializer() {
-    var _this6 = this;
-
-    return function () {
-      var _ref5 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5(id, name) {
-        return regeneratorRuntime.wrap(function _callee5$(_context5) {
-          while (1) {
-            switch (_context5.prev = _context5.next) {
-              case 0:
-                _this6.setError();
-
-                _context5.prev = 1;
-                _context5.next = 4;
-                return _axios2.default.put("containers/" + id + "/rename", { name: name });
-
-              case 4:
-                _this6.loadContainers();
-                _context5.next = 10;
-                break;
-
-              case 7:
-                _context5.prev = 7;
-                _context5.t0 = _context5["catch"](1);
-
-                _this6.setError(_context5.t0);
-
-              case 10:
-              case "end":
-                return _context5.stop();
-            }
-          }
-        }, _callee5, _this6, [[1, 7]]);
-      }));
-
-      return function (_x3, _x4) {
-        return _ref5.apply(this, arguments);
-      };
-    }();
-  }
-}), _descriptor7 = _applyDecoratedDescriptor(_class.prototype, "restartContainer", [_mobx.action], {
->>>>>>> Update node-sass dependency:dist/6edb1c9-app.js
   enumerable: true,
   initializer: function initializer() {
     var _this7 = this;
 
     return function () {
-<<<<<<< HEAD:dist/9132b3f5-app.js
       var _ref6 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee6(id, name) {
-=======
-      var _ref6 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee6(id) {
->>>>>>> Update node-sass dependency:dist/6edb1c9-app.js
         return regeneratorRuntime.wrap(function _callee6$(_context6) {
           while (1) {
             switch (_context6.prev = _context6.next) {
