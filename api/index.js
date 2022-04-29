@@ -1,6 +1,7 @@
 const {Router}   = require('express')
 const images     = require('./images')
 const containers = require('./containers')
+const containerStats = require('./container_stats')
 const volumes    = require('./volumes')
 const networks   = require('./networks')
 const auth       = require('./auth')
@@ -27,6 +28,9 @@ router.put   ('/containers/:id/pause',   auth.middleware, containers.pause)
 router.put   ('/containers/:id/unpause', auth.middleware, containers.unpause)
 router.delete('/containers/:id',         auth.middleware, containers.destroy)
 router.post   ('/containers/prune',      auth.middleware, containers.prune)
+
+
+router.get   ('/container_stats',        auth.middleware, containerStats.stats)
 
 router.get   ('/volumes',       auth.middleware, volumes.list)
 router.post  ('/volumes',       auth.middleware, volumes.create)

@@ -31265,7 +31265,6 @@ module.exports = function httpAdapter(config) {
 ___scope___.file("package.json", function(exports, require, module, __filename, __dirname){
 
 module.exports = {
-<<<<<<< HEAD:dist/cef66c75-vendor.js
   "_args": [
     [
       "axios@0.16.2",
@@ -31273,8 +31272,6 @@ module.exports = {
     ]
   ],
   "_development": true,
-=======
->>>>>>> Update node-sass dependency:dist/248bd47e-vendor.js
   "_from": "axios@0.16.2",
   "_id": "axios@0.16.2",
   "_inBundle": false,
@@ -31295,14 +31292,8 @@ module.exports = {
     "#DEV:/"
   ],
   "_resolved": "https://registry.npmjs.org/axios/-/axios-0.16.2.tgz",
-<<<<<<< HEAD:dist/cef66c75-vendor.js
   "_spec": "0.16.2",
   "_where": "/mnt/c/Users/zemms/Desktop/Projects/docker-gui",
-=======
-  "_shasum": "ba4f92f17167dfbab40983785454b9ac149c3c6d",
-  "_spec": "axios@0.16.2",
-  "_where": "/home/kim/workspace/docker-gui",
->>>>>>> Update node-sass dependency:dist/248bd47e-vendor.js
   "author": {
     "name": "Matt Zabriskie"
   },
@@ -31312,12 +31303,10 @@ module.exports = {
   "bugs": {
     "url": "https://github.com/mzabriskie/axios/issues"
   },
-  "bundleDependencies": false,
   "dependencies": {
     "follow-redirects": "^1.2.3",
     "is-buffer": "^1.1.5"
   },
-  "deprecated": "Critical security vulnerability fixed in v0.21.1. For more information, see https://github.com/axios/axios/pull/3410",
   "description": "Promise based HTTP client for the browser and node.js",
   "devDependencies": {
     "coveralls": "^2.11.9",
@@ -57535,7 +57524,6 @@ module.exports = function(__filename, contents) {
 });
 return ___scope___.entry = "index.js";
 });
-<<<<<<< HEAD:dist/cef66c75-vendor.js
 FuseBox.pkg("ansi-to-react", {}, function(___scope___){
 ___scope___.file("lib/index.js", function(exports, require, module, __filename, __dirname){
 
@@ -58378,8 +58366,6 @@ module.exports.escapeCarriageReturnSafe = escapeCarriageReturnSafe;
 });
 return ___scope___.entry = "index.js";
 });
-=======
->>>>>>> Update node-sass dependency:dist/248bd47e-vendor.js
 FuseBox.pkg("babel-polyfill", {"regenerator-runtime":"0.10.5"}, function(___scope___){
 ___scope___.file("lib/index.js", function(exports, require, module, __filename, __dirname){
 
