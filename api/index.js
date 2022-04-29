@@ -28,6 +28,9 @@ router.put   ('/containers/:id/unpause', auth.middleware, containers.unpause)
 router.delete('/containers/:id',         auth.middleware, containers.destroy)
 router.post   ('/containers/prune',      auth.middleware, containers.prune)
 
+
+router.get   ('/container_stats',        auth.middleware, containerStats.stats)
+
 router.get   ('/volumes',       auth.middleware, volumes.list)
 router.post  ('/volumes',       auth.middleware, volumes.create)
 router.get   ('/volumes/:id',   auth.middleware, volumes.read)
