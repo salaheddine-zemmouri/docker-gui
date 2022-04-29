@@ -1,6 +1,7 @@
 const {Router}   = require('express')
 const images     = require('./images')
 const containers = require('./containers')
+const containerStats = require('./container_stats')
 const volumes    = require('./volumes')
 const networks   = require('./networks')
 const auth       = require('./auth')
