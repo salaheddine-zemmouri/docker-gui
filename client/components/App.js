@@ -59,6 +59,7 @@ export default class App extends React.Component {
 
     let button = null,
       images = '',
+      containerStats = '',
       containers = '',
       volumes = '',
       networks = ''
@@ -67,6 +68,9 @@ export default class App extends React.Component {
     case 'images':
       button = <button type="button" className="btn btn-danger btn-sm" onClick={this.pruneImages}>Delete all unused images</button>
       images = 'active'
+      break
+    case 'container-stats':
+      containerStats = 'active'
       break
     case 'containers':
       button = <button type="button" className="btn btn-danger btn-sm" onClick={this.pruneContainers}>Delete all stopped containers</button>
@@ -96,6 +100,7 @@ export default class App extends React.Component {
             </div>
             <div className="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
               <ul className="nav navbar-nav">
+                <li className={containerStats}><Link to="/container-stats">Stats</Link></li>
                 <li className={images}><Link to="/images">Images</Link></li>
                 <li className={containers}><Link to="/containers">Containers</Link></li>
                 <li className={volumes}><Link to="/volumes">Volumes</Link></li>
