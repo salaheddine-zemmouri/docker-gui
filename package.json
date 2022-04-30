@@ -45,7 +45,7 @@
     "babel-preset-react": "6.24.1",
     "babel-preset-stage-0": "6.24.1",
     "bootstrap": "3.3.7",
-    "chart.js": "^2.6.0",
+    "chart.js": "^2.9.4",
     "eslint-plugin-react": "7.1.0",
     "fuse-box": "2.1.0",
     "fuse-box-eslint-plugin": "0.0.3",

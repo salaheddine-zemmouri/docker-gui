@@ -3943,7 +3943,7 @@ var ContainerStat = function (_React$Component) {
           { style: _ContainerStats.styles.flex_wrapper },
           _react2.default.createElement(_MetricCard2.default, {
             icon: _container2.default,
-            title: 'Number of contianers',
+            title: 'Number of containers',
             value: this.state.containers.length
           }),
           _react2.default.createElement(_MetricCard2.default, {

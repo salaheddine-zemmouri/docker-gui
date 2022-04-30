@@ -52,7 +52,7 @@ export default class ContainerStat extends React.Component {
         <div style={styles.flex_wrapper}>
           <MetricCard
             icon={containerSVG}
-            title='Number of contianers'
+            title='Number of containers'
             value={this.state.containers.length}
           />
           <MetricCard
