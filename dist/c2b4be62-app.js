@@ -77,6 +77,14 @@ var _Logs = require("./components/Logs/Logs");
 
 var _Logs2 = _interopRequireDefault(_Logs);
 
+var _ContainerStats = require("./components/ContainerStats/ContainerStats");
+
+var _ContainerStats2 = _interopRequireDefault(_ContainerStats);
+
+var _ContainerRLTStats = require("./components/ContainerStats/ContainerRLTStats");
+
+var _ContainerRLTStats2 = _interopRequireDefault(_ContainerRLTStats);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -110,6 +118,8 @@ var Router = function (_React$Component) {
             _react2.default.createElement(_reactRouter.Route, { path: "login", component: _Login2.default }),
             _react2.default.createElement(_reactRouter.Route, { path: "images", component: _Images2.default }),
             _react2.default.createElement(_reactRouter.Route, { path: "containers", component: _Containers2.default }),
+            _react2.default.createElement(_reactRouter.Route, { path: "container-stats", component: _ContainerStats2.default }),
+            _react2.default.createElement(_reactRouter.Route, { path: "container-stats/:id", component: _ContainerRLTStats2.default }),
             _react2.default.createElement(_reactRouter.Route, { path: "volumes", component: _Volumes2.default }),
             _react2.default.createElement(_reactRouter.Route, { path: "networks", component: _Networks2.default }),
             _react2.default.createElement(_reactRouter.Route, { path: "Logs", component: _Logs2.default })
@@ -2300,6 +2310,7 @@ var App = (_dec = (0, _mobxReact.inject)('store'), _dec(_class = function (_Reac
 
       var button = null,
           images = '',
+          containerStats = '',
           containers = '',
           volumes = '',
           networks = '';
@@ -2312,6 +2323,9 @@ var App = (_dec = (0, _mobxReact.inject)('store'), _dec(_class = function (_Reac
             "Delete all unused images"
           );
           images = 'active';
+          break;
+        case 'container-stats':
+          containerStats = 'active';
           break;
         case 'containers':
           button = _react2.default.createElement(
@@ -2370,6 +2384,15 @@ var App = (_dec = (0, _mobxReact.inject)('store'), _dec(_class = function (_Reac
               _react2.default.createElement(
                 "ul",
                 { className: "nav navbar-nav" },
+                _react2.default.createElement(
+                  "li",
+                  { className: containerStats },
+                  _react2.default.createElement(
+                    _reactRouter.Link,
+                    { to: "/container-stats" },
+                    "Stats"
+                  )
+                ),
                 _react2.default.createElement(
                   "li",
                   { className: images },
@@ -3811,6 +3834,793 @@ var Logs = (_dec = (0, _mobxReact.inject)('store'), _dec(_class = (0, _mobxReact
   return Logs;
 }(_react2.default.Component)) || _class) || _class);
 exports.default = Logs;
+});
+___scope___.file("components/ContainerStats/ContainerStats.js", function(exports, require, module, __filename, __dirname){
+
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = undefined;
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+var _ContainerStats = require('./ContainerStats.style');
+
+var _container = require('../../assets/png/container.png');
+
+var _container2 = _interopRequireDefault(_container);
+
+var _cpu = require('../../assets/png/cpu.png');
+
+var _cpu2 = _interopRequireDefault(_cpu);
+
+var _memory = require('../../assets/png/memory.png');
+
+var _memory2 = _interopRequireDefault(_memory);
+
+var _MetricCard = require('./MetricCard');
+
+var _MetricCard2 = _interopRequireDefault(_MetricCard);
+
+var _ContainerMetricChartView = require('./ContainerMetricChartView');
+
+var _ContainerMetricChartView2 = _interopRequireDefault(_ContainerMetricChartView);
+
+var _axios = require('axios');
+
+var _axios2 = _interopRequireDefault(_axios);
+
+var _reactRouter = require('react-router');
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var ContainerStat = function (_React$Component) {
+  _inherits(ContainerStat, _React$Component);
+
+  function ContainerStat() {
+    _classCallCheck(this, ContainerStat);
+
+    var _this = _possibleConstructorReturn(this, (ContainerStat.__proto__ || Object.getPrototypeOf(ContainerStat)).call(this));
+
+    _this.state = {
+      isTableBtnActive: true,
+      totalCpuUsage: 0,
+      totalMemoryUsage: 0,
+      containers: []
+    };
+    return _this;
+  }
+
+  _createClass(ContainerStat, [{
+    key: 'componentDidMount',
+    value: function componentDidMount() {
+      var _this2 = this;
+
+      _axios2.default.get('http://localhost:3000/container-stats').then(function (res) {
+        return _this2.setState({
+          totalCpuUsage: res.data.total_cpu_usage.toFixed(2),
+          totalMemoryUsage: res.data.total_memory_usage.toFixed(2),
+          containers: res.data.containers_states
+        });
+      });
+    }
+  }, {
+    key: 'toggleContainerListView',
+    value: function toggleContainerListView(targetBtn) {
+      if (this.state.isTableBtnActive && targetBtn !== 'list' || !this.state.isTableBtnActive && targetBtn !== 'stats') {
+        this.setState(function (state) {
+          return {
+            isTableBtnActive: !state.isTableBtnActive
+          };
+        });
+      }
+    }
+  }, {
+    key: 'getBtnGroupClassName',
+    value: function getBtnGroupClassName(isActive) {
+      return isActive ? 'btn-primary' : 'btn-default';
+    }
+  }, {
+    key: 'render',
+    value: function render() {
+      return _react2.default.createElement(
+        'div',
+        { className: 'containers-stats', style: { padding: '64px' } },
+        _react2.default.createElement(
+          'div',
+          { style: _ContainerStats.styles.flex_wrapper },
+          _react2.default.createElement(_MetricCard2.default, {
+            icon: _container2.default,
+            title: 'Number of contianers',
+            value: this.state.containers.length
+          }),
+          _react2.default.createElement(_MetricCard2.default, {
+            icon: _cpu2.default,
+            title: 'Total CPU usage',
+            value: this.state.totalCpuUsage + ' %'
+          }),
+          _react2.default.createElement(_MetricCard2.default, {
+            icon: _memory2.default,
+            title: 'Total Memory usage',
+            value: this.state.totalMemoryUsage + ' %'
+          })
+        ),
+        _react2.default.createElement(
+          'div',
+          { style: _ContainerStats.styles.table_actions },
+          _react2.default.createElement(
+            'div',
+            {
+              style: _ContainerStats.styles.table_toggle_view, className: 'btn-group',
+              role: 'group',
+              'aria-label': '...'
+            },
+            _react2.default.createElement(
+              'button',
+              {
+                id: 'list',
+                type: 'button',
+                className: 'btn ' + this.getBtnGroupClassName(this.state.isTableBtnActive),
+                onClick: this.toggleContainerListView.bind(this, 'list')
+              },
+              _react2.default.createElement('span', {
+                className: 'glyphicon glyphicon-th-list',
+                'aria-hidden': 'true'
+              })
+            ),
+            _react2.default.createElement(
+              'button',
+              {
+                id: 'stats',
+                type: 'button',
+                className: 'btn ' + this.getBtnGroupClassName(!this.state.isTableBtnActive),
+                onClick: this.toggleContainerListView.bind(this, 'stats')
+              },
+              _react2.default.createElement('span', {
+                className: 'glyphicon glyphicon-stats',
+                'aria-hidden': 'true'
+              })
+            )
+          ),
+          _react2.default.createElement(
+            'button',
+            { type: 'button', className: 'btn btn-primary' },
+            'Refresh'
+          )
+        ),
+        this.state.isTableBtnActive ? _react2.default.createElement(
+          'div',
+          { className: 'table-responsive' },
+          _react2.default.createElement(
+            'table',
+            { className: 'table' },
+            _react2.default.createElement(
+              'thead',
+              null,
+              _react2.default.createElement(
+                'tr',
+                null,
+                _react2.default.createElement(
+                  'th',
+                  null,
+                  'Container ID'
+                ),
+                _react2.default.createElement(
+                  'th',
+                  null,
+                  'Metrics'
+                ),
+                _react2.default.createElement(
+                  'th',
+                  null,
+                  'Stats'
+                ),
+                _react2.default.createElement('th', null)
+              )
+            ),
+            _react2.default.createElement(
+              'tbody',
+              null,
+              this.state.containers.map(function (container) {
+                return _react2.default.createElement(
+                  'tr',
+                  { key: container.container_id },
+                  _react2.default.createElement(
+                    'td',
+                    null,
+                    container.container_id.substring(0, 8)
+                  ),
+                  _react2.default.createElement(
+                    'td',
+                    null,
+                    _react2.default.createElement(
+                      'span',
+                      { className: 'label label-default', style: _ContainerStats.styles.label },
+                      'CPU : ',
+                      container.cpu_usage.toFixed(2),
+                      ' %'
+                    ),
+                    _react2.default.createElement(
+                      'span',
+                      { className: 'label label-default', style: _ContainerStats.styles.label },
+                      'MEM : ',
+                      container.memory_usage.toFixed(2),
+                      ' %'
+                    )
+                  ),
+                  _react2.default.createElement(
+                    'td',
+                    null,
+                    _react2.default.createElement(
+                      _reactRouter.Link,
+                      { to: '/container-stats/' + container.container_id },
+                      'Detailed statistics'
+                    )
+                  )
+                );
+              })
+            )
+          )
+        ) : _react2.default.createElement(
+          'div',
+          null,
+          _react2.default.createElement(_ContainerMetricChartView2.default, {
+            containers: this.state.containers,
+            totalCpuUsage: this.state.totalCpuUsage,
+            totalMemoryUsage: this.state.totalMemoryUsage
+          })
+        )
+      );
+    }
+  }]);
+
+  return ContainerStat;
+}(_react2.default.Component);
+
+exports.default = ContainerStat;
+});
+___scope___.file("components/ContainerStats/ContainerStats.style.js", function(exports, require, module, __filename, __dirname){
+
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+var styles = exports.styles = {
+  flex_wrapper: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between'
+  },
+  label: {
+    marginRight: '8px',
+    borderRadius: '8px'
+  },
+  table_toggle_view: {
+    marginRight: '8px',
+    right: '0'
+  },
+  table_actions: {
+    marginTop: '8px',
+    marginBottom: '8px',
+    display: 'flex',
+    justifyContent: 'end'
+  }
+};
+});
+___scope___.file("components/ContainerStats/MetricCard.js", function(exports, require, module, __filename, __dirname){
+
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = undefined;
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+var _MetricCard = require('./MetricCard.style');
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var MetricCard = function (_React$Component) {
+  _inherits(MetricCard, _React$Component);
+
+  function MetricCard() {
+    _classCallCheck(this, MetricCard);
+
+    return _possibleConstructorReturn(this, (MetricCard.__proto__ || Object.getPrototypeOf(MetricCard)).apply(this, arguments));
+  }
+
+  _createClass(MetricCard, [{
+    key: 'render',
+    value: function render() {
+      return _react2.default.createElement(
+        'div',
+        { style: _MetricCard.styles.flex_card },
+        _react2.default.createElement(
+          'span',
+          { style: _MetricCard.styles.grid_item_title },
+          this.props.title
+        ),
+        _react2.default.createElement(
+          'span',
+          { style: _MetricCard.styles.grid_item_value },
+          this.props.value
+        )
+      );
+    }
+  }]);
+
+  return MetricCard;
+}(_react2.default.Component);
+
+exports.default = MetricCard;
+});
+___scope___.file("components/ContainerStats/MetricCard.style.js", function(exports, require, module, __filename, __dirname){
+
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+var styles = exports.styles = {
+  flex_card: {
+    boxSizing: 'border-box',
+    color: 'white',
+    backgroundColor: '#2c3e50',
+    minWidth: '30%',
+    height: '150px',
+    borderRadius: '8px',
+    overflow: 'hidden',
+    display: 'grid',
+    transition: 'transform ease-in-out .3s',
+    '&:hover': {
+      transform: 'scale(1.05, 1.05)'
+    }
+  },
+  grid_item_icon: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gridColumn: 1,
+    gridRow: '1 / span 2'
+  },
+
+  grid_item_title: {
+    marginTop: '16px',
+    textAlign: 'center',
+    wordWrap: 'break-word',
+    fontSize: '1.8em',
+    gridColumn: 1,
+    gridRow: 1
+  },
+
+  grid_item_value: {
+    fontSize: '3.5em',
+    fontWeight: 'bolder',
+    textAlign: 'center',
+    gridColumn: 1,
+    gridRow: 2
+  }
+};
+});
+___scope___.file("components/ContainerStats/ContainerMetricChartView.js", function(exports, require, module, __filename, __dirname){
+
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = undefined;
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+var _reactChartjs = require('react-chartjs-2');
+
+var _ContainerMetricChartView = require('./ContainerMetricChartView.style');
+
+var _utils = require('./utils.js');
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var cpuData = {
+  labels: [],
+  datasets: [{
+    data: [],
+    backgroundColor: [],
+    borderWidth: 1
+  }]
+};
+
+var cpuOption = {
+  responsive: true,
+  plugins: {
+    legend: {
+      position: 'left'
+    },
+    title: {
+      display: true,
+      text: 'CPU usage distribution'
+    }
+  }
+};
+var memoryData = {
+  labels: [],
+  datasets: [{
+    data: [],
+    backgroundColor: [],
+    borderWidth: 1
+  }]
+};
+
+var memoryOption = {
+  responsive: true,
+  plugins: {
+    legend: {
+      position: 'left'
+    },
+    title: {
+      display: true,
+      text: 'Memory usage distribution'
+    }
+  }
+};
+
+var ContainerMetricChartView = function (_React$Component) {
+  _inherits(ContainerMetricChartView, _React$Component);
+
+  function ContainerMetricChartView(props) {
+    _classCallCheck(this, ContainerMetricChartView);
+
+    var _this = _possibleConstructorReturn(this, (ContainerMetricChartView.__proto__ || Object.getPrototypeOf(ContainerMetricChartView)).call(this, props));
+
+    _this.state = _extends({}, props);
+    return _this;
+  }
+
+  _createClass(ContainerMetricChartView, [{
+    key: 'componentDidMount',
+    value: function componentDidMount() {
+      var backgroundColors = (0, _utils.hexColorGenerator)(this.state.containers.length);
+      cpuData.labels = this.state.containers.map(function (container) {
+        return container.container_name;
+      });
+      cpuData.datasets[0].data = this.state.containers.map(function (container) {
+        return container.cpu_usage;
+      });
+      cpuData.datasets[0].backgroundColor = backgroundColors;
+
+      memoryData.labels = cpuData.labels;
+      memoryData.datasets[0].data = this.state.containers.map(function (container) {
+        return container.memory_usage;
+      });
+      memoryData.datasets[0].backgroundColor = backgroundColors;
+    }
+  }, {
+    key: 'render',
+    value: function render() {
+      return _react2.default.createElement(
+        'div',
+        { style: _ContainerMetricChartView.styles.flex_wrapper },
+        _react2.default.createElement(
+          'div',
+          null,
+          ' ',
+          _react2.default.createElement(_reactChartjs.Pie, { options: cpuOption, data: cpuData })
+        ),
+        _react2.default.createElement(
+          'div',
+          null,
+          ' ',
+          _react2.default.createElement(_reactChartjs.Pie, { options: memoryOption, data: memoryData })
+        )
+      );
+    }
+  }]);
+
+  return ContainerMetricChartView;
+}(_react2.default.Component);
+
+exports.default = ContainerMetricChartView;
+});
+___scope___.file("components/ContainerStats/ContainerMetricChartView.style.js", function(exports, require, module, __filename, __dirname){
+
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+var styles = exports.styles = {
+  flex_wrapper: {
+    display: 'flex',
+    justifyContent: 'space-around',
+    maxWidth: '100%'
+  },
+
+  pie_wrapper: {
+    width: '85px',
+    height: '85px'
+  }
+};
+});
+___scope___.file("components/ContainerStats/utils.js", function(exports, require, module, __filename, __dirname){
+
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+var hexColorGenerator = exports.hexColorGenerator = function hexColorGenerator(length) {
+  var hexColors = [];
+
+  var i = 0;
+  while (i++ <= length) {
+    var generatedHex = Math.floor(Math.random() * 0xfffff * 1000000).toString(16);
+    hexColors.push('#' + generatedHex.slice(0, 6));
+  }
+
+  return hexColors;
+};
+});
+___scope___.file("components/ContainerStats/ContainerRLTStats.js", function(exports, require, module, __filename, __dirname){
+
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = undefined;
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _react = require('react');
+
+var _react2 = _interopRequireDefault(_react);
+
+var _reactChartjs = require('react-chartjs-2');
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var ContainerRLTStat = function (_React$Component) {
+  _inherits(ContainerRLTStat, _React$Component);
+
+  function ContainerRLTStat(props) {
+    _classCallCheck(this, ContainerRLTStat);
+
+    var _this = _possibleConstructorReturn(this, (ContainerRLTStat.__proto__ || Object.getPrototypeOf(ContainerRLTStat)).call(this, props));
+
+    _this.state = { selectedRefreshRate: 5 };
+    var labels = ['January', 'February', 'March', 'April', 'May', 'June', 'July'];
+
+    _this.data = {
+      labels: labels,
+      datasets: [{
+        label: 'dataset 1',
+        data: [100, 200, 300, 400, 500, 600, 700, 800, 900],
+        borderColor: '#e84118',
+        backgroundColor: '#c23616'
+      }, {
+        label: 'dataset 2',
+        data: [100, 200, 300, 400, 500, 600, 700, 800, 900].reverse(),
+        borderColor: '#273c75',
+        backgroundColor: '#192a56'
+      }]
+    };
+    return _this;
+  }
+
+  _createClass(ContainerRLTStat, [{
+    key: 'updateSelectedRefreshRate',
+    value: function updateSelectedRefreshRate(e) {
+      var newRefreshRate = parseInt(e.target.id);
+      this.setState({ selectedRefreshRate: newRefreshRate });
+    }
+  }, {
+    key: 'render',
+    value: function render() {
+      return _react2.default.createElement(
+        'div',
+        { className: 'container-RLT-stats' },
+        _react2.default.createElement(
+          'div',
+          { className: 'panel panel-default' },
+          _react2.default.createElement(
+            'div',
+            { className: 'panel-heading' },
+            _react2.default.createElement(
+              'h3',
+              { className: 'panel-title' },
+              'Parameters'
+            )
+          ),
+          _react2.default.createElement(
+            'div',
+            { className: 'panel-body' },
+            _react2.default.createElement(
+              'div',
+              { className: 'btn-group' },
+              _react2.default.createElement(
+                'button',
+                {
+                  type: 'button',
+                  className: 'btn btn-default dropdown-toggle',
+                  'data-toggle': 'dropdown',
+                  'aria-haspopup': 'true',
+                  'aria-expanded': 'false'
+                },
+                'Refresh rate ',
+                _react2.default.createElement('span', { className: 'caret' })
+              ),
+              _react2.default.createElement(
+                'ul',
+                { className: 'dropdown-menu' },
+                _react2.default.createElement(
+                  'li',
+                  { onClick: this.updateSelectedRefreshRate.bind(this) },
+                  _react2.default.createElement(
+                    'a',
+                    { id: '1', href: true },
+                    '1s'
+                  )
+                ),
+                _react2.default.createElement(
+                  'li',
+                  { onClick: this.updateSelectedRefreshRate.bind(this) },
+                  _react2.default.createElement(
+                    'a',
+                    { id: '3', href: true },
+                    '3s'
+                  )
+                ),
+                _react2.default.createElement(
+                  'li',
+                  { onClick: this.updateSelectedRefreshRate.bind(this) },
+                  _react2.default.createElement(
+                    'a',
+                    { id: '5', href: true },
+                    '5s'
+                  )
+                ),
+                _react2.default.createElement(
+                  'li',
+                  { onClick: this.updateSelectedRefreshRate.bind(this) },
+                  _react2.default.createElement(
+                    'a',
+                    { id: '10', href: true },
+                    '10s'
+                  )
+                ),
+                _react2.default.createElement(
+                  'li',
+                  { onClick: this.updateSelectedRefreshRate.bind(this) },
+                  _react2.default.createElement(
+                    'a',
+                    { id: '30', href: true },
+                    '30s'
+                  )
+                ),
+                _react2.default.createElement(
+                  'li',
+                  { onClick: this.updateSelectedRefreshRate.bind(this) },
+                  _react2.default.createElement(
+                    'a',
+                    { id: '60', href: true },
+                    '60s'
+                  )
+                )
+              )
+            ),
+            _react2.default.createElement(
+              'span',
+              { style: { marginLeft: '8px' } },
+              this.state.selectedRefreshRate,
+              ' s'
+            )
+          )
+        ),
+        _react2.default.createElement(
+          'div',
+          { className: 'panel panel-default' },
+          _react2.default.createElement(
+            'div',
+            { className: 'panel-heading' },
+            _react2.default.createElement(
+              'h3',
+              { className: 'panel-title' },
+              'CPU usage'
+            )
+          ),
+          _react2.default.createElement(
+            'div',
+            { className: 'panel-body' },
+            _react2.default.createElement(_reactChartjs.Line, { width: 5, height: 2, data: this.data })
+          )
+        ),
+        _react2.default.createElement(
+          'div',
+          { className: 'panel panel-default' },
+          _react2.default.createElement(
+            'div',
+            { className: 'panel-heading' },
+            _react2.default.createElement(
+              'h3',
+              { className: 'panel-title' },
+              'Memory usage'
+            )
+          ),
+          _react2.default.createElement(
+            'div',
+            { className: 'panel-body' },
+            _react2.default.createElement(_reactChartjs.Line, { width: 5, height: 2, data: this.data })
+          )
+        ),
+        _react2.default.createElement(
+          'div',
+          { className: 'panel panel-default' },
+          _react2.default.createElement(
+            'div',
+            { className: 'panel-heading' },
+            _react2.default.createElement(
+              'h3',
+              { className: 'panel-title' },
+              'Network usage'
+            )
+          ),
+          _react2.default.createElement(
+            'div',
+            { className: 'panel-body' },
+            _react2.default.createElement(_reactChartjs.Line, { width: 5, height: 2, data: this.data })
+          )
+        )
+      );
+    }
+  }]);
+
+  return ContainerRLTStat;
+}(_react2.default.Component);
+
+exports.default = ContainerRLTStat;
 });
 ___scope___.file("app.css", function(exports, require, module, __filename, __dirname){
 
