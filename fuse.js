@@ -4,7 +4,6 @@ const {FuseBox}        = require('fuse-box')
 const {JSONPlugin}     = require('fuse-box')
 const {SassPlugin}     = require('fuse-box')
 const {WebIndexPlugin} = require('fuse-box')
-const ESLintPlugin     = require('fuse-box-eslint-plugin')
 const config           = require('./config')
 
 module.exports = production => {
@@ -19,7 +18,7 @@ module.exports = production => {
       ['.json', JSONPlugin()],
       ['.scss', SassPlugin(), CSSPlugin({outFile: `${output}/app.css`, group: 'app.css'})],
       ['.css', CSSPlugin()],
-      ['.js', ESLintPlugin(), BabelPlugin()],
+      ['.js', BabelPlugin()],
       WebIndexPlugin({
         title:    'Docker UI',
         template: 'client/index.html'
