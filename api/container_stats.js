@@ -35,6 +35,8 @@ function calculateMemUsage(result) {
 }
 
 module.exports = {
+    calculateCPUUsage,
+    calculateMemUsage,
     stats
   }
 
