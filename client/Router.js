@@ -16,6 +16,7 @@ import Networks from './components/Networks/Networks'
 import Logs from './components/Logs/Logs'
 import ContainerStat from './components/ContainerStats/ContainerStats'
 import ContainerRLTStats from './components/ContainerStats/ContainerRLTStats'
+import DockerFileGen from './components/dockerfileGenerator/DockerFileGen'
 
 export default class Router extends React.Component {
   props: {
@@ -32,6 +33,7 @@ export default class Router extends React.Component {
             <Route path="images" component={Images} />
             <Route path="containers" component={Containers} />
             <Route path="container-stats" component={ContainerStat} />
+            <Route path="dockerfile-generator" component={DockerFileGen} />
             <Route path="container-stats/:id" component={ContainerRLTStats} />
             <Route path="volumes" component={Volumes} />
             <Route path="networks" component={Networks} />
