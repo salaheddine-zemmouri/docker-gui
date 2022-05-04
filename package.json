@@ -9,7 +9,7 @@
     "build": "NODE_ENV=production node fuse.prod.js",
     "postinstall": "node scripts/postinstall.js",
     "prod": "NODE_ENV=production node .",
-    "test": "echo \"Error: no test specified\" && exit 0"
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -46,6 +46,7 @@
     "chart.js": "^2.9.4",
     "fuse-box": "2.1.0",
     "husky": "0.14.1",
+    "jest": "^23.6.0",
     "jquery": "3.2.1",
     "lodash": "4.17.4",
     "mobx": "3.1.9",
