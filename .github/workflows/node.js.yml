@@ -15,8 +15,8 @@ jobs:
 
     runs-on: ubuntu-latest
     env : 
-        DOCKER_USERNAME: ${{secret.DOCKER_USERNAME}}
-        DOCKER_PASS: ${{secret.DOCKER_PASS}}
+        DOCKER_USERNAME: ${{secrets.DOCKER_USERNAME}}
+        DOCKER_PASS: ${{secrets.DOCKER_PASS}}
         IMAGE_NAME : docker-gui-ci-test
         IMAGE_TAGNAME : latest
         
