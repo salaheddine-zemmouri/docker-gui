@@ -6,13 +6,14 @@ router.post("/", async (req, res) => {
     // Generate the Dockerfile
     const fileStatus = await createFile(req.body);
     // Send the Dockerfile
-    if(fileStatus === "Dockerfile generated")
+    if(fileStatus !== "Error writing in file")
     {
         res.download(path.join(__dirname,"../temp/Dockerfile"),"Dockerfile", error => {
             res.status(500).send(error);
         });
     }
 });
+
 const createFile = async (body) => {
     let content = "FROM ";
     for(let stage of body)
@@ -60,19 +61,25 @@ const createFile = async (body) => {
             content += "\n";
         }
     }
+    
+    if(content == "FROM ") content+="scratch";
+
     return new Promise((resolve, reject) => {
         fs.writeFile(path.join(__dirname, "../temp","Dockerfile"),content, error => {
             if(error)
             {
                 console.log("error :", error);
-                reject(error);
+                reject("Error writing in file");
             }
             else
             {
-                resolve("Dockerfile generated");
+                resolve(content);
             }
         });
     });
 };
 
-module.exports = router;
+module.exports = { 
+    router:router,
+    createFile:createFile
+}

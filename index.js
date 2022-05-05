@@ -37,8 +37,9 @@ app.use(session({
 // Route to the api
 app.use('/api/v1', api)
 
+
 // Route to the Dockerfile generator
-app.use("/api/dockerfile", dockerfile)
+app.use("/api/dockerfile", dockerfile.router)
 
 // Route to the index file
 app.use('*', (req, res) => {
@@ -50,3 +51,5 @@ server.listen(port, host, err => {
   if (err) throw err
   console.log(`Listening ${host}:${port}`)
 })
+
+
