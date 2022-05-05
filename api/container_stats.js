@@ -76,30 +76,5 @@ module.exports = {
     }
   }
 
-  /**
-   * GET /api/containers-stats
-        {
-            "total_memory_usage",
-            "total_cpu_usage",
-            "total_net_usage",
-            [
-                {
-                "container_id" : "x",
-                "container_name" : "x?",
-                "cpu_usage" : "x",
-                "memory_usage" : "x",
-                "net_usage" : {
-                    "eth0" : {
-                        "rx",
-                        "tx"
-                    }
-                },
-                "io_usage" : "x"
-                },
-                ...
-            ] 
-
-        }
-   */
 
 

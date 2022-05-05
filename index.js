@@ -50,3 +50,5 @@ server.listen(port, host, err => {
   if (err) throw err
   console.log(`Listening ${host}:${port}`)
 })
+
+module.exports = app;
