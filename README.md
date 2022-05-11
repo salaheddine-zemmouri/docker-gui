@@ -2,7 +2,7 @@
 [![GitHub downloads](https://img.shields.io/github/downloads/otothea/docker-ui/total.svg)](https://github.com/otothea/docker-ui)
 ![build](https://github.com/0SalahEddine0/docker-gui/actions/workflows/node.js.yml/badge.svg)
 
-# Docker UI
+# Docker GUI
 
 Docker UI is a web app for viewing and managing Docker images, containers, volumes, etc in a web browser.
 
