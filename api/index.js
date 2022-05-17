@@ -5,6 +5,7 @@ const containerStats = require('./container_stats')
 const volumes    = require('./volumes')
 const networks   = require('./networks')
 const auth       = require('./auth')
+const terminal   = require('./terminal')
 
 const router = module.exports = new Router()
 
@@ -43,6 +44,8 @@ router.post  ('/networks',       auth.middleware, networks.create)
 router.get   ('/networks/:id',   auth.middleware, networks.read)
 router.delete('/networks/:id',   auth.middleware, networks.destroy)
 router.post  ('/networks/prune', auth.middleware, networks.prune)
+
+router.post ('/exec', auth.middleware, terminal.exec)
 
 router.use('*', (req, res) => {
   res.status(404).send({message: 'Not found'})
