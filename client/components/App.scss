@@ -4,3 +4,60 @@
     overflow: auto;
   }
 }
+.SelectMenu {
+  display: flex;
+  pointer-events: none;
+  flex-direction: column;
+  z-index: 99;
+  position: absolute;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  padding: 0;
+}
+.SelectMenu-modal {
+  width: 300px;
+  height: auto;
+  max-height: 480px;
+  margin: 8px 0 16px 0;
+  border-color: #21262D;
+  border-radius: 6px;
+  background-color: white;
+  position: relative;
+  display: flex;
+  pointer-events: auto;
+  flex-direction: column;
+  border: 1px solid #21262D;
+  z-index: 99;
+
+}
+.SelectMenu-header {
+  padding: 7px 7px 7px 7px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #21262D;
+}
+.SelectMenu-title {
+  flex: 1;
+  font-size: inherit;
+  font-weight: 600;
+}
+.SelectMenu-filter {
+  padding: 8px;
+  border-bottom: 1px solid #21262D;
+}
+.SelectMenu button {
+  margin-left: 5px;
+}
+.SelectMenu input {
+  padding: 2px;
+}
+.SelectMenu-list {
+  padding: 8px 8px 0 8px;
+  margin-bottom: 8px;
+}
+.SelectMenu-list select {
+  margin-left: 5px;
+  padding: 5px 40px;
+}
