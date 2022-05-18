@@ -1,3 +1,4 @@
+import { instances } from "chart.js";
 import { inject } from "mobx-react";
 import React from "react";
 import { Link } from "react-router";
@@ -12,7 +13,11 @@ export default class App extends React.Component {
     routes: *,
     store: AppStore,
   };
-
+  state = {
+    currentInstance: "localhost",
+    instances: ["localhost"],
+    newInstance: null
+  }
   constructor(props) {
     super(props);
 
@@ -53,10 +58,31 @@ export default class App extends React.Component {
       this.networksStore.pruneNetworks();
     }
   };
-
+  onChange = e => {
+    this.setState({
+      currentInstance: e.target.value,
+      instances: this.state.instances
+    })
+  }
+  onInstanceType = e => {
+    this.setState({
+      currentInstance: this.state.currentInstance,
+      instances: this.state.instances,
+      newInstance: e.target.value
+    })
+  } 
+  onAddInstance = () => {
+    let inst = this.state.instances
+    inst.push(this.state.newInstance) 
+    this.setState({
+      currentInstance: this.state.currentInstance,
+      instances: inst,
+      newInstance: null
+    })
+  }
   render() {
     const route = this.props.routes[this.props.routes.length - 1].path;
-
+    const {currentInstance, instances} = this.state;
     let button = null,
       images = "",
       containerStats = "",
@@ -165,6 +191,30 @@ export default class App extends React.Component {
                 </li>
               </ul>
               <form className="navbar-form navbar-left">{button}</form>
+              <form className="navbar-form navbar-left">
+                <details>
+                  <summary className="btn btn-default">{currentInstance}</summary>
+                  <div className="SelectMenu">
+                    <div className="SelectMenu-modal">
+                      <header className="SelectMenu-header">
+                        <span className="SelectMenu-title">Switch docker engine instances</span>
+                      </header>
+                    <div className="SelectMenu-filter">
+                      <input placeholder="Docker instance address" onChange={this.onInstanceType} />
+                      <div className="btn btn-default btn-sm" onClick={this.onAddInstance}>Add instance</div>
+                    </div>
+                    <div className="SelectMenu-list">
+                      <span className="SelectMenu-title">Instances</span>
+                      <select onChange={this.onChange}>
+                        {instances.map((e, idx) => {
+                          return <option key={idx} value={e}>{e}</option>
+                        })}
+                      </select>
+                    </div>
+                    </div>
+                  </div>
+                </details>
+              </form>
               <ul className="nav navbar-nav navbar-right">
                 <li className="dropdown">
                   <a
