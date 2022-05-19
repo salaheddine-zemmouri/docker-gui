@@ -46,7 +46,6 @@ module.exports = {
       const listStats=[]
       let totalCPU=0
       let totalMem=0
-      const totalNet=0
 
       
       for (let i = 0; i < containers.length; i++) {
@@ -55,10 +54,9 @@ module.exports = {
         const stat = {
           container_id:   result.id,
           container_name : result.name,
-          cpu_usage : calculateCPUUsage(result),
-          memory_usage : calculateMemUsage(result),
-          net_usage : result.networks,
-          io_usage : "TODO"
+          cpu_usage : calculateCPUUsage(result) == NULL ? 0:calculateCPUUsage(result),
+          memory_usage : calculateMemUsage(result)== NULL ? 0:calculateMemUsage(result),
+          net_usage : result.networks
           }
         totalCPU+=stat.cpu_usage
         totalMem+=stat.memory_usage
