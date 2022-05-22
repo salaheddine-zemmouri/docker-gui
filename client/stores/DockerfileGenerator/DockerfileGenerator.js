@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios from "../../lib/axios";
 import { action } from "mobx";
 import BaseStore from "stores/BaseStore";
 

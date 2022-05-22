@@ -37,7 +37,6 @@ export default class DockerFileGen extends React.Component {
   constructor(props) {
     super(props);
     this.appStore = props.store;
-    console.log(this.appStore);
     this.dockerfileGeneratorStore = this.appStore.dockerfileGenerator;
     this.state = { stages: [] };
   }
@@ -52,8 +51,6 @@ export default class DockerFileGen extends React.Component {
 
   handleKBShortCuts(e) {
     // Shift + ; shortcut
-
-    console.log(e.keyCode);
     e.altKey &&
       e.keyCode === 190 &&
       this.setState((state) => {
@@ -103,7 +100,6 @@ export default class DockerFileGen extends React.Component {
 
     function handleSubmit(e) {
       e.preventDefault();
-      console.log(this.state);
       this.dockerfileGeneratorStore
         .generateDockerfile(this.state.stages)
         .then((res) => {
