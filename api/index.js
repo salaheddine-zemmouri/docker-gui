@@ -32,6 +32,7 @@ router.post   ('/containers/prune',      auth.middleware, containers.prune)
 
 
 router.get   ('/container_stats',        auth.middleware, containerStats.stats)
+router.get   ('/container_stats/:id',        auth.middleware, containerStats.oneContainerStates)
 
 router.get   ('/volumes',       auth.middleware, volumes.list)
 router.post  ('/volumes',       auth.middleware, volumes.create)
