@@ -4,6 +4,7 @@ import {action, observable} from 'mobx'
 import moment from 'moment'
 import BaseStore from 'stores/BaseStore'
 
+
 const ellipsify = string => {
   return string.length > 40 ? `${string.substr(0, 37)}...` : string
 }
@@ -53,7 +54,6 @@ export default class Containers extends BaseStore {
 
   @action loadContainersLogs = async id => {
     this.setError()
-
     try {
       const res = await axios.get(`containers/${id}/logs`)
       this.inspect = res.data
@@ -67,6 +67,14 @@ export default class Containers extends BaseStore {
     this.setError()
 
     try {
+      let baseURL = localStorage.getItem("baseUrl");
+      if(!baseURL) {
+        baseURL = "http://localhost:9898";
+        localStorage.setItem("baseUrl" , baseURL);
+      }
+      axios.defaults.baseURL = baseURL + '/api/v1/';
+      console.log("after :" + axios.defaults.baseURL)
+
       const res = await axios.get('containers')
       this.containers = sortBy(res.data, container => -container.Created).map(container => {
         const ports = sortBy(container.Ports, p => `${p.PrivatePort}/${p.Type}`).map(p => `${(p.IP || '') && `${p.IP || ''}:${p.PublicPort || ''}->`}${p.PrivatePort}/${p.Type}`).join(', ')
