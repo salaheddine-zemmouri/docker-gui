@@ -1,37 +1,33 @@
 import React from "react";
 import { Line } from "react-chartjs-2";
+import axios from "../../lib/axios";
 
 export default class ContainerRLTStat extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { selectedRefreshRate: 5, selectedContainerID: undefined };
-    const labels = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-    ];
-
-    this.data = {
-      labels,
-      datasets: [
-        {
-          label: "dataset 1",
-          data: [100, 200, 300, 400, 500, 600, 700, 800, 900],
-          borderColor: "#e84118",
-          backgroundColor: "#c23616",
-        },
-        {
-          label: "dataset 2",
-          data: [100, 200, 300, 400, 500, 600, 700, 800, 900].reverse(),
-          borderColor: "#273c75",
-          backgroundColor: "#192a56",
-        },
-      ],
+    this.state = {
+      selectedRefreshRate: 5,
+      selectedContainerID: undefined,
+      labels: [],
+      cpuUsage: [],
+      memUsage: [],
     };
+  }
+
+  componentDidUpdate() {
+    axios
+      .get(`/container_stats/${this.state.selectedContainerID}`)
+      .then((res) =>
+        this.setState((state) => {
+          const labels = state.labels;
+          labels.push(new Date());
+          const cpuUsage = state.cpuUsage;
+          const memUsage = state.memUsage;
+
+          cpuUsage.push(res.data.cpu_usage);
+          memUsage.push(res.data.memory_usage);
+        })
+      );
   }
 
   updateSelectedRefreshRate(e) {
@@ -140,7 +136,21 @@ export default class ContainerRLTStat extends React.Component {
             <h3 className="panel-title">CPU usage</h3>
           </div>
           <div className="panel-body">
-            <Line width={5} height={2} data={this.data} />
+            <Line
+              width={5}
+              height={2}
+              data={{
+                labels: this.state.labels,
+                datasets: [
+                  {
+                    label: "",
+                    data: this.state.cpuUsage,
+                    borderColor: "#e84118",
+                    backgroundColor: "#c23616",
+                  },
+                ],
+              }}
+            />
           </div>
         </div>
 
@@ -149,7 +159,21 @@ export default class ContainerRLTStat extends React.Component {
             <h3 className="panel-title">Memory usage</h3>
           </div>
           <div className="panel-body">
-            <Line width={5} height={2} data={this.data} />
+            <Line
+              width={5}
+              height={2}
+              data={{
+                labels: this.state.labels,
+                datasets: [
+                  {
+                    label: "",
+                    data: this.state.cpuUsage,
+                    borderColor: "#e84118",
+                    backgroundColor: "#c23616",
+                  },
+                ],
+              }}
+            />
           </div>
         </div>
       </div>

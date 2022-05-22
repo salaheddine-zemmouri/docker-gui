@@ -1,5 +1,5 @@
 import React from "react";
-import axios from "axios";
+import axios from "../../lib/axios";
 import "./DockerTerminal.module.css";
 
 export default class DockerTerminal extends React.Component {
@@ -22,7 +22,7 @@ export default class DockerTerminal extends React.Component {
   render() {
     function exec(cmd) {
       axios
-        .post("http://localhost:9898/api/v1/exec", {
+        .post("exec", {
           id: this.state.id,
           cmd,
         })
@@ -33,7 +33,7 @@ export default class DockerTerminal extends React.Component {
             return { loading: false, messages };
           });
         })
-        .catch((err) => alter("ERROR"));
+        .catch((err) => alert("ERROR"));
     }
 
     function onKeyUpHandler(e) {
@@ -55,17 +55,16 @@ export default class DockerTerminal extends React.Component {
     return (
       <div className="container">
         <span className="command">
-          {!this.state.loading &&
-            this.state.history.map((cmd, index) => (
-              <span key={index} style={{ display: "block" }}>
-                Docker-tty:/$
-                <span style={{ fontWeight: 400 }}>
-                  {" " + cmd}
-                  <br />
-                  {this.state.messages[index]}
-                </span>
+          {this.state.history.map((cmd, index) => (
+            <span key={index} style={{ display: "block" }}>
+              Docker-tty:/$
+              <span style={{ fontWeight: 400 }}>
+                {" " + cmd}
+                <br />
+                {this.state.messages[index]}
               </span>
-            ))}
+            </span>
+          ))}
 
           {!this.state.loading && (
             <div>

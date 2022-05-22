@@ -5,8 +5,7 @@ import cpuSVG from "../../assets/png/cpu.png";
 import memorySVG from "../../assets/png/memory.png";
 import MetricCard from "./MetricCard";
 import ContainerMetricChartView from "./ContainerMetricChartView";
-import axios from "axios";
-import { Link } from "react-router";
+import axios from "../../lib/axios";
 import ContainerRLTStat from "./ContainerRLTStats";
 
 export default class ContainerStat extends React.Component {
@@ -21,9 +20,7 @@ export default class ContainerStat extends React.Component {
   }
 
   componentDidMount() {
-    axios.get("/api/v1/container_stats").then((res) => {
-      console.log(res.data);
-
+    axios.get("container_stats").then((res) => {
       this.setState({
         totalCpuUsage: res.data.total_cpu_usage
           ? res.data.total_cpu_usage.toFixed(2)
