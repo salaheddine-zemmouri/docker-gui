@@ -18,6 +18,13 @@ export default class App extends React.Component {
     instances: ["localhost"],
     newInstance: null
   }
+  componentDidMount() {
+    this.setState({
+      currentInstance: localStorage.getItem("currentInstance") ? localStorage.getItem("currentInstance") : "localhost",
+      instances: localStorage.getItem("instances") ? localStorage.getItem("instances").split(',') : ["localhost"],
+      newInstance: null
+    })
+  }
   constructor(props) {
     super(props);
 
@@ -59,6 +66,7 @@ export default class App extends React.Component {
     }
   };
   onChange = e => {
+    localStorage.setItem("currentInstance",e.target.value)
     this.setState({
       currentInstance: e.target.value,
       instances: this.state.instances
@@ -74,6 +82,7 @@ export default class App extends React.Component {
   onAddInstance = () => {
     let inst = this.state.instances
     inst.push(this.state.newInstance) 
+    localStorage.setItem("instances",inst)
     this.setState({
       currentInstance: this.state.currentInstance,
       instances: inst,
@@ -207,7 +216,7 @@ export default class App extends React.Component {
                       <span className="SelectMenu-title">Instances</span>
                       <select onChange={this.onChange}>
                         {instances.map((e, idx) => {
-                          return <option key={idx} value={e}>{e}</option>
+                          return this.state.currentInstance === e ? <option key={idx} value={e} selected>{e}</option> : <option key={idx} value={e}>{e}</option>
                         })}
                       </select>
                     </div>
