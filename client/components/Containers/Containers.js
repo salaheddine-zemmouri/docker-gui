@@ -300,10 +300,103 @@ export default class Containers extends React.Component {
                   Inspect Container
                 </h4>
               </div>
-              <div className="modal-body">
-                <pre>
-                  <code>{JSON.stringify(inspect, undefined, 2)}</code>
-                </pre>
+              <div className="modal-body" style={{ overflow: "scroll" }}>
+                {inspect && (
+                  <table>
+                    <tr>
+                      <th scope="row">Id</th>
+                      <td>{inspect.Id}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Created</th>
+                      <td>{inspect.Created}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Path</th>
+                      <td>{inspect.Path}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Status</th>
+                      <td>{inspect.State.Status}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Running</th>
+                      <td>{"" + inspect.State.Running}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Paused</th>
+                      <td>{"" + inspect.State.Paused}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Restarting</th>
+                      <td>{"" + inspect.State.Restarting}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">OOMKilled</th>
+                      <td>{"" + inspect.State.OOMKilled}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Dead</th>
+                      <td>{"" + inspect.State.Dead}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Pid</th>
+                      <td>{inspect.State.PID}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">ExitCode</th>
+                      <td>{inspect.State.ExitCode}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Error</th>
+                      <td>{inspect.State.Error}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">StartedAt</th>
+                      <td>{inspect.State.StartedAt}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">FinishedAt</th>
+                      <td>{inspect.State.FinishedAt}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Image</th>
+                      <td>{inspect.Image}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Name</th>
+                      <td>{inspect.Name}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">RestartCount</th>
+                      <td>{inspect.RestartCount}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Driver</th>
+                      <td>{inspect.Driver}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Platform</th>
+                      <td>{inspect.Platform}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">MountLabel</th>
+                      <td>{inspect.MountLabel}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">ProcessLabel</th>
+                      <td>{inspect.ProcessLabel}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">AppArmorProfile</th>
+                      <td>{inspect.AppArmorProfile}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">ExecIDs</th>
+                      <td>{inspect.ExecIDs}</td>
+                    </tr>
+                  </table>
+                )}
               </div>
               <div className="modal-footer">
                 <button
