@@ -1,0 +1,32 @@
+@import url(https://fonts.googleapis.com/css?family=Inconsolata:400,700);
+
+.container {
+  margin: 0;
+  font: 0.875em/1.6 "Inconsolata", monospace;
+  color: #181818;
+  font-weight: 700;
+  font-size: 2.1rem;
+  display: flex;
+}
+
+.command {
+  flex: 1;
+}
+
+::selection {
+  background: #eee;
+}
+
+.terminal-input {
+  border: none;
+  font-family: inherit;
+  background: #fff;
+  padding: 0 0.5em;
+  font-weight: 400;
+  width: 80%;
+}
+.terminal-input:focus {
+  background: #fff;
+  color: #000;
+  outline: none;
+}
