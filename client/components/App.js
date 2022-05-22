@@ -3,6 +3,7 @@ import { inject } from "mobx-react";
 import React from "react";
 import { Link } from "react-router";
 import AppStore from "stores/AppStore";
+import axios from 'axios';
 
 import "./App.scss";
 
@@ -65,20 +66,26 @@ export default class App extends React.Component {
       this.networksStore.pruneNetworks();
     }
   };
+
   onChange = e => {
     localStorage.setItem("currentInstance",e.target.value)
     this.setState({
       currentInstance: e.target.value,
       instances: this.state.instances
     })
+    localStorage.setItem("baseUrl", e.target.value);
+    document.location.reload();
   }
+
   onInstanceType = e => {
     this.setState({
       currentInstance: this.state.currentInstance,
       instances: this.state.instances,
       newInstance: e.target.value
     })
+    
   } 
+
   onAddInstance = () => {
     let inst = this.state.instances
     inst.push(this.state.newInstance) 
@@ -88,7 +95,9 @@ export default class App extends React.Component {
       instances: inst,
       newInstance: null
     })
+
   }
+  
   render() {
     const route = this.props.routes[this.props.routes.length - 1].path;
     const {currentInstance, instances} = this.state;
