@@ -4,6 +4,14 @@ import {action, observable} from 'mobx'
 import moment from 'moment'
 import BaseStore from 'stores/BaseStore'
 
+let baseURL = localStorage.getItem("baseUrl");
+if(!baseURL) {
+    baseURL = "http://localhost:9898";
+    localStorage.setItem("baseUrl" , baseURL);
+}
+axios.defaults.baseURL = baseURL + '/api/v1/';
+console.log("after :" + axios.defaults.baseURL)
+
 const sizeOf = bytes => {
   if (Number(bytes) === 0) { return '0.00 B' }
   const e = Math.floor(Math.log(bytes) / Math.log(1024))

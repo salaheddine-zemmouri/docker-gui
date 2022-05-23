@@ -8,6 +8,14 @@ import ContainerMetricChartView from "./ContainerMetricChartView";
 import axios from "../../lib/axios";
 import ContainerRLTStat from "./ContainerRLTStats";
 
+let baseURL = localStorage.getItem("baseUrl");
+if(!baseURL) {
+    baseURL = "http://localhost:9898";
+    localStorage.setItem("baseUrl" , baseURL);
+}
+axios.defaults.baseURL = baseURL + '/api/v1/';
+console.log("after :" + axios.defaults.baseURL)
+
 export default class ContainerStat extends React.Component {
   constructor() {
     super();

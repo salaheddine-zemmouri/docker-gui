@@ -3,6 +3,14 @@ import {sortBy} from 'lodash'
 import {action, observable} from 'mobx'
 import BaseStore from 'stores/BaseStore'
 
+let baseURL = localStorage.getItem("baseUrl");
+if(!baseURL) {
+    baseURL = "http://localhost:9898";
+    localStorage.setItem("baseUrl" , baseURL);
+}
+axios.defaults.baseURL = baseURL + '/api/v1/';
+console.log("after :" + axios.defaults.baseURL)
+
 export default class Volumes extends BaseStore {
   @observable volumes = []
 
