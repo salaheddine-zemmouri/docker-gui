@@ -44,9 +44,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{secrets.GB_TOKEN}}
-      GH_USERNAME: 0SalahEddine0
+      GH_USERNAME: 0salaheddine0
       GH_DOCKER_REGISTRY: ghcr.io
     steps:
+      - uses: actions/checkout@v3
       - name: Docker login
         run: |
           docker login $GH_DOCKER_REGISTRY -u $GH_USERNAME -p $GH_TOKEN
