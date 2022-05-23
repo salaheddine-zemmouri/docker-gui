@@ -15,14 +15,14 @@ export default class App extends React.Component {
     store: AppStore,
   };
   state = {
-    currentInstance: "localhost",
-    instances: ["localhost"],
+    currentInstance: "http://localhost:9898",
+    instances: ["http://localhost:9898"],
     newInstance: null
   }
   componentDidMount() {
     this.setState({
-      currentInstance: localStorage.getItem("currentInstance") ? localStorage.getItem("currentInstance") : "localhost",
-      instances: localStorage.getItem("instances") ? localStorage.getItem("instances").split(',') : ["localhost"],
+      currentInstance: localStorage.getItem("currentInstance") ? localStorage.getItem("currentInstance") : "http://localhost:9898",
+      instances: localStorage.getItem("instances") ? localStorage.getItem("instances").split(',') : ["http://localhost:9898"],
       newInstance: null
     })
   }
@@ -211,7 +211,7 @@ export default class App extends React.Component {
               <form className="navbar-form navbar-left">{button}</form>
               <form className="navbar-form navbar-left">
                 <details>
-                  <summary className="btn btn-default">{currentInstance}</summary>
+                  <summary className="btn btn-default">{this.state.currentInstance}</summary>
                   <div className="SelectMenu">
                     <div className="SelectMenu-modal">
                       <header className="SelectMenu-header">
@@ -223,9 +223,10 @@ export default class App extends React.Component {
                     </div>
                     <div className="SelectMenu-list">
                       <span className="SelectMenu-title">Instances</span>
-                      <select onChange={this.onChange}>
-                        {instances.map((e, idx) => {
-                          return this.state.currentInstance === e ? <option key={idx} value={e} selected>{e}</option> : <option key={idx} value={e}>{e}</option>
+                      <select onChange={this.onChange} value={this.state.currentInstance}>
+                        {this.state.instances.map((e, idx) => {
+                          console.log("e:= "+e);
+                          return <option key={idx} value={e}>{e}</option>
                         })}
                       </select>
                     </div>
