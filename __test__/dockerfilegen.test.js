@@ -70,7 +70,7 @@ const multiStageBody = [
     }
 ]
 
-const multiStageResponse= 'FROM node:12-alpine\nRUN [\"apk\", \"add\", \" --no-cache\", \"python2\", \"g++\", \"make\"]\nnode:12-alpine\nRUN [\"apk\", \"add\", \" --no-cache\", \"python2\", \"g++\", \"make\"]\n';
+const multiStageResponse= 'FROM node:12-alpine\nRUN [\"apk\", \"add\", \" --no-cache\", \"python2\", \"g++\", \"make\"]\nFROM node:12-alpine\nRUN [\"apk\", \"add\", \" --no-cache\", \"python2\", \"g++\", \"make\"]\n';
 
 test('single stage body', async () => {
     expect.assertions(1);

@@ -63,7 +63,7 @@ const createFile = async (body) => {
         }
     }
     
-    if(content == "FROM ") content+="scratch";
+    if(content == "") content+="FROM scratch";
 
     return new Promise((resolve, reject) => {
         fs.writeFile(path.join(__dirname, "../temp","Dockerfile"),content, error => {
