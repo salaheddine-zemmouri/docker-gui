@@ -15,9 +15,10 @@ router.post("/", async (req, res) => {
 });
 
 const createFile = async (body) => {
-    let content = "FROM ";
+    let content = "";
     for(let stage of body)
     {
+        content+="FROM ";
         // FROM instruction generation
         content += stage["from"]["platform"] !== "" ? `--platform=${stage["from"]["platform"]} ${stage["from"]["image"]}` : stage["from"]["image"];
         if(stage["from"]["tag"] !== "")
