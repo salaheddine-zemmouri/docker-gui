@@ -62,13 +62,13 @@ export default class ContainerMetricChartView extends React.Component {
       (container) => container.container_name
     );
     cpuData.datasets[0].data = this.state.containers.map(
-      (container) => container.cpu_usage && 0
+      (container) => container.cpu_usage
     );
     cpuData.datasets[0].backgroundColor = backgroundColors;
 
     memoryData.labels = cpuData.labels;
     memoryData.datasets[0].data = this.state.containers.map(
-      (container) => container.memory_usage && 0
+      (container) => container.memory_usage
     );
     memoryData.datasets[0].backgroundColor = backgroundColors;
   }

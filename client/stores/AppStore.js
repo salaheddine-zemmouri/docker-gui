@@ -12,6 +12,6 @@ export default class AppStore {
     this.images = new Images(this);
     this.volumes = new Volumes(this);
     this.networks = new Networks(this);
-    this.dockerfileGenerator = new DockerfileGenerator();
+    this.dockerfileGenerator = new DockerfileGenerator(this);
   }
 }
