@@ -15,7 +15,7 @@ import Volumes from "./components/Volumes/Volumes";
 import Networks from "./components/Networks/Networks";
 import Logs from "./components/Logs/Logs";
 import ContainerStat from "./components/ContainerStats/ContainerStats";
-import DockerFileGen from "./components/dockerfileGenerator/DockerFileGen";
+import DockerFileGen from "./components/DockerfileGenerator/DockerFileGen";
 import DockerTerminal from "./components/DockerTerminal/DockerTerminal";
 
 export default class Router extends React.Component {
