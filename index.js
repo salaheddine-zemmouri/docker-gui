@@ -7,6 +7,7 @@ const path       = require('path')
 const api        = require('./api')
 const dockerfile = require('./api/dockerfilegen')
 const config     = require('./config')
+const  cors       = require('cors');
 
 const app    = express()
 const server = http.createServer(app)
@@ -14,6 +15,9 @@ const port   = process.env.DOCKER_UI_PORT || config.port || 9898
 const host   = process.env.DOCKER_UI_HOST || config.host || 'localhost'
 const assets = process.env.NODE_ENV === 'production' ? 'dist' : 'build'
 
+
+// use it before all route definitions
+app.use(cors({origin: '*'}));
 // Force https if needed
 if (process.env.DOCKER_UI_HTTPS || config.https) {
   app.use(sslify.HTTPS({trustProtoHeader: process.env.DOCKER_UI_HTTPS_PROTO || config.httpsProto}))
